@@ -1,3 +1,0 @@
-[submodule "ros2_ws/src/RobStride_Control"]
-	path = ros2_ws/src/RobStride_Control
-	url = https://github.com/Seeed-Projects/RobStride_Control.git
