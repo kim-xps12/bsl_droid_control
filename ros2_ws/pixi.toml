@@ -1,0 +1,25 @@
+[workspace]
+channels = ["robostack-jazzy", "conda-forge"]
+name = "my_ros2_project"
+platforms = ["linux-aarch64"]
+version = "0.1.0"
+
+[activation]
+scripts = ["install/setup.sh"]
+
+[activation.env]
+DISPLAY = ":1"
+
+[tasks]
+build = { cmd = "colcon build --symlink-install", inputs = ["src"] }
+rviz2 = "rviz2"
+
+[dependencies]
+ros-jazzy-desktop = ">=0.11.0,<0.12"
+ros-jazzy-turtlesim = ">=1.8.3,<2"
+colcon-common-extensions = ">=0.3.0,<0.4"
+ros-jazzy-ament-cmake-auto = ">=2.5.4,<3"
+compilers = ">=1.11.0,<2"
+pkg-config = ">=0.29.2,<0.30"
+cmake = ">=4.2.2,<5"
+ninja = ">=1.13.2,<2"
