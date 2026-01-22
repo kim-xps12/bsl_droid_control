@@ -86,6 +86,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/expat-2.7.3-hfae3067_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/ffmpeg-8.0.1-gpl_h1a35955_908.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/filelock-3.20.3-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flake8-7.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flake8-builtins-3.1.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/flake8-comprehensions-3.17.0-pyhd8ed1ab_0.conda
@@ -727,6 +728,7 @@ environments:
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-aarch64/ros-jazzy-urdfdom-headers-1.1.2-py312h9804fc4_14.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-aarch64/ros-jazzy-velocity-controllers-4.36.0-np2py312h61f2ce4_14.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-aarch64/ros-jazzy-visualization-msgs-5.3.6-np2py312h61f2ce4_14.conda
+      - conda: https://conda.anaconda.org/robostack-jazzy/linux-aarch64/ros-jazzy-xacro-2.1.1-np2py312h61f2ce4_14.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-aarch64/ros-jazzy-yaml-cpp-vendor-9.0.1-np2py312h61f2ce4_14.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-aarch64/ros-jazzy-zstd-vendor-0.26.9-np2py312h61f2ce4_14.conda
       - conda: https://conda.anaconda.org/robostack-jazzy/linux-aarch64/ros2-distro-mutex-0.13.0-jazzy_14.conda
@@ -1777,6 +1779,14 @@ packages:
   license_family: GPL
   size: 12028458
   timestamp: 1766459996434
+- conda: https://conda.anaconda.org/conda-forge/noarch/filelock-3.20.3-pyhd8ed1ab_0.conda
+  sha256: 8b90dc21f00167a7e58abb5141a140bdb31a7c5734fe1361b5f98f4a4183fd32
+  md5: 2cfaaccf085c133a477f0a7a8657afe9
+  depends:
+  - python >=3.10
+  license: Unlicense
+  size: 18661
+  timestamp: 1768022315929
 - conda: https://conda.anaconda.org/conda-forge/noarch/flake8-7.3.0-pyhd8ed1ab_0.conda
   sha256: a32e511ea71a9667666935fd9f497f00bcc6ed0099ef04b9416ac24606854d58
   md5: 04a55140685296b25b79ad942264c0ef
@@ -12738,6 +12748,23 @@ packages:
   license: Apache-2.0
   size: 377931
   timestamp: 1768946078131
+- conda: https://conda.anaconda.org/robostack-jazzy/linux-aarch64/ros-jazzy-xacro-2.1.1-np2py312h61f2ce4_14.conda
+  sha256: 0053f222f62cd5ea87d0a7768c415b903342ce4ed50526c854618a1870a8dbd7
+  md5: 0652916857402c6ccb69e901a474b28d
+  depends:
+  - python
+  - pyyaml
+  - ros-jazzy-ament-index-python
+  - ros-jazzy-ros-workspace
+  - ros2-distro-mutex 0.13.* jazzy_*
+  - libstdcxx >=14
+  - libgcc >=14
+  - python_abi 3.12.* *_cp312
+  - ros2-distro-mutex >=0.13.0,<0.14.0a0
+  - numpy >=1.23,<3
+  license: BSD-3-Clause
+  size: 76289
+  timestamp: 1768943370206
 - conda: https://conda.anaconda.org/robostack-jazzy/linux-aarch64/ros-jazzy-yaml-cpp-vendor-9.0.1-np2py312h61f2ce4_14.conda
   sha256: efdc3010912ae2520acedb791c8e6f0b15dadc65e0dbc3025bc604d3fb31c51f
   md5: 479dd299dd79cace22899145dcab9f8b
