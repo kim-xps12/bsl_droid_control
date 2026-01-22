@@ -1,0 +1,7 @@
+<library path="robstride_hardware">
+  <class name="robstride_hardware/RobStrideHardware"
+         type="robstride_hardware::RobStrideHardware"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>RobStride RS02 Hardware Interface for ros2_control</description>
+  </class>
+</library>
