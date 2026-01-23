@@ -134,8 +134,7 @@ CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State & /*
 
   // Set real-time scheduling priority (SCHED_FIFO)
   if (state_reader_priority_ > 0) {
-    struct sched_param param;
-    std::memset(&param, 0, sizeof(param));
+    struct sched_param param{};
     param.sched_priority = state_reader_priority_;
     int ret = pthread_setschedparam(state_reader_thread_.native_handle(),
                                      SCHED_FIFO, &param);
