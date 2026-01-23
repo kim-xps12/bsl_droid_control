@@ -1,0 +1,234 @@
+<mxfile host="app.diagrams.net" modified="2026-01-23T07:00:00.000Z" agent="Copilot" version="21.0.0">
+  <diagram name="Robot Structure" id="robot-structure">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Title -->
+        <mxCell id="title" value="逆関節（Digitigrade）二脚ロボット構造図" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="350" y="20" width="400" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Base Link (Body) -->
+        <mxCell id="base_link" value="base_link&#xa;(胴体)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="480" y="80" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- ========== LEFT LEG ========== -->
+        <mxCell id="left_leg_label" value="左脚 (j1x)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#0000FF" vertex="1" parent="1">
+          <mxGeometry x="200" y="100" width="100" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Hip Yaw Joint -->
+        <mxCell id="left_j11" value="j11&#xa;hip_yaw&#xa;(Z軸)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="270" y="160" width="70" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="left_j11_link" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2" edge="1" parent="1" source="base_link" target="left_j11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Hip Yaw Link -->
+        <mxCell id="left_hip_yaw_link" value="hip_yaw_link&#xa;(30mm)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="265" y="220" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="left_yaw_to_link" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="left_j11" target="left_hip_yaw_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Hip Roll Joint -->
+        <mxCell id="left_j12" value="j12&#xa;hip_roll&#xa;(X軸)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="270" y="260" width="70" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="left_link_to_j12" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="left_hip_yaw_link" target="left_j12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Hip Roll Link -->
+        <mxCell id="left_hip_roll_link" value="hip_roll_link&#xa;(20mm)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="265" y="320" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="left_j12_to_link" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="left_j12" target="left_hip_roll_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Hip Pitch Joint -->
+        <mxCell id="left_j13" value="j13&#xa;hip_pitch&#xa;(Y軸)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="270" y="360" width="70" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="left_roll_to_j13" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="left_hip_roll_link" target="left_j13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Thigh Link -->
+        <mxCell id="left_thigh_link" value="thigh_link&#xa;(180mm)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="265" y="420" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="left_j13_to_thigh" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="left_j13" target="left_thigh_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Knee Pitch Joint (REVERSED!) -->
+        <mxCell id="left_j14" value="j14&#xa;knee_pitch&#xa;(Y軸)&#xa;【逆関節】" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="265" y="480" width="80" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="left_thigh_to_j14" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="left_thigh_link" target="left_j14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Shank Link -->
+        <mxCell id="left_shank_link" value="shank_link&#xa;(200mm)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="265" y="550" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="left_j14_to_shank" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="left_j14" target="left_shank_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Ankle Pitch Joint -->
+        <mxCell id="left_j15" value="j15&#xa;ankle_pitch&#xa;(Y軸)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="270" y="610" width="70" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="left_shank_to_j15" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="left_shank_link" target="left_j15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Left Foot Link -->
+        <mxCell id="left_foot_link" value="foot_link&#xa;(100mm)&#xa;←後方" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="265" y="670" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="left_j15_to_foot" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="left_j15" target="left_foot_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- ========== RIGHT LEG ========== -->
+        <mxCell id="right_leg_label" value="右脚 (j2x)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1;fontColor=#FF0000" vertex="1" parent="1">
+          <mxGeometry x="750" y="100" width="100" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Hip Yaw Joint -->
+        <mxCell id="right_j21" value="j21&#xa;hip_yaw&#xa;(Z軸)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="760" y="160" width="70" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="right_j21_link" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2" edge="1" parent="1" source="base_link" target="right_j21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Hip Yaw Link -->
+        <mxCell id="right_hip_yaw_link" value="hip_yaw_link&#xa;(30mm)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="755" y="220" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="right_yaw_to_link" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="right_j21" target="right_hip_yaw_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Hip Roll Joint -->
+        <mxCell id="right_j22" value="j22&#xa;hip_roll&#xa;(X軸)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="760" y="260" width="70" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="right_link_to_j22" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="right_hip_yaw_link" target="right_j22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Hip Roll Link -->
+        <mxCell id="right_hip_roll_link" value="hip_roll_link&#xa;(20mm)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="755" y="320" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="right_j22_to_link" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="right_j22" target="right_hip_roll_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Hip Pitch Joint -->
+        <mxCell id="right_j23" value="j23&#xa;hip_pitch&#xa;(Y軸)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="760" y="360" width="70" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="right_roll_to_j23" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="right_hip_roll_link" target="right_j23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Thigh Link -->
+        <mxCell id="right_thigh_link" value="thigh_link&#xa;(180mm)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="755" y="420" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="right_j23_to_thigh" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="right_j23" target="right_thigh_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Knee Pitch Joint (REVERSED!) -->
+        <mxCell id="right_j24" value="j24&#xa;knee_pitch&#xa;(Y軸)&#xa;【逆関節】" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="755" y="480" width="80" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="right_thigh_to_j24" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="right_thigh_link" target="right_j24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Shank Link -->
+        <mxCell id="right_shank_link" value="shank_link&#xa;(200mm)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="755" y="550" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="right_j24_to_shank" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="right_j24" target="right_shank_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Ankle Pitch Joint -->
+        <mxCell id="right_j25" value="j25&#xa;ankle_pitch&#xa;(Y軸)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="760" y="610" width="70" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="right_shank_to_j25" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="right_shank_link" target="right_j25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- Right Foot Link -->
+        <mxCell id="right_foot_link" value="foot_link&#xa;(100mm)&#xa;←後方" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="755" y="670" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="right_j25_to_foot" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2" edge="1" parent="1" source="right_j25" target="right_foot_link">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- ========== LEGEND ========== -->
+        <mxCell id="legend_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="450" y="600" width="200" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_title" value="凡例" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="520" y="605" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_joint" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="1">
+          <mxGeometry x="460" y="630" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_joint_label" value="通常の関節" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="500" y="630" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_knee" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="1">
+          <mxGeometry x="460" y="655" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_knee_label" value="逆関節（膝）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="500" y="655" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_thigh" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6" vertex="1" parent="1">
+          <mxGeometry x="460" y="680" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_thigh_label" value="大腿部リンク" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="500" y="680" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_shank" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="460" y="705" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_shank_label" value="下腿部リンク" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="500" y="705" width="80" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- Hip Width Dimension -->
+        <mxCell id="hip_width_dim" value="hip_width = 160mm" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="480" y="150" width="140" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="hip_width_line" value="" style="endArrow=classic;startArrow=classic;html=1;strokeWidth=1;strokeColor=#666666" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="180" as="sourcePoint" />
+            <mxPoint x="760" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
