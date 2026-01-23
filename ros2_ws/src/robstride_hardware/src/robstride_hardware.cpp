@@ -6,6 +6,9 @@
 #include "robstride_hardware/robstride_hardware.hpp"
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
 #include <chrono>
+#include <pthread.h>
+#include <sched.h>
+#include <cstring>
 
 namespace robstride_hardware
 {
@@ -21,7 +24,7 @@ CallbackReturn RobStrideHardware::on_init(const hardware_interface::HardwareInfo
   }
   
   // Read parameters from URDF
-  can_interface_ = info_.hardware_parameters.count("can_interface") 
+  can_interface_ = info_.hardware_parameters.count("can_interface")
     ? info_.hardware_parameters.at("can_interface") : "can0";
   motor_id_ = info_.hardware_parameters.count("motor_id")
     ? std::stoi(info_.hardware_parameters.at("motor_id")) : 11;
@@ -29,6 +32,14 @@ CallbackReturn RobStrideHardware::on_init(const hardware_interface::HardwareInfo
     ? std::stod(info_.hardware_parameters.at("kp")) : 30.0;
   kd_ = info_.hardware_parameters.count("kd")
     ? std::stod(info_.hardware_parameters.at("kd")) : 1.0;
+
+  // Read state reader thread configuration from URDF
+  state_reader_rate_ = info_.hardware_parameters.count("state_reader_rate")
+    ? std::stoi(info_.hardware_parameters.at("state_reader_rate")) : 200;
+  state_reader_cpu_affinity_ = info_.hardware_parameters.count("state_reader_cpu_affinity")
+    ? std::stoi(info_.hardware_parameters.at("state_reader_cpu_affinity")) : 3;
+  state_reader_priority_ = info_.hardware_parameters.count("state_reader_priority")
+    ? std::stoi(info_.hardware_parameters.at("state_reader_priority")) : 80;
   
   // Initialize storage for each joint
   hw_positions_.resize(info_.joints.size(), 0.0);
@@ -45,6 +56,10 @@ CallbackReturn RobStrideHardware::on_init(const hardware_interface::HardwareInfo
     rclcpp::get_logger("RobStrideHardware"),
     "Initialized: can=%s, motor_id=%d, kp=%.1f, kd=%.1f, joints=%zu",
     can_interface_.c_str(), motor_id_, kp_, kd_, info_.joints.size());
+  RCLCPP_INFO(
+    rclcpp::get_logger("RobStrideHardware"),
+    "State reader config: rate=%dHz, cpu=%d, priority=%d",
+    state_reader_rate_, state_reader_cpu_affinity_, state_reader_priority_);
   
   return CallbackReturn::SUCCESS;
 }
@@ -95,12 +110,47 @@ CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State & /*
     hw_commands_position_[i] = hw_positions_[i];
   }
   
-  // Start state reader thread (100Hz, separate from RT loop)
+  // Start state reader thread (separate from RT loop)
   state_reader_running_ = true;
   state_reader_thread_ = std::thread(&RobStrideHardware::state_reader_loop, this);
-  
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), 
-    "Motor %d activated in MIT mode, state reader thread started", motor_id_);
+
+  // Set CPU affinity for state reader thread (bind to specific CPU core).
+  // Note: Negative values mean "no affinity setting"; 0 and positive values are valid CPU indices.
+  if (state_reader_cpu_affinity_ >= 0) {
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(state_reader_cpu_affinity_, &cpuset);
+    int ret = pthread_setaffinity_np(state_reader_thread_.native_handle(),
+                                      sizeof(cpu_set_t), &cpuset);
+    if (ret != 0) {
+      RCLCPP_WARN(rclcpp::get_logger("RobStrideHardware"),
+        "Failed to set CPU affinity to CPU %d: %s",
+        state_reader_cpu_affinity_, std::strerror(ret));
+    } else {
+      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+        "State reader thread bound to CPU %d", state_reader_cpu_affinity_);
+    }
+  }
+
+  // Set real-time scheduling priority (SCHED_FIFO)
+  if (state_reader_priority_ > 0) {
+    struct sched_param param{};
+    param.sched_priority = state_reader_priority_;
+    int ret = pthread_setschedparam(state_reader_thread_.native_handle(),
+                                     SCHED_FIFO, &param);
+    if (ret != 0) {
+      RCLCPP_WARN(rclcpp::get_logger("RobStrideHardware"),
+        "Failed to set RT priority %d: %s (may need sudo or rtprio limits configured)",
+        state_reader_priority_, std::strerror(ret));
+    } else {
+      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+        "State reader thread priority set to %d (SCHED_FIFO)", state_reader_priority_);
+    }
+  }
+
+  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+    "Motor %d activated in MIT mode, state reader thread started (%dHz)",
+    motor_id_, state_reader_rate_);
   return CallbackReturn::SUCCESS;
 }
 
@@ -204,16 +254,16 @@ hardware_interface::return_type RobStrideHardware::write(
 }
 
 // ============================================================================
-// State reader thread (100Hz, completely separate from RT control loop)
+// State reader thread (configurable Hz, completely separate from RT control loop)
 // ============================================================================
 
 void RobStrideHardware::state_reader_loop()
 {
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), 
-    "State reader thread started (100Hz) for motor %d", motor_id_);
-  
-  // 100Hz = 10ms period
-  const auto period = std::chrono::milliseconds(10);
+  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+    "State reader thread started (%dHz) for motor %d", state_reader_rate_, motor_id_);
+
+  // Calculate period from state_reader_rate_ (200Hz = 5ms period)
+  const auto period = std::chrono::microseconds(1000000 / state_reader_rate_);
   auto next_time = std::chrono::steady_clock::now();
   
   // Pre-allocate message to avoid allocation in loop
@@ -247,8 +297,8 @@ void RobStrideHardware::state_reader_loop()
     }
     read_count++;
     
-    // Log every 1 second (100 cycles at 100Hz) - more frequent for debugging
-    if (read_count % 100 == 0) {
+    // Log every 1 second (state_reader_rate_ cycles)
+    if (read_count % state_reader_rate_ == 0) {
       RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
         "[StateReader] pos: %.3f rad, vel: %.3f rad/s, torque: %.3f, valid: %d/%d (%.1f%%)",
         latest_position_.load(), latest_velocity_.load(), latest_torque_.load(),

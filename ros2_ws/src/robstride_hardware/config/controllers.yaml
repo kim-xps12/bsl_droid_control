@@ -1,6 +1,12 @@
 controller_manager:
   ros__parameters:
-    update_rate: 200  # Keep at 200Hz, stability improved by removing RT loop overhead
+    update_rate: 200  # 200Hz RT loop
+
+    # Real-time configuration for RT loop
+    use_realtime: true
+    thread_priority: 90        # SCHED_FIFO priority (higher than state_reader)
+    cpu_affinity: 2            # Bind RT loop to CPU 2
+    lock_memory: false         # No memory lock; acceptable when swap is disabled on the target system
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
