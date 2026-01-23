@@ -1,0 +1,30 @@
+# Gait Pattern Generator Parameters
+# Configuration file for biped_gait_control package
+
+gait_pattern_generator:
+  ros__parameters:
+    # Publishing rate [Hz]
+    # Higher rates provide smoother motion but increase CPU load
+    publish_rate: 50.0
+
+    # Gait parameters
+    # Step height: vertical lift during swing phase [m]
+    step_height: 0.04
+
+    # Step length: forward stride distance [m]
+    step_length: 0.08
+
+    # Step frequency: walking speed [Hz]
+    # 0.5 Hz = 2 seconds per complete walking cycle
+    step_frequency: 0.5
+
+    # Leg extension ratio for standing pose [0.0-1.0]
+    # 0.9 = 90% extended (slight knee bend)
+    leg_extension_ratio: 0.90
+
+    # Robot geometry [m]
+    thigh_length: 0.18
+    shank_length: 0.20
+
+    # Enable/disable walking pattern generation
+    enabled: true
