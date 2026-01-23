@@ -43,7 +43,7 @@ public:
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 private:
-  // State reader thread (runs at 100Hz, separate from RT loop)
+  // State reader thread (runs at state_reader_rate_ Hz, separate from RT loop)
   void state_reader_loop();
   
   // RobStride driver (ROS 2 independent)
@@ -54,6 +54,11 @@ private:
   int motor_id_ = 11;
   double kp_ = 30.0;
   double kd_ = 1.0;
+
+  // State reader thread configuration (from URDF)
+  int state_reader_rate_ = 200;           // Hz (default: 200Hz to match RT loop)
+  int state_reader_cpu_affinity_ = 3;     // Bind to CPU 3 (RT loop uses CPU 2)
+  int state_reader_priority_ = 80;        // SCHED_FIFO priority (lower than RT loop's 90)
   
   // State storage (updated in read())
   std::vector<double> hw_positions_;
