@@ -55,10 +55,12 @@ private:
   double kp_ = 30.0;
   double kd_ = 1.0;
 
-  // State reader thread configuration (from URDF)
-  int state_reader_rate_ = 200;           // Hz (default: 200Hz to match RT loop)
-  int state_reader_cpu_affinity_ = 3;     // Bind to CPU 3 (RT loop uses CPU 2)
-  int state_reader_priority_ = 80;        // SCHED_FIFO priority (lower than RT loop's 90)
+  // State reader thread configuration (from URDF).
+  // These in-class initializers act as fallback defaults and may be overridden in on_init()
+  // if corresponding parameters are provided; if parameters are missing, these values apply.
+  int state_reader_rate_ = 200;           // Fallback default: Hz (200Hz to match RT loop)
+  int state_reader_cpu_affinity_ = 3;     // Fallback default: bind to CPU 3 (RT loop uses CPU 2)
+  int state_reader_priority_ = 80;        // Fallback default: SCHED_FIFO priority (lower than RT loop's 90)
   
   // State storage (updated in read())
   std::vector<double> hw_positions_;
