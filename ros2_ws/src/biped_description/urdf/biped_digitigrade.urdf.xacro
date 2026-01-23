@@ -1,0 +1,227 @@
+<?xml version="1.0"?>
+<robot name="biped_digitigrade" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  
+  <!-- 
+    逆関節（Digitigrade/鳥脚型）二脚ロボット URDF
+    
+    特徴:
+    - 膝が前方に曲がる逆関節構造
+    - 片脚5関節 × 2脚（左右対称）
+    - 関節構成: 腰ヨー, 股関節ロール, 股関節ピッチ, 膝ピッチ, 足首ピッチ
+  -->
+
+  <!-- リンク長パラメータ (example_gait.pyと一致) -->
+  <xacro:property name="hip_width" value="0.16" />      <!-- 左右の股関節間距離 [m] -->
+  <xacro:property name="hip_yaw_length" value="0.03" /> <!-- ヨー軸リンク長 [m] -->
+  <xacro:property name="hip_roll_length" value="0.02" /><!-- ロール軸リンク長 [m] -->
+  <xacro:property name="thigh_length" value="0.18" />   <!-- 大腿部長さ [m] -->
+  <xacro:property name="shank_length" value="0.20" />   <!-- 下腿部長さ [m] -->
+  <xacro:property name="foot_length" value="0.10" />    <!-- 足部長さ [m] -->
+  
+  <!-- 視覚的なリンク半径 -->
+  <xacro:property name="base_radius" value="0.08" />
+  <xacro:property name="thigh_radius" value="0.03" />
+  <xacro:property name="shank_radius" value="0.025" />
+  <xacro:property name="foot_width" value="0.08" />
+  <xacro:property name="foot_height" value="0.03" />
+  
+  <!-- マテリアル定義 -->
+  <material name="blue">
+    <color rgba="0.2 0.2 0.8 1.0"/>
+  </material>
+  
+  <material name="gray">
+    <color rgba="0.6 0.6 0.6 1.0"/>
+  </material>
+  
+  <material name="dark_gray">
+    <color rgba="0.4 0.4 0.4 1.0"/>
+  </material>
+  
+  <material name="black">
+    <color rgba="0.1 0.1 0.1 1.0"/>
+  </material>
+
+  <!-- Base Link (胴体) -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${base_radius}" length="0.12"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${base_radius}" length="0.12"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="3.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05"/>
+    </inertial>
+  </link>
+
+  <!-- 脚マクロ定義 -->
+  <xacro:macro name="leg" params="side reflect">
+    
+    <!-- 
+      関節命名規則:
+      - 左脚 (side=left, reflect=1):  j11, j12, j13, j14, j15
+      - 右脚 (side=right, reflect=-1): j21, j22, j23, j24, j25
+    -->
+    
+    <!-- j11/j21: Hip Yaw Joint (腰ヨー) -->
+    <joint name="${side}_hip_yaw_joint" type="revolute">
+      <parent link="base_link"/>
+      <child link="${side}_hip_yaw_link"/>
+      <origin xyz="0 ${reflect * hip_width/2} 0" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>  <!-- Z軸回転（ヨー） -->
+      <limit lower="${-30 * pi / 180}" upper="${30 * pi / 180}" effort="50" velocity="5"/>
+      <dynamics damping="0.1" friction="0.1"/>
+    </joint>
+
+    <link name="${side}_hip_yaw_link">
+      <visual>
+        <origin xyz="0 0 ${-hip_yaw_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.02" length="${hip_yaw_length}"/>
+        </geometry>
+        <material name="gray"/>
+      </visual>
+      <inertial>
+        <mass value="0.3"/>
+        <origin xyz="0 0 ${-hip_yaw_length/2}" rpy="0 0 0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+    </link>
+
+    <!-- j12/j22: Hip Roll Joint (股関節ロール) -->
+    <joint name="${side}_hip_roll_joint" type="revolute">
+      <parent link="${side}_hip_yaw_link"/>
+      <child link="${side}_hip_roll_link"/>
+      <origin xyz="0 0 ${-hip_yaw_length}" rpy="0 0 0"/>
+      <axis xyz="1 0 0"/>  <!-- X軸回転（ロール） -->
+      <limit lower="${-20 * pi / 180}" upper="${20 * pi / 180}" effort="50" velocity="5"/>
+      <dynamics damping="0.1" friction="0.1"/>
+    </joint>
+
+    <link name="${side}_hip_roll_link">
+      <visual>
+        <origin xyz="0 0 ${-hip_roll_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.015" length="${hip_roll_length}"/>
+        </geometry>
+        <material name="gray"/>
+      </visual>
+      <inertial>
+        <mass value="0.2"/>
+        <origin xyz="0 0 ${-hip_roll_length/2}" rpy="0 0 0"/>
+        <inertia ixx="0.0005" ixy="0" ixz="0" iyy="0.0005" iyz="0" izz="0.0005"/>
+      </inertial>
+    </link>
+
+    <!-- j13/j23: Hip Pitch Joint (股関節ピッチ) -->
+    <joint name="${side}_hip_pitch_joint" type="revolute">
+      <parent link="${side}_hip_roll_link"/>
+      <child link="${side}_thigh_link"/>
+      <origin xyz="0 0 ${-hip_roll_length}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>  <!-- Y軸回転（ピッチ） -->
+      <limit lower="${-90 * pi / 180}" upper="${90 * pi / 180}" effort="100" velocity="10"/>
+      <dynamics damping="0.2" friction="0.15"/>
+    </joint>
+
+    <link name="${side}_thigh_link">
+      <visual>
+        <origin xyz="0 0 ${-thigh_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${thigh_radius}" length="${thigh_length}"/>
+        </geometry>
+        <material name="gray"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${-thigh_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${thigh_radius}" length="${thigh_length}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="1.0"/>
+        <origin xyz="0 0 ${-thigh_length/2}" rpy="0 0 0"/>
+        <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.001"/>
+      </inertial>
+    </link>
+
+    <!-- j14/j24: Knee Pitch Joint (膝ピッチ) - 逆関節：前方に曲がる -->
+    <joint name="${side}_knee_pitch_joint" type="revolute">
+      <parent link="${side}_thigh_link"/>
+      <child link="${side}_shank_link"/>
+      <origin xyz="0 0 ${-thigh_length}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>  <!-- Y軸回転（ピッチ） -->
+      <!-- 逆関節: 負の角度で前方に曲がる -->
+      <limit lower="${-120 * pi / 180}" upper="${0 * pi / 180}" effort="100" velocity="10"/>
+      <dynamics damping="0.2" friction="0.15"/>
+    </joint>
+
+    <link name="${side}_shank_link">
+      <visual>
+        <origin xyz="0 0 ${-shank_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${shank_radius}" length="${shank_length}"/>
+        </geometry>
+        <material name="dark_gray"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${-shank_length/2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${shank_radius}" length="${shank_length}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.6"/>
+        <origin xyz="0 0 ${-shank_length/2}" rpy="0 0 0"/>
+        <inertia ixx="0.005" ixy="0" ixz="0" iyy="0.005" iyz="0" izz="0.0005"/>
+      </inertial>
+    </link>
+
+    <!-- j15/j25: Ankle Pitch Joint (足首ピッチ) -->
+    <joint name="${side}_ankle_pitch_joint" type="revolute">
+      <parent link="${side}_shank_link"/>
+      <child link="${side}_foot_link"/>
+      <origin xyz="0 0 ${-shank_length}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>  <!-- Y軸回転（ピッチ） -->
+      <limit lower="${-45 * pi / 180}" upper="${135 * pi / 180}" effort="50" velocity="10"/>
+      <dynamics damping="0.1" friction="0.1"/>
+    </joint>
+
+    <link name="${side}_foot_link">
+      <!-- 逆関節の足部: 後方（-X方向）に伸びる -->
+      <visual>
+        <origin xyz="${-foot_length/2} 0 ${-foot_height/2}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${foot_length} ${foot_width} ${foot_height}"/>
+        </geometry>
+        <material name="black"/>
+      </visual>
+      <collision>
+        <origin xyz="${-foot_length/2} 0 ${-foot_height/2}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${foot_length} ${foot_width} ${foot_height}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.3"/>
+        <origin xyz="${-foot_length/2} 0 ${-foot_height/2}" rpy="0 0 0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+    </link>
+
+  </xacro:macro>
+
+  <!-- 左右の脚を生成 -->
+  <xacro:leg side="left" reflect="1"/>
+  <xacro:leg side="right" reflect="-1"/>
+
+</robot>
