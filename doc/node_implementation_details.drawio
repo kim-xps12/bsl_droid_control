@@ -1,0 +1,263 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Node Implementation Details" id="node-details">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Title -->
+        <mxCell id="title" value="Phase 1 優先実装ノード詳細設計" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="320" y="20" width="520" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- State Estimator Node Detail -->
+        <mxCell id="box-state-estimator" value="State Estimator Node" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontSize=16;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="480" height="480" as="geometry" />
+        </mxCell>
+
+        <!-- Inputs -->
+        <mxCell id="state-inputs-box" value="入力 (Subscribers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="100" y="120" width="200" height="140" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-input1" value="/imu/data&lt;br&gt;sensor_msgs/Imu&lt;br&gt;200-1000 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="145" width="180" height="35" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-input2" value="/joint_states&lt;br&gt;sensor_msgs/JointState&lt;br&gt;200 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="185" width="180" height="35" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-input3" value="/force_sensors (optional)&lt;br&gt;geometry_msgs/WrenchStamped&lt;br&gt;200 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="225" width="180" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Processing -->
+        <mxCell id="state-processing-box" value="処理アルゴリズム" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="120" width="220" height="210" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-proc1" value="1. IMU統合&lt;br&gt;   - Madgwick/Mahony Filter&lt;br&gt;   - 姿勢推定 (quaternion)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="145" width="200" height="45" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-proc2" value="2. 運動学計算&lt;br&gt;   - Forward Kinematics&lt;br&gt;   - ベース位置推定" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="195" width="200" height="45" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-proc3" value="3. 速度推定&lt;br&gt;   - 数値微分 + LPF&lt;br&gt;   - IMU加速度統合" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="245" width="200" height="45" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-proc4" value="4. 接地検出&lt;br&gt;   - 力センサベース or&lt;br&gt;   - 運動学ベース推定" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="295" width="200" height="45" as="geometry" />
+        </mxCell>
+
+        <!-- Outputs -->
+        <mxCell id="state-outputs-box" value="出力 (Publishers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="100" y="280" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-output1" value="/robot_state&lt;br&gt;custom_msgs/RobotState&lt;br&gt;200 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="110" y="305" width="180" height="35" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-output2" value="/tf (base → world)&lt;br&gt;tf2_msgs/TFMessage" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="345" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Parameters -->
+        <mxCell id="state-params-box" value="パラメータ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="100" y="400" width="440" height="140" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="state-param1" value="- update_rate: 200 (Hz)&lt;br&gt;- imu_topic: /imu/data&lt;br&gt;- joint_states_topic: /joint_states&lt;br&gt;- use_robot_localization: true/false&lt;br&gt;- filter_type: ekf / ukf / complementary&lt;br&gt;- world_frame: odom / world&lt;br&gt;- base_frame: base_link" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="425" width="420" height="105" as="geometry" />
+        </mxCell>
+
+        <!-- Safety Monitor Node Detail -->
+        <mxCell id="box-safety" value="Safety Monitor Node" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;verticalAlign=top;fontSize=16;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="80" width="480" height="480" as="geometry" />
+        </mxCell>
+
+        <!-- Safety Inputs -->
+        <mxCell id="safety-inputs-box" value="入力 (Subscribers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="620" y="120" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="safety-input1" value="/robot_state&lt;br&gt;custom_msgs/RobotState&lt;br&gt;200 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="630" y="145" width="180" height="35" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="safety-input2" value="/joint_states&lt;br&gt;sensor_msgs/JointState&lt;br&gt;200 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="630" y="185" width="180" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- Safety Checks -->
+        <mxCell id="safety-checks-box" value="安全チェック項目" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="840" y="120" width="220" height="210" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="safety-check1" value="1. 姿勢チェック&lt;br&gt;   - Roll/Pitch 角度制限&lt;br&gt;   - 転倒検出" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="145" width="200" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="safety-check2" value="2. 関節リミット&lt;br&gt;   - 位置・速度・トルク上限&lt;br&gt;   - 加速度チェック" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="190" width="200" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="safety-check3" value="3. モータ診断&lt;br&gt;   - 温度監視&lt;br&gt;   - 電流監視" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="235" width="200" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="safety-check4" value="4. 高さチェック&lt;br&gt;   - ベース高さ下限" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="850" y="280" width="200" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Safety Outputs -->
+        <mxCell id="safety-outputs-box" value="出力 (Publishers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="620" y="240" width="200" height="90" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="safety-output1" value="/safety_status&lt;br&gt;custom_msgs/SafetyStatus&lt;br&gt;200 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="630" y="265" width="180" height="35" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="safety-output2" value="/emergency_stop&lt;br&gt;std_msgs/Bool" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1;fontColor=#cc0000;" vertex="1" parent="1">
+          <mxGeometry x="630" y="300" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Safety Parameters -->
+        <mxCell id="safety-params-box" value="パラメータ (閾値設定)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="620" y="350" width="440" height="190" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="safety-param1" value="姿勢閾値:&lt;br&gt;- roll_pitch_warning_deg: 45.0&lt;br&gt;- roll_pitch_error_deg: 60.0&lt;br&gt;&lt;br&gt;関節閾値:&lt;br&gt;- joint_velocity_limit_factor: 1.2&lt;br&gt;- joint_position_limits: [yaml配列]&lt;br&gt;&lt;br&gt;モータ閾値:&lt;br&gt;- motor_temp_warning_c: 80.0&lt;br&gt;- motor_temp_error_c: 90.0&lt;br&gt;&lt;br&gt;高さ閾値:&lt;br&gt;- min_base_height_m: 0.1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="630" y="375" width="420" height="155" as="geometry" />
+        </mxCell>
+
+        <!-- RL Policy Node Detail -->
+        <mxCell id="box-rl" value="RL Policy Node" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalAlign=top;fontSize=16;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="600" width="1000" height="380" as="geometry" />
+        </mxCell>
+
+        <!-- RL Inputs -->
+        <mxCell id="rl-inputs-box" value="入力 (Subscribers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="100" y="640" width="200" height="100" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rl-input1" value="/robot_state&lt;br&gt;custom_msgs/RobotState&lt;br&gt;50-100 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="665" width="180" height="35" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rl-input2" value="/velocity_command&lt;br&gt;geometry_msgs/Twist&lt;br&gt;10-50 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="705" width="180" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- RL Processing -->
+        <mxCell id="rl-processing-box" value="推論処理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="320" y="640" width="280" height="220" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rl-proc1" value="1. 観測ベクトル構築&lt;br&gt;   - base_orientation (4 or 3)&lt;br&gt;   - base_angular_velocity (3)&lt;br&gt;   - projected_gravity (3)&lt;br&gt;   - command_velocity (3)&lt;br&gt;   - joint_positions (n)&lt;br&gt;   - joint_velocities (n)&lt;br&gt;   - previous_action (n)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="665" width="260" height="95" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rl-proc2" value="2. ポリシー推論&lt;br&gt;   - PyTorch / TensorFlow&lt;br&gt;   - libtorch (C++) 推奨" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="765" width="260" height="45" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rl-proc3" value="3. アクション変換&lt;br&gt;   - 正規化解除&lt;br&gt;   - 関節位置/速度変換" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="330" y="815" width="260" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- RL Outputs -->
+        <mxCell id="rl-outputs-box" value="出力 (Publishers)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="620" y="640" width="220" height="70" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rl-output1" value="/gait_target&lt;br&gt;custom_msgs/JointTrajectoryPoint&lt;br&gt;50-100 Hz" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="630" y="665" width="200" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- RL Parameters -->
+        <mxCell id="rl-params-box" value="パラメータ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="100" y="760" width="200" height="200" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rl-param1" value="- policy_path: (string)&lt;br&gt;  学習済みモデルのパス&lt;br&gt;&lt;br&gt;- update_rate: 50-100 Hz&lt;br&gt;&lt;br&gt;- observation_dim: (int)&lt;br&gt;  観測ベクトル次元数&lt;br&gt;&lt;br&gt;- action_dim: (int)&lt;br&gt;  アクション次元数&lt;br&gt;&lt;br&gt;- device: cpu / cuda&lt;br&gt;&lt;br&gt;- action_scale: (float)&lt;br&gt;  正規化スケール" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="785" width="180" height="165" as="geometry" />
+        </mxCell>
+
+        <!-- Model Loading -->
+        <mxCell id="rl-model-box" value="モデル管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="620" y="730" width="220" height="230" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rl-model1" value="学習フレームワーク:&lt;br&gt;- Isaac Gym&lt;br&gt;- MuJoCo + RL library&lt;br&gt;  (stable-baselines3, etc.)&lt;br&gt;&lt;br&gt;デプロイ形式:&lt;br&gt;- TorchScript (.pt)&lt;br&gt;- ONNX (.onnx)&lt;br&gt;- TensorRT (最適化版)&lt;br&gt;&lt;br&gt;Sim-to-Real:&lt;br&gt;- Domain randomization&lt;br&gt;- System ID&lt;br&gt;- Adaptive components" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="630" y="755" width="200" height="195" as="geometry" />
+        </mxCell>
+
+        <!-- Implementation Notes -->
+        <mxCell id="rl-impl-box" value="実装オプション" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;verticalAlign=top;fontSize=12;fontStyle=1;align=left;" vertex="1" parent="1">
+          <mxGeometry x="860" y="640" width="200" height="320" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rl-impl1" value="Option 1: Python (推奨初期)&lt;br&gt;✓ プロトタイピング高速&lt;br&gt;✓ PyTorch直接使用&lt;br&gt;✗ レイテンシ大きい&lt;br&gt;&lt;br&gt;Option 2: C++ (libtorch)&lt;br&gt;✓ 最高性能&lt;br&gt;✓ リアルタイム性向上&lt;br&gt;✗ 実装コスト大&lt;br&gt;&lt;br&gt;推奨戦略:&lt;br&gt;1. Pythonで実装・検証&lt;br&gt;2. 性能問題あれば C++化&lt;br&gt;&lt;br&gt;パフォーマンス目標:&lt;br&gt;- 推論時間 &lt; 5 ms&lt;br&gt;- 全体レイテンシ &lt; 10 ms&lt;br&gt;&lt;br&gt;最適化手法:&lt;br&gt;- モデル量子化&lt;br&gt;- TensorRT変換&lt;br&gt;- バッチサイズ最適化" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="870" y="665" width="180" height="285" as="geometry" />
+        </mxCell>
+
+        <!-- Footer note -->
+        <mxCell id="footer-box" value="実装優先順位: State Estimator → Safety Monitor → Gait Generator (CPG) → RL Policy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffcc;strokeColor=#cccc00;align=center;verticalAlign=middle;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="1020" width="1000" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Timeline -->
+        <mxCell id="timeline-title" value="推奨実装タイムライン" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="1100" width="1000" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="timeline-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;verticalAlign=top;fontSize=12;align=left;" vertex="1" parent="1">
+          <mxGeometry x="80" y="1140" width="1000" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="week1" value="Week 1-2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1160" width="220" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="week1-content" value="State Estimator 実装&lt;br&gt;- robot_localization設定&lt;br&gt;- カスタムメッセージ定義&lt;br&gt;- RVizで可視化・検証" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="110" y="1195" width="200" height="55" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="week3" value="Week 3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="340" y="1160" width="220" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="week3-content" value="Safety Monitor 実装&lt;br&gt;- 基本チェック機能&lt;br&gt;- E-Stopメカニズム&lt;br&gt;- シミュレータでテスト" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="350" y="1195" width="200" height="55" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="week4-5" value="Week 4-5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="580" y="1160" width="220" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="week4-5-content" value="CPG Gait Generator&lt;br&gt;- シンプルな歩容実装&lt;br&gt;- 実機テスト (立位→歩行)&lt;br&gt;- パラメータチューニング" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="590" y="1195" width="200" height="55" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="week6plus" value="Week 6+" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="820" y="1160" width="240" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="week6plus-content" value="RL Policy 実装&lt;br&gt;- シミュレータで学習&lt;br&gt;- Python推論ノード実装&lt;br&gt;- Sim-to-Real転移&lt;br&gt;- (必要なら) C++化" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="830" y="1195" width="220" height="65" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="timeline-parallel" value="並行作業:&lt;br&gt;- URDFモデル整備&lt;br&gt;- Gazebo/Isaac Gymシミュレータ構築&lt;br&gt;- ロギング・診断機能実装&lt;br&gt;- ドキュメント整備" style="text;html=1;strokeColor=none;fillColor=#e3f2fd;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=10;strokeColor=#1976d2;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1265" width="960" height="45" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

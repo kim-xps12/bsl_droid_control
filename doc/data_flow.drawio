@@ -1,0 +1,161 @@
+<mxfile host="65bd71144e">
+    <diagram name="Data Flow Diagram" id="data-flow">
+        <mxGraphModel dx="1385" dy="1099" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="二脚ロボット制御システム データフロー図" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="320" y="20" width="520" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="sensor-imu" value="/imu/data&lt;br&gt;(sensor_msgs/Imu)&lt;br&gt;200-1000 Hz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="80" y="100" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sensor-joints" value="/joint_states&lt;br&gt;(sensor_msgs/JointState)&lt;br&gt;200 Hz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="80" y="180" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="sensor-force" value="/force_sensors&lt;br&gt;(geometry_msgs/WrenchStamped)&lt;br&gt;200 Hz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="260" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-estimator" value="State Estimator Node&lt;br&gt;(200 Hz)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=13" parent="1" vertex="1">
+                    <mxGeometry x="300" y="170" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-imu-to-est" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="sensor-imu" target="node-estimator" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-joints-to-est" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="sensor-joints" target="node-estimator" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-force-to-est" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="sensor-force" target="node-estimator" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="topic-robot-state" value="/robot_state&lt;br&gt;(custom_msgs/RobotState)&lt;br&gt;200 Hz" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontStyle=1;fontSize=12" parent="1" vertex="1">
+                    <mxGeometry x="560" y="165" width="180" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-est-to-state" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#f0a000;" parent="1" source="node-estimator" target="topic-robot-state" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-safety" value="Safety Monitor Node&lt;br&gt;(200 Hz, SCHED_FIFO)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13" parent="1" vertex="1">
+                    <mxGeometry x="820" y="80" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-state-to-safety" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="topic-robot-state" target="node-safety" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="topic-safety" value="/safety_status&lt;br&gt;(custom_msgs/SafetyStatus)&lt;br&gt;200 Hz" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=12" parent="1" vertex="1">
+                    <mxGeometry x="820" y="190" width="180" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-safety-to-topic" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="node-safety" target="topic-safety" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-rl" value="RL Policy Node&lt;br&gt;(50-100 Hz)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13" parent="1" vertex="1">
+                    <mxGeometry x="560" y="330" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-state-to-rl" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="topic-robot-state" target="node-rl" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="topic-vel-cmd" value="/velocity_command&lt;br&gt;(geometry_msgs/Twist)&lt;br&gt;10-50 Hz" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12" parent="1" vertex="1">
+                    <mxGeometry x="320" y="330" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-velcmd-to-rl" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="topic-vel-cmd" target="node-rl" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="topic-gait-target" value="/gait_target&lt;br&gt;(custom_msgs/JointTrajectoryPoint)&lt;br&gt;50-100 Hz" style="ellipse;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;fontStyle=1;fontSize=12" parent="1" vertex="1">
+                    <mxGeometry x="560" y="470" width="180" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-rl-to-gait" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#00aa00;" parent="1" source="node-rl" target="topic-gait-target" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="node-hardware" value="robstride_hardware&lt;br&gt;(ros2_control, 200 Hz, SCHED_FIFO)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13" parent="1" vertex="1">
+                    <mxGeometry x="560" y="620" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-gait-to-hw" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" parent="1" source="topic-gait-target" target="node-hardware" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-safety-to-hw" value="Emergency Stop" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.25;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#cc0000;dashed=1;fontSize=11;" parent="1" source="topic-safety" target="node-hardware" edge="1">
+                    <mxGeometry x="-0.2" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1040" y="225"/>
+                            <mxPoint x="1040" y="640"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="hw-motors" value="RobStride Motors (CAN Bus)&lt;br&gt;RS02/RS05" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=13" parent="1" vertex="1">
+                    <mxGeometry x="560" y="740" width="180" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-hw-to-motors" value="CAN Frames&lt;br&gt;(Position/Velocity/Torque)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;fontSize=11;" parent="1" source="node-hardware" target="hw-motors" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-motors-feedback" value="Encoder Feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;dashed=1;fontSize=11;" parent="1" source="hw-motors" target="node-hardware" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="480" y="770"/>
+                            <mxPoint x="480" y="680"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="topic-diagnostics" value="/diagnostics&lt;br&gt;(diagnostic_msgs/DiagnosticArray)&lt;br&gt;1-10 Hz" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11" parent="1" vertex="1">
+                    <mxGeometry x="80" y="420" width="160" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-safety-to-diag" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=1;dashed=1;strokeColor=#999999;" parent="1" source="topic-safety" target="topic-diagnostics" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="topic-tf" value="/tf, /tf_static&lt;br&gt;(tf2_msgs/TFMessage)&lt;br&gt;As needed" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11" parent="1" vertex="1">
+                    <mxGeometry x="80" y="520" width="160" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-est-to-tf" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=1;dashed=1;strokeColor=#999999;" parent="1" source="node-estimator" target="topic-tf" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="280" y="230"/>
+                            <mxPoint x="280" y="555"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;verticalAlign=top;fontSize=12;align=left;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="620" width="380" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-title" value="凡例" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="90" y="630" width="360" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-solid" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;strokeColor=#000000;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="100" y="680" as="sourcePoint"/>
+                        <mxPoint x="160" y="680" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend-solid-label" value="主要なデータフロー" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="170" y="665" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-dashed" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#000000;dashed=1;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="100" y="720" as="sourcePoint"/>
+                        <mxPoint x="160" y="720" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend-dashed-label" value="フィードバック / 補助的データ" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="170" y="705" width="180" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-red" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=3;strokeColor=#cc0000;dashed=1;" parent="1" edge="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="100" y="760" as="sourcePoint"/>
+                        <mxPoint x="160" y="760" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend-red-label" value="緊急停止シグナル" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="170" y="745" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="freq-label-200" value="200 Hz" style="text;html=1;strokeColor=none;fillColor=#ffeeee;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;fontStyle=1;fontColor=#cc0000;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="340" width="60" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="freq-label-50-100" value="50-100 Hz" style="text;html=1;strokeColor=none;fillColor=#e8f5e9;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;fontStyle=1;fontColor=#00aa00;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="380" width="70" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="freq-label-10-50" value="10-50 Hz" style="text;html=1;strokeColor=none;fillColor=#e3f2fd;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;fontStyle=1;fontColor=#1976d2;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="420" width="70" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="note-box" value="備考:&lt;br&gt;- State Estimator と Safety Monitor は SCHED_FIFO で 200 Hz 動作&lt;br&gt;- RL Policy は通常優先度で 50-100 Hz&lt;br&gt;- 高レベルコマンド (/velocity_command) は 10-50 Hz で十分" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffcc;strokeColor=#cccc00;align=left;verticalAlign=top;fontSize=10;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="820" y="290" width="220" height="120" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
