@@ -114,7 +114,8 @@ CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State & /*
   state_reader_running_ = true;
   state_reader_thread_ = std::thread(&RobStrideHardware::state_reader_loop, this);
 
-  // Set CPU affinity for state reader thread (bind to specific CPU core)
+  // Set CPU affinity for state reader thread (bind to specific CPU core).
+  // Note: Negative values mean "no affinity setting"; 0 and positive values are valid CPU indices.
   if (state_reader_cpu_affinity_ >= 0) {
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
