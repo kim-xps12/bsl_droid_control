@@ -34,6 +34,11 @@
       <param name="motor_id">127</param>
       <param name="kp">1.5</param>
       <param name="kd">0.01</param>
+
+      <!-- State reader thread configuration (200Hz, separate from RT loop) -->
+      <param name="state_reader_rate">200</param>
+      <param name="state_reader_cpu_affinity">3</param>
+      <param name="state_reader_priority">80</param>
     </hardware>
     
     <joint name="joint1">
