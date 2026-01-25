@@ -1,1 +1,1 @@
-Please refer `./AGENTS.md`.
+Please refer to `./AGENTS.md`.
