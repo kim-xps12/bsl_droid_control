@@ -140,6 +140,7 @@ pixi run ros2 run tf2_tools view_frames
 |-----------|------|------|
 | `biped_description` | URDFモデル・RViz2可視化・関節操作GUI | ✅ 完成 |
 | `biped_gait_control` | 歩容生成のサンプル実装（50Hz関節角度出力） | ✅ 完成 |
+| `biped_teleop` | 手動操作ツール（スライダーGUI等） | ✅ 完成 |
 | `robstride_hardware` | ros2_control用ハードウェアインターフェース | 🔄 開発中 |
 | `pub_sub_cpp` | ROS 2チュートリアル（C++） | 📚 サンプル |
 | `pub_sub_python` | ROS 2チュートリアル（Python） | 📚 サンプル |
@@ -160,6 +161,7 @@ bsl_droid_ros2/
     └── src/
         ├── biped_description/    # ロボットモデル・URDF
         ├── biped_gait_control/   # 歩容パターン生成
+        ├── biped_teleop/         # 手動操作ツール
         ├── robstride_hardware/   # ハードウェアIF
         └── ...
 ```
@@ -204,5 +206,6 @@ MIT License
 
 | 日付 | 変更内容 |
 |------|----------|
+| 2026-01-25 | biped_teleopパッケージ追加（スライダーGUI等をrobstride_hardwareから分離） |
 | 2026-01-23 | biped_gait_controlパッケージ追加（歩容パターン生成）、display_rviz_only.launch.py追加 |
 | 2026-01-23 | biped_descriptionパッケージ追加、クロスプラットフォーム対応 |
