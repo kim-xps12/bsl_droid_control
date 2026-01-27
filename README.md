@@ -145,6 +145,75 @@ pixi run ros2 run tf2_tools view_frames
 | `pub_sub_cpp` | ROS 2チュートリアル（C++） | 📚 サンプル |
 | `pub_sub_python` | ROS 2チュートリアル（Python） | 📚 サンプル |
 
+## 強化学習環境（rl_ws）
+
+歩容獲得のための強化学習環境を `rl_ws/` に用意しています。[Genesis](https://genesis-world.readthedocs.io/)物理シミュレータとPPO実装を使用します。
+
+### セットアップ
+
+```bash
+cd rl_ws
+
+# 依存関係をインストール
+uv sync
+
+# 動作確認
+uv run python -c "import genesis as gs; print(f'Genesis {gs.__version__} loaded')"
+```
+
+### トレーニング（Go2サンプル）
+
+```bash
+cd rl_ws
+
+# ヘッドレスでトレーニング（デフォルト: 4096環境）
+uv run python genesis_official/examples/locomotion/go2_train.py
+
+# 少数環境でテスト
+uv run python genesis_official/examples/locomotion/go2_train.py -B 64
+
+# イテレーション数を指定（チェックポイントは100回ごとに保存）
+uv run python genesis_official/examples/locomotion/go2_train.py -B 64 --max_iterations 200
+```
+
+**注意**: モデルチェックポイントはイテレーション0と100の倍数で保存されます（100, 200, 300...）。
+`--max_iterations 100`の場合、`model_0.pt`は生成されますが、100回目の完了前に終了すると`model_100.pt`は生成されません。
+
+### TensorBoard監視
+
+```bash
+cd rl_ws
+uv run tensorboard --logdir logs
+
+# ブラウザで http://localhost:6006 を開く
+```
+
+### ポリシー評価
+
+```bash
+cd rl_ws
+
+# デフォルト（model_100.ptを読み込み）
+uv run python genesis_official/examples/locomotion/go2_eval.py -e go2-walking
+
+# チェックポイント指定
+uv run python genesis_official/examples/locomotion/go2_eval.py -e go2-walking --ckpt 0
+```
+
+### BSL-Droid二脚ロボットへの適用（今後）
+
+1. URDFエクスポート:
+   ```bash
+   cd rl_ws
+   uv run python assets/export_urdf.py
+   ```
+
+2. Go2環境を二脚用に改変（10 DOF vs 12 DOF）
+
+3. カスタム訓練設定を作成
+
+詳細は [rl_ws/README.md](rl_ws/README.md) を参照してください。
+
 ## ディレクトリ構造
 
 ```
@@ -156,6 +225,11 @@ bsl_droid_ros2/
 │   └── *.drawio
 ├── ref/                      # 参考資料・リファレンス実装
 │   └── RobStride_Control/    # モーター制御ライブラリ
+├── rl_ws/                    # 強化学習環境（Genesis + uv）
+│   ├── pyproject.toml        # uv環境設定
+│   ├── genesis_official/     # 公式サンプル（クローン済み）
+│   ├── assets/               # ロボットモデル
+│   └── logs/                 # トレーニングログ
 └── ros2_ws/                  # ROS 2ワークスペース
     ├── pixi.toml             # pixi環境設定
     └── src/

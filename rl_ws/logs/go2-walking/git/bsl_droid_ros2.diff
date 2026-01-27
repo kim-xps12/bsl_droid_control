@@ -1,0 +1,30 @@
+--- git status ---
+On branch feat/add_gait_example
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   AGENTS.md
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.github/pull_request_template.md
+	doc/experiments/
+	rl_ws/
+	ros2_ws/src/biped_teleop/
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/AGENTS.md b/AGENTS.md
+index d4ef3c8..59aba33 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -46,6 +46,7 @@ pixi run ros2 launch biped_description display_rviz_only.launch.py
+ 
+ ## ドキュメント類の作成ルール
+ - 文書は`markdown`形式のドキュメントとして作成すること
++- 必ず日本語で執筆し，N1相当の流暢で自然な日本語を用いること．
+ - 図は`drawio.svg`形式のファイル名に`drawio`の規格に準じたxmlタグを格納することで，独立して作成すること．
+ - 図をmarkdownドキュメント内にアスキーアートで描くことは行なってはいけない．二重管理の状態を避けるために厳守する．
+ 
