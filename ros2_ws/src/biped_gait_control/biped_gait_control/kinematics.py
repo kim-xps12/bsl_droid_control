@@ -13,7 +13,7 @@ Leg structure (per leg, 5 DOF):
 
 Coordinate system:
 - X-axis: Forward/backward (positive = forward)
-- Y-axis: Left/right (positive = right, negative = left)
+- Y-axis: Left/right (positive = left, negative = right)
 - Z-axis: Up/down (positive = up)
 - Origin: Ground center (0, 0, 0)
 """
