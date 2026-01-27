@@ -197,23 +197,24 @@
     </joint>
 
     <link name="${side}_foot_link">
-      <!-- 逆関節の足部: 後方（-X方向）に伸びる -->
+      <!-- 足首関節が足部の中心に位置する -->
+      <!-- 足部は前後に均等に広がる（前方 +X、後方 -X） -->
       <visual>
-        <origin xyz="${-foot_length/2} 0 ${-foot_height/2}" rpy="0 0 0"/>
+        <origin xyz="0 0 ${-foot_height/2}" rpy="0 0 0"/>
         <geometry>
           <box size="${foot_length} ${foot_width} ${foot_height}"/>
         </geometry>
         <material name="black"/>
       </visual>
       <collision>
-        <origin xyz="${-foot_length/2} 0 ${-foot_height/2}" rpy="0 0 0"/>
+        <origin xyz="0 0 ${-foot_height/2}" rpy="0 0 0"/>
         <geometry>
           <box size="${foot_length} ${foot_width} ${foot_height}"/>
         </geometry>
       </collision>
       <inertial>
         <mass value="0.3"/>
-        <origin xyz="${-foot_length/2} 0 ${-foot_height/2}" rpy="0 0 0"/>
+        <origin xyz="0 0 ${-foot_height/2}" rpy="0 0 0"/>
         <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
       </inertial>
     </link>

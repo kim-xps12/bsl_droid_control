@@ -1,0 +1,13 @@
+# Fast walking gait parameters
+# Use with caution - may require tuned PID gains
+
+gait_pattern_generator:
+  ros__parameters:
+    publish_rate: 100.0    # Higher rate for fast motion
+    step_height: 0.05      # Higher step height
+    step_length: 0.12      # Longer stride
+    step_frequency: 1.0    # Faster (1 second per cycle)
+    leg_extension_ratio: 0.85  # Slightly more bent
+    thigh_length: 0.18
+    shank_length: 0.20
+    enabled: true

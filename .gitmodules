@@ -1,0 +1,6 @@
+[submodule "rl_ws/genesis_official"]
+	path = rl_ws/genesis_official
+	url = https://github.com/Genesis-Embodied-AI/Genesis.git
+[submodule "rl_ws/mujoco_menagerie"]
+	path = rl_ws/mujoco_menagerie
+	url = https://github.com/google-deepmind/mujoco_menagerie.git

@@ -1,0 +1,263 @@
+<mxfile host="65bd71144e">
+    <diagram name="Unified Joint Interface Architecture" id="unified-joint-interface-arch">
+        <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                
+                <!-- Title -->
+                <mxCell id="title" value="統一関節インターフェース アーキテクチャ" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="20" width="600" height="40" as="geometry"/>
+                </mxCell>
+                
+                <!-- Legend -->
+                <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="1300" y="80" width="280" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-title" value="凡例" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="1310" y="85" width="100" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-cmd" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="110" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-cmd-text" value="コマンドフロー" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1360" y="110" width="100" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-fb" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="140" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-fb-text" value="フィードバック" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1360" y="140" width="100" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-switch" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="1320" y="170" width="30" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend-switch-text" value="切り替えポイント" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="1360" y="170" width="120" height="20" as="geometry"/>
+                </mxCell>
+                
+                <!-- Gait Generation Layer -->
+                <mxCell id="gait-layer-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="80" width="400" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="gait-layer-title" value="Gait Generation Layer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="85" width="200" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="gait-node" value="gait_pattern_generator&#xa;(biped_gait_control)&#xa;&#xa;50Hz 関節角度生成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="115" width="160" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="rl-node" value="RL Policy Node&#xa;(将来拡張)&#xa;&#xa;強化学習ポリシー" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeDashArray=3 3;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="115" width="160" height="70" as="geometry"/>
+                </mxCell>
+                
+                <!-- Unified Topic -->
+                <mxCell id="topic-box" value="/joint_commands&#xa;(sensor_msgs/JointState)&#xa;50Hz" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;fontStyle=1;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="230" width="200" height="60" as="geometry"/>
+                </mxCell>
+                
+                <!-- Arrow from Gait to Topic -->
+                <mxCell id="arrow-gait-topic" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;endArrow=classic;" parent="1" source="gait-node" target="topic-box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                
+                <!-- Router Node (Switch Point) -->
+                <mxCell id="router-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="320" width="400" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="router-title" value="Joint Command Router" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="325" width="200" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="router-desc" value="target引数で切り替え：&#xa;viz_only | mujoco | gazebo | hardware" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="350" width="300" height="60" as="geometry"/>
+                </mxCell>
+                
+                <!-- Arrow from Topic to Router -->
+                <mxCell id="arrow-topic-router" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#6c8ebf;endArrow=classic;" parent="1" source="topic-box" target="router-box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                
+                <!-- Environment A: Viz Only -->
+                <mxCell id="env-a-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="480" width="250" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-a-title" value="環境A: 可視化のみ&#xa;(MacBook)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="490" width="170" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-a-mode" value="target:=viz_only" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="130" y="535" width="150" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-a-remap" value="/joint_commands&#xa;↓ remap&#xa;/joint_states" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="575" width="170" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-a-rsp" value="robot_state_publisher&#xa;URDF → /tf" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="650" width="170" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-a-rviz" value="RViz2&#xa;Robot Visualization" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="710" width="170" height="40" as="geometry"/>
+                </mxCell>
+                
+                <!-- Environment B: Simulator -->
+                <mxCell id="env-b-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="480" width="250" height="380" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-b-title" value="環境B: 物理シミュレータ&#xa;(MacBook)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+                    <mxGeometry x="520" y="490" width="170" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-b-mode" value="target:=mujoco" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="530" y="535" width="150" height="25" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-b-bridge" value="Simulator Bridge&#xa;/joint_commands → MuJoCo API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="510" y="575" width="190" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-b-sim" value="MuJoCo / Gazebo&#xa;Physics Simulation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="510" y="640" width="190" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-b-feedback" value="/joint_states&#xa;(シミュレータからのフィードバック)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="510" y="705" width="190" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-b-rsp" value="robot_state_publisher" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="510" y="765" width="190" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-b-rviz" value="RViz2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="510" y="815" width="190" height="35" as="geometry"/>
+                </mxCell>
+                
+                <!-- Environment C: Hardware -->
+                <mxCell id="env-c-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d4edda;strokeColor=#28a745;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="880" y="480" width="350" height="450" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-c-title" value="環境C: 実機制御&#xa;(Jetson + MacBook)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=13;" parent="1" vertex="1">
+                    <mxGeometry x="970" y="490" width="170" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="env-c-mode" value="target:=hardware" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="980" y="535" width="150" height="25" as="geometry"/>
+                </mxCell>
+                
+                <!-- Jetson Box -->
+                <mxCell id="jetson-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="575" width="310" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="jetson-title" value="Jetson Orin Nano Super" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="970" y="580" width="170" height="25" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="ros2-control-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="920" y="610" width="270" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="ros2-control-title" value="ros2_control_node" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="615" width="130" height="20" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="fpc" value="forward_position_controller&#xa;/forward_position_controller/commands" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="940" y="645" width="230" height="45" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="cmd-if" value="command_interface&#xa;(共有メモリ)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="970" y="705" width="170" height="35" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="hw-if" value="robstride_hardware&#xa;(Hardware Interface)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="940" y="755" width="230" height="40" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="can-bus" value="CAN Bus (1Mbps)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#666666;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="970" y="810" width="170" height="25" as="geometry"/>
+                </mxCell>
+                
+                <!-- Motor -->
+                <mxCell id="motor" value="RobStride RS02 x10&#xa;QDD Motors" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#333333;strokeColor=#000000;fontColor=#ffffff;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="970" y="870" width="170" height="50" as="geometry"/>
+                </mxCell>
+                
+                <!-- MacBook Viz Box in Env C -->
+                <mxCell id="macbook-viz-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;strokeDashArray=3 3;" parent="1" vertex="1">
+                    <mxGeometry x="1260" y="575" width="150" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="macbook-viz-title" value="MacBook (可視化)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="580" width="110" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="macbook-rviz" value="RViz2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="610" width="110" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="macbook-plot" value="Plotjuggler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="655" width="110" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="macbook-debug" value="デバッグツール" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1280" y="700" width="110" height="30" as="geometry"/>
+                </mxCell>
+                
+                <!-- DDS Link -->
+                <mxCell id="dds-link" value="ROS 2 DDS&#xa;(WiFi/Ethernet)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#1976d2;strokeDashArray=5 5;startArrow=classic;endArrow=classic;" parent="1" source="jetson-box" target="macbook-viz-box" edge="1">
+                    <mxGeometry x="-0.2" y="10" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                
+                <!-- Arrows from Router to Environments -->
+                <mxCell id="arrow-router-a" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#b85450;endArrow=classic;" parent="1" source="router-box" target="env-a-box" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="205" y="370"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="arrow-router-b" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#d79b00;endArrow=classic;" parent="1" source="router-box" target="env-b-box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-router-c" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#28a745;endArrow=classic;" parent="1" source="router-box" target="env-c-box" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1055" y="370"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                
+                <!-- Arrows within Env A -->
+                <mxCell id="arrow-a-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#6c8ebf;endArrow=classic;" parent="1" source="env-a-remap" target="env-a-rsp" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-a-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#82b366;endArrow=classic;" parent="1" source="env-a-rsp" target="env-a-rviz" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                
+                <!-- Arrows within Env B -->
+                <mxCell id="arrow-b-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#6c8ebf;endArrow=classic;" parent="1" source="env-b-bridge" target="env-b-sim" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-b-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#82b366;endArrow=classic;" parent="1" source="env-b-sim" target="env-b-feedback" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-b-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#82b366;endArrow=classic;" parent="1" source="env-b-feedback" target="env-b-rsp" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-b-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#82b366;endArrow=classic;" parent="1" source="env-b-rsp" target="env-b-rviz" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                
+                <!-- Arrows within Env C -->
+                <mxCell id="arrow-c-1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#6c8ebf;endArrow=classic;" parent="1" source="fpc" target="cmd-if" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-c-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#6c8ebf;endArrow=classic;" parent="1" source="cmd-if" target="hw-if" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-c-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#6c8ebf;endArrow=classic;" parent="1" source="hw-if" target="can-bus" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arrow-c-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#6c8ebf;endArrow=classic;" parent="1" source="can-bus" target="motor" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                
+                <!-- Key Point Annotation -->
+                <mxCell id="key-point-1" value="✅ 統一トピック：/joint_commands&#xa;全環境で同一フォーマット" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6f3ff;strokeColor=#0066cc;fontStyle=1;fontSize=11;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="850" y="235" width="200" height="50" as="geometry"/>
+                </mxCell>
+                
+                <mxCell id="key-point-2" value="✅ 切り替えはLaunch引数のみ&#xa;target:=viz_only | mujoco | hardware" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3cd;strokeColor=#856404;fontStyle=1;fontSize=11;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="850" y="320" width="220" height="50" as="geometry"/>
+                </mxCell>
+                
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

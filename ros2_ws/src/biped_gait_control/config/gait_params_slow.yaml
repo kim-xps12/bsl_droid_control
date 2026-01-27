@@ -1,0 +1,13 @@
+# Slow walking gait parameters
+# Suitable for initial testing and debugging
+
+gait_pattern_generator:
+  ros__parameters:
+    publish_rate: 50.0
+    step_height: 0.03      # Lower step height
+    step_length: 0.05      # Shorter stride
+    step_frequency: 0.25   # Slower (4 seconds per cycle)
+    leg_extension_ratio: 0.90
+    thigh_length: 0.18
+    shank_length: 0.20
+    enabled: true
