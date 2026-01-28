@@ -38,29 +38,30 @@ pixi run colcon build --symlink-install
 ```bash
 # 正しい形式
 cd rl_ws
-uv run python genesis_official/examples/locomotion/biped_train_v4.py --max_iterations 1000
-uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4
+uv run python scripts/biped_train_v9.py --max_iterations 500
+uv run python scripts/biped_eval.py -e biped-walking-v9
 
 # 誤った形式（動作しない）
-uv run python rl_ws/genesis_official/...  # rl_wsの外から実行不可
-python genesis_official/...               # uvなしでは依存関係が解決されない
+uv run python rl_ws/scripts/...  # rl_wsの外から実行不可
+python scripts/...               # uvなしでは依存関係が解決されない
 ```
 
 ### 主要スクリプト
 
 | 用途 | コマンド |
 |------|---------|
-| トレーニング | `uv run python genesis_official/examples/locomotion/biped_train_v4.py --max_iterations 1000` |
-| 評価（GUI） | `uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4` |
-| 評価（特定チェックポイント） | `uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4 --ckpt 400` |
+| トレーニング | `uv run python scripts/biped_train_v9.py --max_iterations 500` |
+| 評価（GUI） | `uv run python scripts/biped_eval.py -e biped-walking-v9` |
+| 評価（特定チェックポイント） | `uv run python scripts/biped_eval.py -e biped-walking-v9 --ckpt 400` |
 | TensorBoard | `uv run tensorboard --logdir logs/` |
 
 ### 実験名の規則
 
 - `biped-walking`: V1（初期実装）
 - `biped-walking-v2`: V2
-- `biped-walking-v3`: V3
-- `biped-walking-v4`: V4
+- `biped-walking-v4`: V4（交互歩行）
+- `biped-walking-v7`: V7（Phase-based参照軌道）
+- `biped-walking-v9`: V9（対称歩行報酬）
 ...
 
 評価スクリプトは`-e`オプションで実験名を指定することで、任意のバージョンを評価できる統一インターフェースとなっている．
