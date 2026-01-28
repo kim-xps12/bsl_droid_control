@@ -90,6 +90,27 @@ uv run python genesis_official/examples/locomotion/go2_train.py
 uv run python genesis_official/examples/locomotion/go2_eval.py
 ```
 
+## TensorBoardで学習進捗を監視
+
+訓練中のメトリクスをリアルタイムで確認できます。
+
+```bash
+cd rl_ws
+
+# TensorBoardを起動（ブラウザで http://localhost:6006 を開く）
+uv run tensorboard --logdir logs/
+
+# 特定の実験のみ監視
+uv run tensorboard --logdir logs/go2-walking
+uv run tensorboard --logdir logs/biped-walking
+```
+
+主要なメトリクス：
+- `Loss/value_function`: 価値関数の損失
+- `Loss/surrogate`: PPOのサロゲート損失
+- `Perf/mean_reward`: 平均報酬（学習の進捗指標）
+- `Perf/mean_episode_length`: 平均エピソード長（転倒までのステップ数）
+
 ## Sim2Sim: MuJoCoでの評価
 
 GenesisでトレーニングしたポリシーをMuJoCoで評価します。
@@ -202,15 +223,44 @@ Menagerie keyframes: 1
 - **足の接触パラメータ**: friction, condim
 - **keyframe数**: 初期姿勢の定義
 
-## BSL-Droid二脚ロボットへの適用（今後）
+## BSL-Droid二脚ロボットへの適用
 
-二脚ロボットモデルでトレーニングするには：
+二脚ロボット（10 DOF）の歩容獲得トレーニングと評価。
 
-1. ROS 2ワークスペースからURDFをエクスポート
-2. Go2環境を二脚用に改変（10 DOF vs 12 DOF）
-3. カスタム訓練設定を作成
+### トレーニング
 
-詳細は[プロジェクトルートのREADME.md](../README.md#強化学習環境rl_ws)を参照してください。
+```bash
+cd rl_ws
+
+# V4トレーニング（交互歩行版、推奨）
+uv run python genesis_official/examples/locomotion/biped_train_v4.py --max_iterations 1000
+```
+
+### 評価
+
+統一評価スクリプト`biped_eval.py`を使用。`-e`オプションで実験名を指定して任意のバージョンを評価できます。
+
+```bash
+cd rl_ws
+
+# V4評価（最新チェックポイント）
+uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4
+
+# 特定チェックポイントを指定
+uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4 --ckpt 400
+
+# 過去バージョン評価
+uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v3
+```
+
+### バージョン履歴
+
+| バージョン | 実験名 | 特徴 |
+|-----------|--------|------|
+| V1 | biped-walking | 初期実装。歩行するがジャーキー |
+| V2 | biped-walking-v2 | 滑らかさペナルティ過剰。歩行せず |
+| V3 | biped-walking-v3 | バランス調整版。歩行するがすり足 |
+| V4 | biped-walking-v4 | 交互歩行報酬追加。足を交互に出す歩行を目指す |
 
 ## 依存パッケージ
 
