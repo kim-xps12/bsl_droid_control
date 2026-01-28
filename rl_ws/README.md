@@ -68,9 +68,10 @@ rl_ws/
 │   └── examples/locomotion/ # Go2サンプル（参考用）
 ├── mujoco_menagerie/        # MuJoCo公式ロボットモデル集（比較用）
 └── logs/                    # トレーニングログ（生成）
+    ├── .gitignore
     ├── biped-walking-v7/    # V7実験
     ├── biped-walking-v9/    # V9実験
-    │   ├── model_*.pt       # チェックポイント
+    │   ├── model_*.pt       # チェックポイント（git管理外）
     │   └── cfgs.pkl         # 訓練設定
     └── go2-walking/         # Go2歩行ポリシー
 ```
@@ -281,6 +282,14 @@ uv run python scripts/biped_eval.py -e biped-walking-v4
 | rsl-rl-lib | ==2.2.4 | PPO実装 |
 | tensorboard | >=2.14.0 | トレーニング可視化 |
 | mujoco | latest | Sim2Sim評価 |
+
+## 注意事項
+
+### モデル重みファイルについて
+
+`logs/`以下の`.pt`ファイル（学習済み重み）は**gitの管理対象外**です。これらのファイルはサイズが大きく、各開発者が自身の環境でトレーニングを実行して生成することを想定しています。
+
+重みファイルを共有する必要がある場合は、別途ファイル共有サービス等を利用してください。
 
 ## 参考資料
 
