@@ -30,9 +30,12 @@ Jetson Orin Nano SuperとMacBookの分散環境で動作する二脚ロボット
 ### セットアップ
 
 ```bash
-# リポジトリをクローン
-git clone <repository-url>
+# リポジトリをクローン（submoduleを含む）
+git clone --recursive --shallow-submodules https://github.com/kim-xps12/bsl_droid_ros2.git
 cd bsl_droid_ros2
+
+# 既にclone済みの場合はsubmoduleを取得
+git submodule update --init --depth 1
 
 # ros2_wsディレクトリに移動
 cd ros2_ws
@@ -43,6 +46,10 @@ pixi install
 # ワークスペースをビルド
 pixi run colcon build --symlink-install
 ```
+
+> **Note**: このリポジトリはsubmoduleを含んでいます（`rl_ws/genesis_official`, `rl_ws/mujoco_menagerie`）。
+> `--recursive`オプションを付けてcloneするか、clone後に`git submodule update --init`を実行してください。
+> `--shallow-submodules`または`--depth 1`を使用することで、submoduleの履歴を取得せず高速にcloneできます。
 
 ### pixi環境について
 
