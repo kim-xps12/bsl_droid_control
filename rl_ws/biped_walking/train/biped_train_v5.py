@@ -39,7 +39,7 @@ from pathlib import Path
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(rl_ws_dir))
-from envs.biped_env_v5 import BipedEnvV5
+from biped_walking.envs.biped_env import BipedEnv
 
 
 def get_train_cfg(exp_name, max_iterations):
@@ -92,7 +92,7 @@ def get_train_cfg(exp_name, max_iterations):
 def get_cfgs():
     """環境設定を取得"""
     script_dir = Path(__file__).parent
-    rl_ws_dir = script_dir.parent
+    rl_ws_dir = script_dir.parent.parent.parent
     urdf_path = rl_ws_dir / "assets" / "biped_digitigrade.urdf"
 
     env_cfg = {
@@ -217,7 +217,7 @@ def main():
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 
-    env = BipedEnvV5(
+    env = BipedEnv(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
     )
 

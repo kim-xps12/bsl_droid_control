@@ -16,8 +16,9 @@ from pathlib import Path
 import torch
 
 # biped_envをインポート
-sys.path.insert(0, str(Path(__file__).parent.parent / "genesis_official/examples/locomotion"))
-from biped_env import BipedEnv
+rl_ws_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(rl_ws_dir))
+from biped_walking.envs.biped_env import BipedEnv
 
 import genesis as gs
 from rsl_rl.runners import OnPolicyRunner

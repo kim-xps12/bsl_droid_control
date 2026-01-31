@@ -42,7 +42,7 @@ from pathlib import Path
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(rl_ws_dir))
-from envs.biped_env_v9 import BipedEnvV9
+from biped_walking.envs.biped_env import BipedEnv
 
 
 def get_train_cfg(exp_name, max_iterations):
@@ -233,7 +233,7 @@ def main():
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 
-    env = BipedEnvV9(
+    env = BipedEnv(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
     )
 

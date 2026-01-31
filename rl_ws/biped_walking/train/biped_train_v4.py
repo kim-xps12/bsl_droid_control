@@ -1,24 +1,17 @@
 """
-BSL-Droid二脚ロボット Genesis訓練スクリプト v2
+BSL-Droid二脚ロボット Genesis訓練スクリプト v4
 
-改善版: 滑らかで実機デプロイ向けの動作を学習
+V3からの修正:
+- 足の交互接地報酬（alternating_gait）を追加: 左右の足が交互に動くことを促進
+- 足のスイング報酬（foot_swing）を追加: 歩行中に足を持ち上げることを報酬
+- feet_air_time報酬を強化: 長いストライドを促進
+- 両足同時接地ペナルティ（no_fly）を強化
 
-主な変更点:
-- action_rate ペナルティを10倍強化 (-0.05)
-- dof_vel ペナルティ追加（高速振動抑制）
-- dof_acc ペナルティ追加（急激な動き抑制）
-- action_scale を0.5に拡大（可動域拡大）
-- feet_air_time報酬追加（長いストライド促進）
+目標: すり足ではなく、人間やアヒルのように足を交互に出す歩行を実現
 
 Usage:
     cd rl_ws
-    uv run python scripts/biped_train_v2.py
-
-    # ビューア付きで短時間テスト
-    uv run python scripts/biped_train_v2.py --max_iterations 10 --num_envs 16
-
-    # 本番訓練（1000イテレーション - より長い訓練で安定）
-    uv run python scripts/biped_train_v2.py --max_iterations 1000
+    uv run python scripts/biped_train_v4.py --max_iterations 1000
 """
 
 import argparse
@@ -41,12 +34,13 @@ from rsl_rl.runners import OnPolicyRunner
 
 import genesis as gs
 
-# envsパッケージへのパスを追加
 import sys
 from pathlib import Path
+
+# envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(rl_ws_dir))
-from envs.biped_env_v2 import BipedEnvV2
+from biped_walking.envs.biped_env import BipedEnv
 
 
 def get_train_cfg(exp_name, max_iterations):
@@ -98,7 +92,6 @@ def get_train_cfg(exp_name, max_iterations):
 
 def get_cfgs():
     """環境設定を取得"""
-    # URDFパスを解決（Genesis assetsからの相対パス）
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent.parent
     urdf_path = rl_ws_dir / "assets" / "biped_digitigrade.urdf"
@@ -106,7 +99,6 @@ def get_cfgs():
     env_cfg = {
         "num_actions": 10,
         "urdf_path": str(urdf_path),
-        # 関節名（左脚→右脚）
         "joint_names": [
             "left_hip_yaw_joint",
             "left_hip_roll_joint",
@@ -119,41 +111,35 @@ def get_cfgs():
             "right_knee_pitch_joint",
             "right_ankle_pitch_joint",
         ],
-        # 初期関節角度（逆関節に適した立位）
         "default_joint_angles": {
             "left_hip_yaw_joint": 0.0,
             "left_hip_roll_joint": 0.0,
             "left_hip_pitch_joint": 0.0,
-            "left_knee_pitch_joint": -0.52,   # 約-30° (前方屈曲)
-            "left_ankle_pitch_joint": 0.52,   # 膝と相殺
+            "left_knee_pitch_joint": -0.52,
+            "left_ankle_pitch_joint": 0.52,
             "right_hip_yaw_joint": 0.0,
             "right_hip_roll_joint": 0.0,
             "right_hip_pitch_joint": 0.0,
             "right_knee_pitch_joint": -0.52,
             "right_ankle_pitch_joint": 0.52,
         },
-        # 足のリンク名（feet_air_time用）
         "feet_names": ["left_toe", "right_toe"],
-        # PD制御ゲイン（やや低めでソフトな動作）
+        # PD gains
         "kp": 35.0,
-        "kd": 2.0,  # ダンピング増加で振動抑制
-        # 終了条件
-        "termination_if_roll_greater_than": 30,   # 度
-        "termination_if_pitch_greater_than": 30,  # 度
-        # 初期姿勢
+        "kd": 2.0,
+        "termination_if_roll_greater_than": 30,
+        "termination_if_pitch_greater_than": 30,
         "base_init_pos": [0.0, 0.0, 0.45],
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
-        # エピソード設定
         "episode_length_s": 20.0,
         "resampling_time_s": 4.0,
-        # ★ action_scale拡大で可動域を広く
-        "action_scale": 0.5,
+        "action_scale": 0.4,
         "simulate_action_latency": True,
-        "clip_actions": 10.0,  # クリッピングも調整
+        "clip_actions": 10.0,
     }
 
     obs_cfg = {
-        "num_obs": 39,  # 3 + 3 + 3 + 10 + 10 + 10
+        "num_obs": 39,
         "obs_scales": {
             "lin_vel": 2.0,
             "ang_vel": 0.25,
@@ -162,41 +148,43 @@ def get_cfgs():
         },
     }
 
-    # ★ 報酬設定の大幅改善
+    # V4: 交互歩行を促進する報酬設定
     reward_cfg = {
         "tracking_sigma": 0.25,
-        "base_height_target": 0.40,  # 二脚の目標高さ
-        "feet_air_time_target": 0.2,  # 目標滞空時間（秒）
+        "base_height_target": 0.40,
+        "feet_air_time_target": 0.25,  # 目標滞空時間を長めに
         "reward_scales": {
-            # 追従報酬
-            "tracking_lin_vel": 1.5,   # 速度追従をより重視
-            "tracking_ang_vel": 0.5,
+            # === 追従報酬 ===
+            "tracking_lin_vel": 2.0,
+            "tracking_ang_vel": 0.3,
             
-            # ★ 滑らかさペナルティ（大幅強化）
-            "action_rate": -0.1,       # 10倍強化: アクション変化を強くペナルティ
-            "dof_vel": -0.001,         # 新規: 関節速度ペナルティ（振動抑制）
-            "dof_acc": -2.5e-7,        # 新規: 関節加速度ペナルティ
-            "smoothness": -0.01,       # 新規: 動作の滑らかさ
+            # === 交互歩行報酬（新規・重要）===
+            "alternating_gait": 1.5,     # 左右の足が交互に接地することを報酬
+            "foot_swing": 0.8,           # 歩行中に足を持ち上げることを報酬
+            "feet_air_time": 1.0,        # 強化: 長いストライドを促進
+            "no_fly": -1.0,              # 強化: 両足同時離地を強くペナルティ
+            "single_stance": 0.5,        # 片足立ちを報酬（交互歩行の前提）
             
-            # 姿勢・高さ維持
-            "orientation": -5.0,       # 直立維持
-            "base_height": -30.0,      # 高さ維持（やや緩和）
-            "lin_vel_z": -2.0,         # 上下動抑制
-            "ang_vel_xy": -0.05,       # ボディ回転抑制
+            # === 滑らかさペナルティ ===
+            "action_rate": -0.02,
+            "dof_vel": -0.0001,
+            "dof_acc": -1e-7,
             
-            # 歩容改善
-            "feet_air_time": 1.0,      # 新規: 長いストライド促進
-            "no_fly": -0.5,            # 新規: 両足離地ペナルティ
+            # === 姿勢・高さ維持 ===
+            "orientation": -3.0,
+            "base_height": -30.0,
+            "lin_vel_z": -1.5,
+            "ang_vel_xy": -0.05,
             
-            # その他
-            "similar_to_default": -0.05,  # デフォルト姿勢維持（緩和）
-            "torques": -0.0001,        # エネルギー効率
+            # === その他 ===
+            "similar_to_default": -0.03,  # 緩和: 歩行を阻害しない
+            "torques": -0.0001,
         },
     }
 
     command_cfg = {
         "num_commands": 3,
-        "lin_vel_x_range": [0.3, 0.3],  # まずは固定速度で訓練
+        "lin_vel_x_range": [0.3, 0.3],
         "lin_vel_y_range": [0, 0],
         "ang_vel_range": [0, 0],
     }
@@ -206,9 +194,9 @@ def get_cfgs():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v2")
+    parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v4")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
-    parser.add_argument("--max_iterations", type=int, default=1000)  # より長い訓練
+    parser.add_argument("--max_iterations", type=int, default=1000)
     args = parser.parse_args()
 
     log_dir = f"logs/{args.exp_name}"
@@ -226,7 +214,7 @@ def main():
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 
-    env = BipedEnvV2(
+    env = BipedEnv(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
     )
 
