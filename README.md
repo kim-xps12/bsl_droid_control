@@ -24,8 +24,19 @@ Jetson Orin Nano SuperとMacBookの分散環境で動作する二脚ロボット
 ### 前提条件
 以下のツールが導入済みであること
 
-- [pixi](https://pixi.sh/)
+- [pixi](https://pixi.sh/) — ROS 2ワークスペース（ros2_ws）用
+- [uv](https://docs.astral.sh/uv/) — 強化学習環境（rl_ws）用
 - Git
+
+#### uvのインストール
+
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
 ### セットアップ
 
