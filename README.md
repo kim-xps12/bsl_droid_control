@@ -24,15 +24,29 @@ Jetson Orin Nano SuperとMacBookの分散環境で動作する二脚ロボット
 ### 前提条件
 以下のツールが導入済みであること
 
-- [pixi](https://pixi.sh/)
+- [pixi](https://pixi.sh/) — ROS 2ワークスペース（ros2_ws）用
+- [uv](https://docs.astral.sh/uv/) — 強化学習環境（rl_ws）用
 - Git
+
+#### uvのインストール
+
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
 ### セットアップ
 
 ```bash
-# リポジトリをクローン
-git clone <repository-url>
+# リポジトリをクローン（submoduleを含む）
+git clone --recursive --shallow-submodules https://github.com/kim-xps12/bsl_droid_ros2.git
 cd bsl_droid_ros2
+
+# 既にclone済みの場合はsubmoduleを取得
+git submodule update --init --depth 1
 
 # ros2_wsディレクトリに移動
 cd ros2_ws
@@ -43,6 +57,21 @@ pixi install
 # ワークスペースをビルド
 pixi run colcon build --symlink-install
 ```
+
+### Git Submoduleについて
+
+このリポジトリは以下のsubmoduleを含んでいます：
+
+| Submodule | パス | 用途 |
+|-----------|------|------|
+| [Genesis](https://github.com/Genesis-Embodied-AI/Genesis) | `rl_ws/genesis_official/` | 物理シミュレータ（強化学習環境） |
+| [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) | `rl_ws/mujoco_menagerie/` | ロボットモデル集（Sim2Sim比較用） |
+
+- **新規clone時**: `--recursive`オプションを付けてcloneしてください
+- **既存リポジトリ**: `git submodule update --init`を実行してください
+- **高速化**: `--shallow-submodules`または`--depth 1`でsubmoduleの履歴を省略できます
+
+> **Note**: 強化学習環境（rl_ws）を使用しない場合、submoduleの取得は不要です。
 
 ### pixi環境について
 

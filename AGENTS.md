@@ -27,6 +27,52 @@ pixi run colcon build --symlink-install
 ## 作業ディレクトリ
 このリポジトリではROS 2の作業環境は`ros2_ws`以下にpixiで仮想化しているため，ビルドやノードの実行をする際にはカレントディレクトリを`ros2_ws`に移動した後に`pixi run hogehoge...`の形式で実行する必要がある．
 
+## 強化学習環境（rl_ws）
+
+強化学習ワークスペース`rl_ws/`はuvで管理されている．ROS 2環境（ros2_ws）とは独立した仮想環境である．
+
+### コマンド実行形式
+
+**必須**: `rl_ws`ディレクトリに移動してから`uv run`で実行すること．
+
+```bash
+# 正しい形式
+cd rl_ws
+uv run python scripts/biped_train_v9.py --max_iterations 500
+uv run python scripts/biped_eval.py -e biped-walking-v9
+
+# 誤った形式（動作しない）
+uv run python rl_ws/scripts/...  # rl_wsの外から実行不可
+python scripts/...               # uvなしでは依存関係が解決されない
+```
+
+### 主要スクリプト
+
+| 用途 | コマンド |
+|------|---------|
+| トレーニング | `uv run python scripts/biped_train_v9.py --max_iterations 500` |
+| 評価（GUI） | `uv run python scripts/biped_eval.py -e biped-walking-v9` |
+| 評価（特定チェックポイント） | `uv run python scripts/biped_eval.py -e biped-walking-v9 --ckpt 400` |
+| TensorBoard | `uv run tensorboard --logdir logs/` |
+
+### 実験名の規則
+
+- `biped-walking`: V1（初期実装）
+- `biped-walking-v2`: V2
+- `biped-walking-v4`: V4（交互歩行）
+- `biped-walking-v7`: V7（Phase-based参照軌道）
+- `biped-walking-v9`: V9（対称歩行報酬）
+...
+
+評価スクリプトは`-e`オプションで実験名を指定することで、任意のバージョンを評価できる統一インターフェースとなっている．
+
+### 注意事項
+
+- **カレントディレクトリ**: 必ず`rl_ws`に`cd`してから実行
+- **パス指定**: スクリプトパスは`rl_ws`からの相対パスで指定
+- **ログ出力**: チェックポイントは`rl_ws/logs/{実験名}/`に保存される
+- **設定ファイル**: 各実験の設定は`rl_ws/logs/{実験名}/cfgs.pkl`に保存される
+
 ## 実際に実行する動作確認
 - GUIを伴う実装の有無によらず、コーディング完了後は実際に対象を起動し、エラーなく終了することを必ず確認する
 - 各仮想環境のworkspaceへ`cd`して実行する必要があることを念頭におく

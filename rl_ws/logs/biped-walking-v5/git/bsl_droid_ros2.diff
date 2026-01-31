@@ -1,0 +1,220 @@
+--- git status ---
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+  (commit or discard the untracked or modified content in submodules)
+	modified:   AGENTS.md
+	modified:   rl_ws/README.md
+	modified:   rl_ws/genesis_official (untracked content)
+	modified:   ros2_ws/src/biped_description/urdf/biped_digitigrade.urdf.xacro
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	doc/experiments/
+	rl_ws/assets/biped_digitigrade.urdf
+	rl_ws/assets/biped_digitigrade.xml
+	rl_ws/logs/biped-walking-v2/
+	rl_ws/logs/biped-walking-v3/
+	rl_ws/logs/biped-walking-v4/
+	rl_ws/logs/biped-walking-v5/
+	rl_ws/logs/biped-walking/
+	rl_ws/logs/go2-walking/events.out.tfevents.1769513199.MacBook-Air.local.54805.0
+	rl_ws/scripts/biped_eval_headless.py
+	rl_ws/scripts/biped_eval_mujoco.py
+	rl_ws/scripts/convert_biped_urdf_to_mjcf.py
+	ros2_ws/src/biped_teleop/
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/AGENTS.md b/AGENTS.md
+index 5a4cb35..5558e3d 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -27,6 +27,51 @@ pixi run colcon build --symlink-install
+ ## 作業ディレクトリ
+ このリポジトリではROS 2の作業環境は`ros2_ws`以下にpixiで仮想化しているため，ビルドやノードの実行をする際にはカレントディレクトリを`ros2_ws`に移動した後に`pixi run hogehoge...`の形式で実行する必要がある．
+ 
++## 強化学習環境（rl_ws）
++
++強化学習ワークスペース`rl_ws/`はuvで管理されている．ROS 2環境（ros2_ws）とは独立した仮想環境である．
++
++### コマンド実行形式
++
++**必須**: `rl_ws`ディレクトリに移動してから`uv run`で実行すること．
++
++```bash
++# 正しい形式
++cd rl_ws
++uv run python genesis_official/examples/locomotion/biped_train_v4.py --max_iterations 1000
++uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4
++
++# 誤った形式（動作しない）
++uv run python rl_ws/genesis_official/...  # rl_wsの外から実行不可
++python genesis_official/...               # uvなしでは依存関係が解決されない
++```
++
++### 主要スクリプト
++
++| 用途 | コマンド |
++|------|---------|
++| トレーニング | `uv run python genesis_official/examples/locomotion/biped_train_v4.py --max_iterations 1000` |
++| 評価（GUI） | `uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4` |
++| 評価（特定チェックポイント） | `uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4 --ckpt 400` |
++| TensorBoard | `uv run tensorboard --logdir logs/` |
++
++### 実験名の規則
++
++- `biped-walking`: V1（初期実装）
++- `biped-walking-v2`: V2
++- `biped-walking-v3`: V3
++- `biped-walking-v4`: V4
++...
++
++評価スクリプトは`-e`オプションで実験名を指定することで、任意のバージョンを評価できる統一インターフェースとなっている．
++
++### 注意事項
++
++- **カレントディレクトリ**: 必ず`rl_ws`に`cd`してから実行
++- **パス指定**: スクリプトパスは`rl_ws`からの相対パスで指定
++- **ログ出力**: チェックポイントは`rl_ws/logs/{実験名}/`に保存される
++- **設定ファイル**: 各実験の設定は`rl_ws/logs/{実験名}/cfgs.pkl`に保存される
++
+ ## 実際に実行する動作確認
+ - GUIを伴う実装の有無によらず、コーディング完了後は実際に対象を起動し、エラーなく終了することを必ず確認する
+ - 各仮想環境のworkspaceへ`cd`して実行する必要があることを念頭におく
+diff --git a/rl_ws/README.md b/rl_ws/README.md
+index 09842f8..13fd49f 100644
+--- a/rl_ws/README.md
++++ b/rl_ws/README.md
+@@ -90,6 +90,27 @@ uv run python genesis_official/examples/locomotion/go2_train.py
+ uv run python genesis_official/examples/locomotion/go2_eval.py
+ ```
+ 
++## TensorBoardで学習進捗を監視
++
++訓練中のメトリクスをリアルタイムで確認できます。
++
++```bash
++cd rl_ws
++
++# TensorBoardを起動（ブラウザで http://localhost:6006 を開く）
++uv run tensorboard --logdir logs/
++
++# 特定の実験のみ監視
++uv run tensorboard --logdir logs/go2-walking
++uv run tensorboard --logdir logs/biped-walking
++```
++
++主要なメトリクス：
++- `Loss/value_function`: 価値関数の損失
++- `Loss/surrogate`: PPOのサロゲート損失
++- `Perf/mean_reward`: 平均報酬（学習の進捗指標）
++- `Perf/mean_episode_length`: 平均エピソード長（転倒までのステップ数）
++
+ ## Sim2Sim: MuJoCoでの評価
+ 
+ GenesisでトレーニングしたポリシーをMuJoCoで評価します。
+@@ -202,15 +223,44 @@ Menagerie keyframes: 1
+ - **足の接触パラメータ**: friction, condim
+ - **keyframe数**: 初期姿勢の定義
+ 
+-## BSL-Droid二脚ロボットへの適用（今後）
++## BSL-Droid二脚ロボットへの適用
++
++二脚ロボット（10 DOF）の歩容獲得トレーニングと評価。
++
++### トレーニング
++
++```bash
++cd rl_ws
++
++# V4トレーニング（交互歩行版、推奨）
++uv run python genesis_official/examples/locomotion/biped_train_v4.py --max_iterations 1000
++```
++
++### 評価
++
++統一評価スクリプト`biped_eval.py`を使用。`-e`オプションで実験名を指定して任意のバージョンを評価できます。
+ 
+-二脚ロボットモデルでトレーニングするには：
++```bash
++cd rl_ws
++
++# V4評価（最新チェックポイント）
++uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4
++
++# 特定チェックポイントを指定
++uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v4 --ckpt 400
++
++# 過去バージョン評価
++uv run python genesis_official/examples/locomotion/biped_eval.py -e biped-walking-v3
++```
+ 
+-1. ROS 2ワークスペースからURDFをエクスポート
+-2. Go2環境を二脚用に改変（10 DOF vs 12 DOF）
+-3. カスタム訓練設定を作成
++### バージョン履歴
+ 
+-詳細は[プロジェクトルートのREADME.md](../README.md#強化学習環境rl_ws)を参照してください。
++| バージョン | 実験名 | 特徴 |
++|-----------|--------|------|
++| V1 | biped-walking | 初期実装。歩行するがジャーキー |
++| V2 | biped-walking-v2 | 滑らかさペナルティ過剰。歩行せず |
++| V3 | biped-walking-v3 | バランス調整版。歩行するがすり足 |
++| V4 | biped-walking-v4 | 交互歩行報酬追加。足を交互に出す歩行を目指す |
+ 
+ ## 依存パッケージ
+ 
+diff --git a/ros2_ws/src/biped_description/urdf/biped_digitigrade.urdf.xacro b/ros2_ws/src/biped_description/urdf/biped_digitigrade.urdf.xacro
+index f3db189..cd24e5f 100644
+--- a/ros2_ws/src/biped_description/urdf/biped_digitigrade.urdf.xacro
++++ b/ros2_ws/src/biped_description/urdf/biped_digitigrade.urdf.xacro
+@@ -8,6 +8,7 @@
+     - 膝が前方に曲がる逆関節構造
+     - 片脚5関節 × 2脚（左右対称）
+     - 関節構成: 腰ヨー, 股関節ロール, 股関節ピッチ, 膝ピッチ, 足首ピッチ
++    - IMUリンク: 胴体上面中央に配置（強化学習・状態推定用）
+   -->
+ 
+   <!-- リンク長パラメータ (example_gait.pyと一致) -->
+@@ -64,6 +65,35 @@
+     </inertial>
+   </link>
+ 
++  <!-- IMU Link -->
++  <!-- 
++    IMUセンサの取り付け位置を定義するフレーム
++    - URDFではリンク+固定ジョイントとして定義（ROS 2標準）
++    - MuJoCo変換時にはsiteとして扱われ、gyro/accelerometer等のセンサを配置可能
++    - 質量・慣性は無視できる程度の小さい値（シミュレーションに影響しない）
++  -->
++  <link name="imu_link">
++    <visual>
++      <origin xyz="0 0 0" rpy="0 0 0"/>
++      <geometry>
++        <box size="0.02 0.02 0.01"/>
++      </geometry>
++      <material name="dark_gray"/>
++    </visual>
++    <inertial>
++      <mass value="0.01"/>
++      <origin xyz="0 0 0" rpy="0 0 0"/>
++      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
++    </inertial>
++  </link>
++
++  <joint name="imu_joint" type="fixed">
++    <parent link="base_link"/>
++    <child link="imu_link"/>
++    <!-- IMUは胴体上面中央に配置 -->
++    <origin xyz="0 0 0.06" rpy="0 0 0"/>
++  </joint>
++
+   <!-- 脚マクロ定義 -->
+   <xacro:macro name="leg" params="side reflect">
+     

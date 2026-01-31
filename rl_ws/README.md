@@ -48,27 +48,32 @@ rl_ws/
 ├── .python-version          # Pythonバージョン（3.11）
 ├── README.md                # 本ファイル
 ├── assets/                  # ロボットモデル
+│   ├── biped_digitigrade.urdf # BSL-Droid二脚URDF
 │   ├── export_urdf.py       # 二脚URDF出力スクリプト
 │   └── go2_genesis.xml      # Genesis URDF変換後のMJCF（生成）
-├── genesis_official/        # Genesis公式リポジトリ（クローン済み）
-│   ├── genesis/assets/urdf/go2/  # Go2 URDFモデル（Sim2Sim元データ）
-│   │   ├── urdf/go2.urdf    # ロボットURDF
-│   │   └── dae/             # メッシュファイル
-│   └── examples/
-│       └── locomotion/
-│           ├── go2_env.py   # Go2環境
-│           ├── go2_train.py # PPOトレーニング
-│           └── go2_eval.py  # ポリシー評価
+├── envs/                    # 強化学習環境パッケージ
+│   ├── __init__.py
+│   ├── biped_env_v2.py      # V2環境（滑らかさペナルティ）
+│   ├── biped_env_v4.py      # V4環境（交互歩行報酬）
+│   ├── biped_env_v7.py      # V7環境（Phase-based参照軌道）
+│   ├── biped_env_v9.py      # V9環境（対称歩行報酬）
+│   └── ...                  # 他バージョン
+├── scripts/                 # トレーニング・評価スクリプト
+│   ├── biped_train_v9.py    # V9トレーニング
+│   ├── biped_eval.py        # 統一評価スクリプト
+│   ├── convert_urdf_to_mjcf.py  # URDF→MJCF変換
+│   ├── go2_eval_mujoco.py   # Go2 Sim2Sim評価
+│   └── compare_models.py    # モデルパラメータ比較
+├── genesis_official/        # Genesis公式リポジトリ（git submodule）
+│   └── examples/locomotion/ # Go2サンプル（参考用）
 ├── mujoco_menagerie/        # MuJoCo公式ロボットモデル集（比較用）
-│   └── unitree_go2/         # Go2 MJCFモデル（--modelオプションで使用可）
-├── scripts/                 # 評価・開発ツール
-│   ├── convert_urdf_to_mjcf.py  # URDF→MJCF変換スクリプト
-│   ├── go2_eval_mujoco.py       # Sim2Sim評価スクリプト
-│   └── compare_models.py        # モデルパラメータ比較ツール
 └── logs/                    # トレーニングログ（生成）
+    ├── .gitignore
+    ├── biped-walking-v7/    # V7実験
+    ├── biped-walking-v9/    # V9実験
+    │   ├── model_*.pt       # チェックポイント（git管理外）
+    │   └── cfgs.pkl         # 訓練設定
     └── go2-walking/         # Go2歩行ポリシー
-        ├── model_*.pt       # チェックポイント
-        └── cfgs.pkl         # 訓練設定
 ```
 
 ## デバイス選択
@@ -89,6 +94,27 @@ uv run python genesis_official/examples/locomotion/go2_train.py
 # 推論の評価（Genesisビューア）
 uv run python genesis_official/examples/locomotion/go2_eval.py
 ```
+
+## TensorBoardで学習進捗を監視
+
+訓練中のメトリクスをリアルタイムで確認できます。
+
+```bash
+cd rl_ws
+
+# TensorBoardを起動（ブラウザで http://localhost:6006 を開く）
+uv run tensorboard --logdir logs/
+
+# 特定の実験のみ監視
+uv run tensorboard --logdir logs/go2-walking
+uv run tensorboard --logdir logs/biped-walking
+```
+
+主要なメトリクス：
+- `Loss/value_function`: 価値関数の損失
+- `Loss/surrogate`: PPOのサロゲート損失
+- `Perf/mean_reward`: 平均報酬（学習の進捗指標）
+- `Perf/mean_episode_length`: 平均エピソード長（転倒までのステップ数）
 
 ## Sim2Sim: MuJoCoでの評価
 
@@ -202,15 +228,50 @@ Menagerie keyframes: 1
 - **足の接触パラメータ**: friction, condim
 - **keyframe数**: 初期姿勢の定義
 
-## BSL-Droid二脚ロボットへの適用（今後）
+## BSL-Droid二脚ロボットへの適用
 
-二脚ロボットモデルでトレーニングするには：
+二脚ロボット（10 DOF）の歩容獲得トレーニングと評価。
 
-1. ROS 2ワークスペースからURDFをエクスポート
-2. Go2環境を二脚用に改変（10 DOF vs 12 DOF）
-3. カスタム訓練設定を作成
+### トレーニング
 
-詳細は[プロジェクトルートのREADME.md](../README.md#強化学習環境rl_ws)を参照してください。
+```bash
+cd rl_ws
+
+# V9トレーニング（最新版、対称歩行報酬）
+uv run python scripts/biped_train_v9.py --max_iterations 500
+
+# V4トレーニング（交互歩行版）
+uv run python scripts/biped_train_v4.py --max_iterations 1000
+```
+
+### 評価
+
+統一評価スクリプト`biped_eval.py`を使用。`-e`オプションで実験名を指定して任意のバージョンを評価できます。
+
+```bash
+cd rl_ws
+
+# V9評価（最新チェックポイント）
+uv run python scripts/biped_eval.py -e biped-walking-v9
+
+# 特定チェックポイントを指定
+uv run python scripts/biped_eval.py -e biped-walking-v9 --ckpt 400
+
+# 過去バージョン評価
+uv run python scripts/biped_eval.py -e biped-walking-v4
+```
+
+### バージョン履歴
+
+| バージョン | 実験名 | 特徴 |
+|-----------|--------|------|
+| V1 | biped-walking | 初期実装。歩行するがジャーキー |
+| V2 | biped-walking-v2 | 滑らかさペナルティ過剰。歩行せず |
+| V3 | biped-walking-v3 | バランス調整版。歩行するがすり足 |
+| V4 | biped-walking-v4 | **交互歩行報酬追加。足を交互に出す歩行◎** |
+| V7 | biped-walking-v7 | Phase-based参照軌道。歩けるが4ステップカクカク |
+| V8 | biped-walking-v8 | 過度なペナルティで失敗（倒れる） |
+| V9 | biped-walking-v9 | V7ベース+対称歩行報酬（控えめ） |
 
 ## 依存パッケージ
 
@@ -221,6 +282,14 @@ Menagerie keyframes: 1
 | rsl-rl-lib | ==2.2.4 | PPO実装 |
 | tensorboard | >=2.14.0 | トレーニング可視化 |
 | mujoco | latest | Sim2Sim評価 |
+
+## 注意事項
+
+### モデル重みファイルについて
+
+`logs/`以下の`.pt`ファイル（学習済み重み）は**gitの管理対象外**です。これらのファイルはサイズが大きく、各開発者が自身の環境でトレーニングを実行して生成することを想定しています。
+
+重みファイルを共有する必要がある場合は、別途ファイル共有サービス等を利用してください。
 
 ## 参考資料
 
