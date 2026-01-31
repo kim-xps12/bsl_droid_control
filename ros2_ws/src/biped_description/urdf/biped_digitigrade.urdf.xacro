@@ -8,7 +8,6 @@
     - 膝が前方に曲がる逆関節構造
     - 片脚5関節 × 2脚（左右対称）
     - 関節構成: 腰ヨー, 股関節ロール, 股関節ピッチ, 膝ピッチ, 足首ピッチ
-    - IMUリンク: 胴体上面中央に配置（強化学習・状態推定用）
   -->
 
   <!-- リンク長パラメータ (example_gait.pyと一致) -->
@@ -64,35 +63,6 @@
       <inertia ixx="0.05" ixy="0" ixz="0" iyy="0.05" iyz="0" izz="0.05"/>
     </inertial>
   </link>
-
-  <!-- IMU Link -->
-  <!-- 
-    IMUセンサの取り付け位置を定義するフレーム
-    - URDFではリンク+固定ジョイントとして定義（ROS 2標準）
-    - MuJoCo変換時にはsiteとして扱われ、gyro/accelerometer等のセンサを配置可能
-    - 質量・慣性は無視できる程度の小さい値（シミュレーションに影響しない）
-  -->
-  <link name="imu_link">
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.02 0.02 0.01"/>
-      </geometry>
-      <material name="dark_gray"/>
-    </visual>
-    <inertial>
-      <mass value="0.01"/>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6"/>
-    </inertial>
-  </link>
-
-  <joint name="imu_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="imu_link"/>
-    <!-- IMUは胴体上面中央に配置 -->
-    <origin xyz="0 0 0.06" rpy="0 0 0"/>
-  </joint>
 
   <!-- 脚マクロ定義 -->
   <xacro:macro name="leg" params="side reflect">
