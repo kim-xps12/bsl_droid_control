@@ -18,7 +18,7 @@
 
 ## システムアーキテクチャ（分散構成）
 
-![dio.svg](./exp001_slider_control_architecture.drawio.svg)
+![システムアーキテクチャ](./exp001_slider_control_rs02_architecture.drawio.svg)
 
 ### アーキテクチャ設計の重要ポイント
 
@@ -43,7 +43,7 @@ ros2_controlの設計上、以下の理由でコントローラーはHardware In
 
 ## 制御フロー
 
-![](./exp001_slider_control_sequence.drawio.svg)
+![制御フロー](./exp001_slider_control_rs02_sequence.drawio.svg)
 
 ### 送信側（コマンド）
 1. スライダーGUI: ユーザー操作で目標角度を設定
