@@ -271,7 +271,11 @@ uv run python scripts/biped_eval.py -e biped-walking-v4
 | V4 | biped-walking-v4 | **交互歩行報酬追加。足を交互に出す歩行◎** |
 | V7 | biped-walking-v7 | Phase-based参照軌道。歩けるが4ステップカクカク |
 | V8 | biped-walking-v8 | 過度なペナルティで失敗（倒れる） |
-| V9 | biped-walking-v9 | V7ベース+対称歩行報酬（控えめ） |
+| V9 | biped-walking-v9 | V7ベース+対称歩行報酬。振動による移動 |
+| V10 | biped-walking-v10 | 研究ベース報酬。両脚同期（hip相関0.957） |
+| V11 | biped-walking-v11 | V10+V4交互報酬復元+hip逆相報酬。生き物っぽい歩行◎ |
+| V12 | biped-walking-v12 | 静的報酬で失敗。開脚固定（過去最悪）✗ |
+| V13 | biped-walking-v13 | **V11+動的報酬。過去最高の歩行品質◎** |
 
 ## 依存パッケージ
 
