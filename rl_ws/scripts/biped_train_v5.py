@@ -92,7 +92,7 @@ def get_train_cfg(exp_name, max_iterations):
 def get_cfgs():
     """環境設定を取得"""
     script_dir = Path(__file__).parent
-    rl_ws_dir = script_dir.parent.parent.parent
+    rl_ws_dir = script_dir.parent
     urdf_path = rl_ws_dir / "assets" / "biped_digitigrade.urdf"
 
     env_cfg = {
