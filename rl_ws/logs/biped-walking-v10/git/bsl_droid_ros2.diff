@@ -1,0 +1,122 @@
+--- git status ---
+On branch feat/rl_walking
+Your branch is up to date with 'origin/feat/rl_walking'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   doc/experiments/exp002_biped_sim2sim.md
+	modified:   rl_ws/envs/__pycache__/__init__.cpython-311.pyc
+	modified:   rl_ws/envs/__pycache__/biped_env_v10.cpython-311.pyc
+	modified:   rl_ws/envs/__pycache__/biped_env_v2.cpython-311.pyc
+	modified:   rl_ws/envs/__pycache__/biped_env_v4.cpython-311.pyc
+	modified:   rl_ws/envs/__pycache__/biped_env_v5.cpython-311.pyc
+	modified:   rl_ws/envs/__pycache__/biped_env_v6.cpython-311.pyc
+	modified:   rl_ws/envs/__pycache__/biped_env_v7.cpython-311.pyc
+	modified:   rl_ws/envs/__pycache__/biped_env_v8.cpython-311.pyc
+	modified:   rl_ws/envs/__pycache__/biped_env_v9.cpython-311.pyc
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	rl_ws/logs/biped-walking-v10/
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/doc/experiments/exp002_biped_sim2sim.md b/doc/experiments/exp002_biped_sim2sim.md
+index ff32499..5b24881 100644
+--- a/doc/experiments/exp002_biped_sim2sim.md
++++ b/doc/experiments/exp002_biped_sim2sim.md
+@@ -256,24 +256,50 @@ uv run python scripts/biped_eval_mujoco.py --no-viewer --duration 5
+ 
+ ---
+ 
+-## ファイル構成（予定）
++## ファイル構成
+ 
+ ```
+ rl_ws/
+ ├── assets/
+-│   ├── biped_digitigrade.urdf      # Phase 1で生成
+-│   └── biped_digitigrade.xml       # Phase 1で生成
+-├── genesis_official/examples/locomotion/
+-│   ├── biped_env.py                # Phase 2で作成
+-│   ├── biped_train.py              # Phase 2で作成
+-│   └── biped_eval.py               # Phase 2で作成
+-├── scripts/
+-│   ├── convert_biped_urdf_to_mjcf.py  # Phase 1で作成
+-│   └── biped_eval_mujoco.py           # Phase 4で作成
+-└── logs/
+-    └── biped-walking/              # Phase 3で生成
+-        ├── model_*.pt
+-        └── cfgs.pkl
++│   ├── biped_digitigrade.urdf      # エクスポート済みURDF
++│   ├── biped_digitigrade.xml       # 変換済みMJCF
++│   ├── go2_genesis.xml             # Go2用MJCF（参考）
++│   └── export_urdf.py              # URDFエクスポートスクリプト
++├── envs/                           # 強化学習環境（バージョン管理）
++│   ├── __init__.py
++│   ├── biped_env.py                # V1環境
++│   ├── biped_env_v2.py             # V2環境（滑らかさペナルティ）
++│   ├── biped_env_v4.py             # V4環境（交互歩行報酬）
++│   ├── biped_env_v5.py             # V5環境（大歩幅・足上げ）
++│   ├── biped_env_v6.py             # V6環境（feet_names修正）
++│   ├── biped_env_v7.py             # V7環境（Phase-based参照軌道）
++│   ├── biped_env_v8.py             # V8環境（Yaw補正強化）
++│   ├── biped_env_v9.py             # V9環境（対称歩行報酬）
++│   └── biped_env_v10.py            # V10環境（研究ベース報酬設計）
++├── scripts/                        # トレーニング・評価スクリプト
++│   ├── biped_train.py              # V1トレーニング
++│   ├── biped_train_v2.py〜v10.py   # 各バージョンのトレーニング
++│   ├── biped_eval.py               # 統一評価スクリプト（-eオプションで全バージョン対応）
++│   ├── biped_eval_headless.py      # ヘッドレス評価
++│   ├── biped_eval_mujoco.py        # MuJoCo sim2sim評価
++│   ├── convert_biped_urdf_to_mjcf.py  # 二脚URDF→MJCF変換
++│   ├── convert_urdf_to_mjcf.py     # 汎用URDF→MJCF変換
++│   └── compare_models.py           # モデルパラメータ比較
++└── logs/                           # トレーニングログ（※.ptファイルはgit管理外）
++    ├── .gitignore                  # *.pt を除外
++    ├── biped-walking/              # V1実験
++    ├── biped-walking-v2/           # V2実験
++    ├── biped-walking-v3/           # V3実験
++    ├── biped-walking-v4/           # V4実験（交互歩行◎）
++    ├── biped-walking-v5/           # V5実験
++    ├── biped-walking-v6/           # V6実験
++    ├── biped-walking-v7/           # V7実験（Phase-based）
++    ├── biped-walking-v8/           # V8実験（失敗）
++    ├── biped-walking-v9/           # V9実験
++    ├── biped-walking-v10/          # V10実験（実験中）
++    │   ├── model_*.pt              # チェックポイント（git管理外）
++    │   └── cfgs.pkl                # 訓練設定
++    └── go2-walking/                # Go2歩行ポリシー（参考）
+ ```
+ 
+ ---
+diff --git a/rl_ws/envs/__pycache__/__init__.cpython-311.pyc b/rl_ws/envs/__pycache__/__init__.cpython-311.pyc
+index 5f7d7a7..c32eee6 100644
+Binary files a/rl_ws/envs/__pycache__/__init__.cpython-311.pyc and b/rl_ws/envs/__pycache__/__init__.cpython-311.pyc differ
+diff --git a/rl_ws/envs/__pycache__/biped_env_v10.cpython-311.pyc b/rl_ws/envs/__pycache__/biped_env_v10.cpython-311.pyc
+index 441c467..6c8e395 100644
+Binary files a/rl_ws/envs/__pycache__/biped_env_v10.cpython-311.pyc and b/rl_ws/envs/__pycache__/biped_env_v10.cpython-311.pyc differ
+diff --git a/rl_ws/envs/__pycache__/biped_env_v2.cpython-311.pyc b/rl_ws/envs/__pycache__/biped_env_v2.cpython-311.pyc
+index fa6c64e..760e83f 100644
+Binary files a/rl_ws/envs/__pycache__/biped_env_v2.cpython-311.pyc and b/rl_ws/envs/__pycache__/biped_env_v2.cpython-311.pyc differ
+diff --git a/rl_ws/envs/__pycache__/biped_env_v4.cpython-311.pyc b/rl_ws/envs/__pycache__/biped_env_v4.cpython-311.pyc
+index bece659..c3ce6fa 100644
+Binary files a/rl_ws/envs/__pycache__/biped_env_v4.cpython-311.pyc and b/rl_ws/envs/__pycache__/biped_env_v4.cpython-311.pyc differ
+diff --git a/rl_ws/envs/__pycache__/biped_env_v5.cpython-311.pyc b/rl_ws/envs/__pycache__/biped_env_v5.cpython-311.pyc
+index c5cff96..147a6b7 100644
+Binary files a/rl_ws/envs/__pycache__/biped_env_v5.cpython-311.pyc and b/rl_ws/envs/__pycache__/biped_env_v5.cpython-311.pyc differ
+diff --git a/rl_ws/envs/__pycache__/biped_env_v6.cpython-311.pyc b/rl_ws/envs/__pycache__/biped_env_v6.cpython-311.pyc
+index 367a4f0..e4fde08 100644
+Binary files a/rl_ws/envs/__pycache__/biped_env_v6.cpython-311.pyc and b/rl_ws/envs/__pycache__/biped_env_v6.cpython-311.pyc differ
+diff --git a/rl_ws/envs/__pycache__/biped_env_v7.cpython-311.pyc b/rl_ws/envs/__pycache__/biped_env_v7.cpython-311.pyc
+index 1a958bb..7159653 100644
+Binary files a/rl_ws/envs/__pycache__/biped_env_v7.cpython-311.pyc and b/rl_ws/envs/__pycache__/biped_env_v7.cpython-311.pyc differ
+diff --git a/rl_ws/envs/__pycache__/biped_env_v8.cpython-311.pyc b/rl_ws/envs/__pycache__/biped_env_v8.cpython-311.pyc
+index 76deeb3..17bc1a8 100644
+Binary files a/rl_ws/envs/__pycache__/biped_env_v8.cpython-311.pyc and b/rl_ws/envs/__pycache__/biped_env_v8.cpython-311.pyc differ
+diff --git a/rl_ws/envs/__pycache__/biped_env_v9.cpython-311.pyc b/rl_ws/envs/__pycache__/biped_env_v9.cpython-311.pyc
+index 95c467b..30632cb 100644
+Binary files a/rl_ws/envs/__pycache__/biped_env_v9.cpython-311.pyc and b/rl_ws/envs/__pycache__/biped_env_v9.cpython-311.pyc differ

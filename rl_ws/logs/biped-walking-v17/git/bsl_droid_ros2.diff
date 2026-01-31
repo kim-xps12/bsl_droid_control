@@ -1,0 +1,1619 @@
+--- git status ---
+On branch feat/rl_walking
+Your branch is ahead of 'origin/feat/rl_walking' by 3 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   doc/experiments/exp002_biped_sim2sim.md
+	modified:   rl_ws/README.md
+	modified:   rl_ws/envs/__init__.py
+	deleted:    rl_ws/logs/.gitignore
+	modified:   rl_ws/scripts/biped_eval.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	rl_ws/envs/biped_env_v11.py
+	rl_ws/envs/biped_env_v12.py
+	rl_ws/envs/biped_env_v13.py
+	rl_ws/envs/biped_env_v14.py
+	rl_ws/envs/biped_env_v15.py
+	rl_ws/envs/biped_env_v16.py
+	rl_ws/envs/biped_env_v17.py
+	rl_ws/logs/biped-walking-v10/
+	rl_ws/logs/biped-walking-v11/
+	rl_ws/logs/biped-walking-v12/
+	rl_ws/logs/biped-walking-v13/
+	rl_ws/logs/biped-walking-v14/
+	rl_ws/logs/biped-walking-v15/
+	rl_ws/logs/biped-walking-v16/
+	rl_ws/logs/biped-walking-v17/
+	rl_ws/scripts/biped_train_v11.py
+	rl_ws/scripts/biped_train_v12.py
+	rl_ws/scripts/biped_train_v13.py
+	rl_ws/scripts/biped_train_v14.py
+	rl_ws/scripts/biped_train_v15.py
+	rl_ws/scripts/biped_train_v16.py
+	rl_ws/scripts/biped_train_v17.py
+	rl_ws/scripts/check_height.py
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/doc/experiments/exp002_biped_sim2sim.md b/doc/experiments/exp002_biped_sim2sim.md
+index ff32499..a741cb7 100644
+--- a/doc/experiments/exp002_biped_sim2sim.md
++++ b/doc/experiments/exp002_biped_sim2sim.md
+@@ -256,24 +256,52 @@ uv run python scripts/biped_eval_mujoco.py --no-viewer --duration 5
+ 
+ ---
+ 
+-## ファイル構成（予定）
++## ファイル構成
+ 
+ ```
+ rl_ws/
+ ├── assets/
+-│   ├── biped_digitigrade.urdf      # Phase 1で生成
+-│   └── biped_digitigrade.xml       # Phase 1で生成
+-├── genesis_official/examples/locomotion/
+-│   ├── biped_env.py                # Phase 2で作成
+-│   ├── biped_train.py              # Phase 2で作成
+-│   └── biped_eval.py               # Phase 2で作成
+-├── scripts/
+-│   ├── convert_biped_urdf_to_mjcf.py  # Phase 1で作成
+-│   └── biped_eval_mujoco.py           # Phase 4で作成
+-└── logs/
+-    └── biped-walking/              # Phase 3で生成
+-        ├── model_*.pt
+-        └── cfgs.pkl
++│   ├── biped_digitigrade.urdf      # エクスポート済みURDF
++│   ├── biped_digitigrade.xml       # 変換済みMJCF
++│   ├── go2_genesis.xml             # Go2用MJCF（参考）
++│   └── export_urdf.py              # URDFエクスポートスクリプト
++├── envs/                           # 強化学習環境（バージョン管理）
++│   ├── __init__.py
++│   ├── biped_env.py                # V1環境
++│   ├── biped_env_v2.py             # V2環境（滑らかさペナルティ）
++│   ├── biped_env_v4.py             # V4環境（交互歩行報酬）
++│   ├── biped_env_v5.py             # V5環境（大歩幅・足上げ）
++│   ├── biped_env_v6.py             # V6環境（feet_names修正）
++│   ├── biped_env_v7.py             # V7環境（Phase-based参照軌道）
++│   ├── biped_env_v8.py             # V8環境（Yaw補正強化）
++│   ├── biped_env_v9.py             # V9環境（対称歩行報酬）
++│   ├── biped_env_v10.py            # V10環境（研究ベース報酬設計）
++│   └── biped_env_v11.py            # V11環境（V10+V4交互報酬+hip逆相）
++├── scripts/                        # トレーニング・評価スクリプト
++│   ├── biped_train.py              # V1トレーニング
++│   ├── biped_train_v2.py〜v11.py   # 各バージョンのトレーニング
++│   ├── biped_eval.py               # 統一評価スクリプト（-eオプションで全バージョン対応）
++│   ├── biped_eval_headless.py      # ヘッドレス評価
++│   ├── biped_eval_mujoco.py        # MuJoCo sim2sim評価
++│   ├── convert_biped_urdf_to_mjcf.py  # 二脚URDF→MJCF変換
++│   ├── convert_urdf_to_mjcf.py     # 汎用URDF→MJCF変換
++│   └── compare_models.py           # モデルパラメータ比較
++└── logs/                           # トレーニングログ（※.ptファイルはgit管理外）
++    ├── .gitignore                  # *.pt を除外
++    ├── biped-walking/              # V1実験
++    ├── biped-walking-v2/           # V2実験
++    ├── biped-walking-v3/           # V3実験
++    ├── biped-walking-v4/           # V4実験（交互歩行◎）
++    ├── biped-walking-v5/           # V5実験
++    ├── biped-walking-v6/           # V6実験
++    ├── biped-walking-v7/           # V7実験（Phase-based）
++    ├── biped-walking-v8/           # V8実験（失敗）
++    ├── biped-walking-v9/           # V9実験（振動歩行）
++    ├── biped-walking-v10/          # V10実験（両脚同期）
++    ├── biped-walking-v11/          # V11実験（V10改良版）
++    │   ├── model_*.pt              # チェックポイント（git管理外）
++    │   └── cfgs.pkl                # 訓練設定
++    └── go2-walking/                # Go2歩行ポリシー（参考）
+ ```
+ 
+ ---
+@@ -1069,6 +1097,7 @@ Base height:
+ | V6 | biped-walking-v6 | 0.475 m | 0.121 m/s | - | 0.0028 | 速度低下 |
+ | V7 | biped-walking-v7 | 2.374 m | 0.237 m/s | ~28° | 0.0036 | 4ステップカクカク |
+ | V8 | biped-walking-v8 | -0.099 m | -0.629 m/s | ~0° | 0.0493 | **完全失敗（倒れる）** |
++| V9 | biped-walking-v9 | 2.309 m | 0.231 m/s | ~20° | 0.0047 | 小刻み振動歩行 |
+ 
+ ---
+ 
+@@ -1091,6 +1120,86 @@ V8の失敗から学び、以下の方針でV9を設計：
+ 
+ ---
+ 
++### V9: symmetric_gait報酬追加版
++
++#### 評価結果（model_499.pt, 500イテレーション）
++
++**数値データ（10秒間、GUIなし）:**
++
++```
++t= 0.00s | pos=(-0.000,  0.000, 0.447) | vel=(-0.00,  0.00) | rpy=(  0.0,   0.0,   0.0)° | dof_vel_rms= 0.00
++t= 1.00s | pos=( 0.097, -0.008, 0.441) | vel=( 0.20,  0.18) | rpy=(  2.1,  -4.9,  10.6)° | dof_vel_rms= 2.31
++t= 2.00s | pos=( 0.361,  0.009, 0.449) | vel=( 0.21,  0.07) | rpy=(  7.8,  -6.1,  11.9)° | dof_vel_rms= 2.19
++t= 3.00s | pos=( 0.623,  0.055, 0.452) | vel=( 0.22, -0.18) | rpy=( -1.4,  -2.8,  14.2)° | dof_vel_rms= 0.93
++t= 4.00s | pos=( 0.853,  0.081, 0.443) | vel=( 0.21, -0.17) | rpy=(  1.5,  -7.7,  14.4)° | dof_vel_rms= 2.57
++t= 5.00s | pos=( 1.097,  0.119, 0.446) | vel=( 0.30,  0.14) | rpy=(  1.5,  -4.4,  12.7)° | dof_vel_rms= 0.91
++t= 6.00s | pos=( 1.352,  0.137, 0.448) | vel=( 0.24,  0.10) | rpy=(  6.4,  -1.6,  14.5)° | dof_vel_rms= 0.85
++t= 7.00s | pos=( 1.595,  0.170, 0.456) | vel=( 0.17,  0.08) | rpy=(  8.0,  -5.1,  15.0)° | dof_vel_rms= 1.96
++t= 8.00s | pos=( 1.836,  0.255, 0.453) | vel=( 0.25, -0.14) | rpy=( -1.9,  -4.6,  17.9)° | dof_vel_rms= 1.41
++t= 9.00s | pos=( 2.076,  0.301, 0.442) | vel=( 0.19, -0.22) | rpy=(  1.9,  -7.4,  19.7)° | dof_vel_rms= 2.70
++
++=== Evaluation Statistics ===
++Duration: 10.0s (500 steps)
++
++Travel distance:
++  X: 2.309 m
++  Y: 0.362 m
++  Total: 2.337 m
++
++Average velocity:
++  X: 0.231 m/s (target: 0.300)
++  Y: -0.023 m/s
++
++Base height:
++  Mean: 0.447 m
++  Std: 0.0047 m
++
++DOF velocity RMS: 1.900 rad/s
++Action RMS: 0.928
++```
++
++#### V7との比較
++
++| 指標 | V7 | V9 | 評価 |
++|------|-----|-----|------|
++| X移動距離（10s） | 2.374 m | 2.309 m | V7が2.7%速い |
++| 平均X速度 | 0.237 m/s | 0.231 m/s | ほぼ同等 |
++| Yaw回転（10s） | ~28° | ~20° | **V9が29%改善** |
++| ベース高さStd | 0.0036 m | 0.0047 m | V7が30%安定 |
++| DOF velocity RMS | 1.263 rad/s | 1.900 rad/s | **V9が50%高い（振動）** |
++| Action RMS | 0.809 | 0.928 | V9がアクション大 |
++
++#### 問題点の分析
++
++**GUI評価での観察:**
++> 「まだ生き物っぽくない小刻みな振動による移動の印象」
++
++**数値的根拠:**
++1. **DOF velocity RMS = 1.900 rad/s**: V7（1.263）の50%増加
++   - 関節が高速で振動しながら動いている
++   - 「震えながら前進」する状態
++
++2. **Roll/Pitch変動が大きい**:
++   - Roll: -1.9° 〜 +8.0°（約10°の変動幅）
++   - Pitch: -7.7° 〜 -1.6°（約6°の変動幅）
++   - 体が左右・前後に揺れながら移動
++
++3. **symmetric_gait報酬の効果**:
++   - Yaw回転は28° → 20°に改善（目的達成）
++   - しかし、対称性を強制することで小刻み動作が増加した可能性
++
++#### 結論
++
++V9は**Yaw回転抑制には成功**したが、**振動的な動作が悪化**した。
++「生き物らしい滑らかな歩行」という目標には到達していない。
++
++**課題:**
++- DOF velocity RMSを1.0以下に抑える必要がある
++- action_rateペナルティの強化を検討
++- Phase-basedではない別の周期性報酬を検討
++
++---
++
+ ### V10: 研究調査に基づく報酬設計の根本的見直し
+ 
+ #### 背景
+@@ -1202,9 +1311,1192 @@ uv run python genesis_official/examples/locomotion/biped_train_v10.py --max_iter
+ 3. **自然な歩行周期**: Phase強制なしでロボットが自律的に発見
+ 4. **バランスの取れた学習**: 研究標準値に基づくスケール
+ 
+-#### 評価予定
++#### V10評価結果（model_499.pt）
++
++**評価コマンド**:
++```bash
++cd rl_ws
++uv run python scripts/biped_eval.py -e biped-walking-v10 --no-viewer --duration 10
++```
++
++**基本統計**:
++
++| 指標 | V10 | V9 | V4 | V7（参考） |
++|------|-----|-----|-----|-----------|
++| X移動距離 [m] | 2.281 | 2.309 | **2.793** | 2.1 |
++| Y移動距離 [m] | -0.416 | 0.362 | 0.580 | - |
++| 平均X速度 [m/s] | 0.220 | 0.231 | **0.286** | 0.21 |
++| 高さ平均 [m] | 0.427 | 0.447 | 0.403 | - |
++| 高さ標準偏差 [m] | 0.0043 | 0.0047 | 0.0063 | - |
++| DOF velocity RMS [rad/s] | **1.005** | 1.900 | 1.024 | 1.263 |
++| Action RMS | 1.115 | 0.928 | 1.093 | - |
++| Yaw回転（10秒後）[°] | -10.1 | 19.7 | 15.6 | 28 |
++
++**関節動作分析**:
++
++| 関節 | V10 L [rad] | V10 R [rad] | V4 L [rad] | V4 R [rad] |
++|------|------------|------------|------------|------------|
++| hip_pitch | 0.525 | 0.249 | 0.457 | **0.628** |
++| hip_roll | 0.413 | 0.293 | 0.094 | 0.147 |
++| knee | 0.655 | 1.034 | 0.634 | **0.940** |
++| ankle_pitch | 0.360 | 0.302 | **0.725** | **0.623** |
++| ankle_roll | 0.326 | 0.638 | 0.423 | 0.454 |
++
++**左右hip_pitch相関**:
++
++| バージョン | 相関係数 | 解釈 |
++|-----------|---------|------|
++| V10 | **0.957** | ほぼ完全同期（両脚固定） |
++| V9 | 0.240 | 弱い相関（震え歩行） |
++| V4 | 0.772 | 中程度（部分的交互） |
++| 理想 | **-1.0** | 完全交互歩行 |
++
++**問題点の特定**:
++
++1. **両脚同期問題（最重要）**: 左右hip_pitch相関が0.957と極めて高く、両脚がほぼ同時に動いている。これが「前脚と後脚が固定されている」印象の原因。
++
++2. **交互歩行報酬の弱体化**: V10では研究標準値に合わせて報酬を控えめにした結果、V4で効いていた`alternating_gait`が弱くなった。
++   - V4: `alternating_gait=1.5`, `foot_swing=0.8`, `feet_air_time=1.0`
++   - V10: `alternating_gait=1.0`, `foot_swing=0.5`, `feet_air_time=0.5`
++
++3. **Pitch傾斜**: Pitch角が-17°〜-18°で安定しており、前傾姿勢で「滑り降りる」動作になっている。
++
++**良い点**:
++
++- DOF velocity RMS: 1.005 rad/s（V9の1.900より47%改善、V7の1.263より20%改善）
++- Yaw回転: -10.1°（V9の19.7°より改善、方向安定性向上）
++- 高さ安定性: 標準偏差0.0043m（V9の0.0047mより改善）
++
++**V11への教訓**:
++
++1. **交互歩行報酬はV4の値を維持すべき**: 研究標準値への最適化よりも、実際に動作したV4の設定を尊重する。
++2. **hip_pitch相関を監視指標に**: 評価時に左右相関を計算し、-0.5以下を目標とする。
++3. **Pitch補正**: 前傾を抑えるために`orientation`または`lin_vel_z`ペナルティを調整。
++
++---
++
++## V11設計に向けた先行研究調査
++
++### 調査目的
++
++V9の評価結果で「小刻みな振動による移動」という問題が確認された。この問題を解決し、生き物らしい滑らかな歩行を実現するため、二脚ロボットの強化学習による歩容獲得に関する先行研究を調査した。
++
++### 主要な先行研究
++
++#### 1. Real-World Humanoid Locomotion with Reinforcement Learning (Berkeley, 2023)
++
++**論文**: [arXiv:2303.03381](https://arxiv.org/abs/2303.03381)
++
++**概要**:
++- Causal Transformerを用いたヒューマノイド歩行制御
++- 観測-行動履歴を入力として次の行動を予測
++- シミュレーションで学習し、実世界にゼロショット転送
++
++**重要な知見**:
++- **履歴情報の活用**: 過去の観測・行動履歴がin-context adaptationを可能にする
++- **大規模並列学習**: 多数のランダム化環境でのロバスト性獲得
++- **外乱に対する適応**: 学習中のランダムプッシュが汎化性能を向上
++
++#### 2. Learning Agile Soccer Skills for a Bipedal Robot (DeepMind, 2023)
++
++**論文**: [arXiv:2304.13653](https://arxiv.org/abs/2304.13653) (Science Robotics掲載)
++
++**概要**:
++- 20関節の小型ヒューマノイドロボットでサッカースキルを学習
++- 歩行、転回、キック、起き上がりなど複合スキルを単一ポリシーで習得
++- シミュレーションから実機へゼロショット転送
++
++**重要な知見**:
++- **高周波制御**: 十分に高い制御周波数（50Hz以上）が安定性に重要
++- **Targeted Dynamics Randomization**: 摩擦、質量などの物理パラメータランダム化
++- **基本的な正則化で安全な動作**: 過度な報酬エンジニアリングなしでも安全で効果的な動作を学習
++- **スキル間の滑らかな遷移**: 複数スキルの自然な切り替え
++
++**実績**:
++- 歩行速度: スクリプトベースラインの181%
++- 転回速度: 302%
++- 起き上がり時間: 63%短縮
++
++#### 3. Reinforcement Learning for Versatile, Dynamic, and Robust Bipedal Locomotion Control (UC Berkeley, 2024)
++
++**論文**: [arXiv:2401.16889](https://arxiv.org/abs/2401.16889) (IJRR掲載)
++
++**概要**:
++- Cassieロボットで歩行、走行、ジャンプ、立位など多様なスキルを学習
++- **Dual-History Architecture**: 長期・短期のI/O履歴を活用
++
++**重要な知見**:
++- **Task Randomization**: タスク条件のランダム化がロバスト性と汎化に重要
++- **Contact Event Adaptation**: 接触イベントへの適応にI/O履歴が有効
++- **時変・時不変のダイナミクス変化への対応**: 履歴情報で両方に適応可能
++
++**実績**:
++- 400mダッシュの実機デモ
++- 立ち幅跳び、高跳びなど多様なジャンプスキル
++
++#### 4. Not Only Rewards But Also Constraints (KAIST, 2024)
++
++**論文**: [arXiv:2308.12517](https://arxiv.org/abs/2308.12517) (IEEE T-RO掲載)
++
++**概要**:
++- 報酬だけでなく**制約**を用いた強化学習フレームワーク
++- 報酬エンジニアリングの労力を大幅に削減
++
++**重要な知見**:
++- **報酬項目の削減**: 単一の報酬係数チューニングで高性能なコントローラを実現
++- **制約の解釈可能性**: 制約は報酬より直感的に設計可能
++- **制約の汎化性**: 異なるロボット形態に同じ制約を適用可能
++
++**提案する制約タイプ**:
++1. **Hard Constraint**: 物理的に絶対に守るべき制約（関節限界など）
++2. **Soft Constraint**: 望ましいが厳密でない制約（姿勢維持など）
++
++#### 5. Humanoid Locomotion as Next Token Prediction (Berkeley, 2024)
++
++**論文**: [arXiv:2402.19469](https://arxiv.org/abs/2402.19469)
++
++**概要**:
++- ヒューマノイド制御を「次トークン予測」問題として定式化
++- シミュレーション軌道、モーションキャプチャ、YouTube動画からも学習
++
++**重要な知見**:
++- **データソースの多様化**: 異なるモダリティのデータを統合学習
++- **27時間の歩行データで実機転送成功**: 必要なデータ量は意外と少ない
++- **未見コマンドへの汎化**: 後ろ歩きなど訓練時にないコマンドにも対応
++
++### 標準的な報酬関数設計（legged_gym / Isaac Gym）
++
++[leggedrobotics/legged_gym](https://github.com/leggedrobotics/legged_gym)はETH Zurichによる四脚・二脚ロボットの強化学習環境の標準実装である。
++
++#### 基本報酬スケール（LeggedRobotCfg）
++
++```python
++class scales:
++    # タスク報酬
++    tracking_lin_vel = 1.0      # 線速度追従
++    tracking_ang_vel = 0.5      # 角速度追従
++    feet_air_time = 1.0         # 滞空時間
++    
++    # ペナルティ
++    termination = -0.0          # 終端
++    lin_vel_z = -2.0            # 上下動
++    ang_vel_xy = -0.05          # Roll/Pitch角速度
++    orientation = -0.0          # 姿勢
++    torques = -0.00001          # トルク
++    dof_vel = -0.0              # 関節速度
++    dof_acc = -2.5e-7           # 関節加速度（重要！）
++    base_height = -0.0          # 高さ
++    collision = -1.0            # 衝突
++    action_rate = -0.01         # アクション変化率（重要！）
++    stand_still = -0.0          # 静止時のペナルティ
++```
++
++#### Cassie（二脚ロボット）の設定
++
++```python
++class scales:
++    termination = -200.         # 転倒に大きなペナルティ
++    tracking_ang_vel = 1.0
++    torques = -5.e-6
++    dof_acc = -2.e-7
++    lin_vel_z = -0.5
++    feet_air_time = 5.          # 滞空時間を重視
++    dof_pos_limits = -1.
++    no_fly = 0.25               # 両足離地を軽くペナルティ
++```
++
++#### Unitree G1（ヒューマノイド）の設定
++
++[unitreerobotics/unitree_rl_gym](https://github.com/unitreerobotics/unitree_rl_gym)より：
++
++```python
++class scales:
++    tracking_lin_vel = 1.0
++    tracking_ang_vel = 0.5
++    lin_vel_z = -2.0
++    ang_vel_xy = -0.05
++    orientation = -1.0
++    base_height = -10.0         # 高さ維持を重視
++    dof_acc = -2.5e-7
++```
++
++### 振動抑制のための具体的手法
++
++#### 1. Action Rate Penalty（アクション変化率ペナルティ）
++
++**定義**:
++```python
++def _reward_action_rate(self):
++    return torch.sum(torch.square(self.last_actions - self.actions), dim=1)
++```
++
++**効果**: 連続するアクション間の変化を抑制し、滑らかな動作を促進
++
++**推奨スケール**: `-0.01` 〜 `-0.05`
++
++**注意**: 強すぎると動かなくなる（V2の失敗パターン）
++
++#### 2. DOF Acceleration Penalty（関節加速度ペナルティ）
++
++**定義**:
++```python
++def _reward_dof_acc(self):
++    return torch.sum(torch.square((self.last_dof_vel - self.dof_vel) / self.dt), dim=1)
++```
++
++**効果**: 急激な関節速度変化（ジャーク）を抑制
++
++**推奨スケール**: `-2.5e-7` 〜 `-1e-6`
++
++#### 3. DOF Velocity Penalty（関節速度ペナルティ）
++
++**定義**:
++```python
++def _reward_dof_vel(self):
++    return torch.sum(torch.square(self.dof_vel), dim=1)
++```
++
++**効果**: 高速な関節運動を抑制
++
++**推奨スケール**: `-0.0` 〜 `-1e-3`（軽めに設定）
++
++**注意**: 強すぎると歩行速度が低下
++
++#### 4. Torque Penalty（トルクペナルティ）
++
++**定義**:
++```python
++def _reward_torques(self):
++    return torch.sum(torch.square(self.torques), dim=1)
++```
++
++**効果**: エネルギー効率の良い動作を促進、振動も間接的に抑制
++
++**推奨スケール**: `-1e-5` 〜 `-1e-4`
++
++### 歩行周期の制御手法
++
++#### 1. Gait Clock / Phase Signal
++
++**概要**: 歩行周期を表す位相信号を観測に追加
++
++```python
++phase = (time * gait_frequency) % 1.0  # [0, 1]の周期信号
++obs_phase = [sin(2π * phase), cos(2π * phase)]
++```
++
++**利点**: ポリシーが周期的な動作を学習しやすい
++
++**欠点**: 周波数を事前に固定する必要がある（V7の「4ステップカクカク」問題の原因）
++
++#### 2. Feet Air Time Reward
++
++**概要**: 足の滞空時間に応じて報酬を付与
++
++```python
++def _reward_feet_air_time(self):
++    contact = self.contact_forces[:, self.feet_indices, 2] > 1.
++    first_contact = (self.feet_air_time > 0.) * contact
++    self.feet_air_time += self.dt
++    rew = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1)
++    self.feet_air_time *= ~contact
++    return rew
++```
++
++**利点**: 明示的な周期指定なしで自然な歩行周期を発見
++
++**推奨スケール**: `1.0` 〜 `5.0`
++
++#### 3. No-Fly Reward（Cassie）
++
++**概要**: 片足だけが接地している状態を報酬
++
++```python
++def _reward_no_fly(self):
++    contacts = self.contact_forces[:, self.feet_indices, 2] > 0.1
++    single_contact = torch.sum(1.*contacts, dim=1) == 1
++    return 1.*single_contact
++```
++
++**利点**: 両足離地（ジャンプ）や両足接地（すり足）を抑制
++
++### V11への具体的提案
++
++#### 課題の整理（V10評価結果を反映）
++
++| 問題 | V9での状況 | V10での状況 | V11対策方針 |
++|------|-----------|-------------|-------------|
++| 両脚同期 | 相関0.240 | **相関0.957** | hip_pitch逆相報酬追加 |
++| 小刻み振動 | DOF vel RMS = 1.9 | 1.005 | action_rate 3倍強化 |
++| Pitch前傾 | - | -17° | pitch_penalty追加 |
++| 交互歩行不足 | - | 報酬弱化 | V4レベル復元 |
++
++---
++
++## V11: V10改良版（実装済み）
++
++### 設計方針
++
++V10の評価結果（両脚同期、Pitch前傾）と先行研究調査を反映し、以下の方針でV11を設計した。
++
++1. **交互歩行報酬をV4レベルに復元**: V10で控えめにした報酬を戻す
++2. **振動抑制ペナルティを強化**: 先行研究（legged_gym）の知見を適用
++3. **新規報酬追加**: hip_pitch逆相報酬、Pitch角ペナルティ
++
++### 報酬設計の比較
++
++| 報酬項目 | V4 | V10 | V11 | 変更理由 |
++|----------|-----|-----|-----|---------|
++| **交互歩行報酬** |
++| alternating_gait | 1.5 | 1.0 | **1.5** | V4レベル復元 |
++| foot_swing | 0.8 | 0.5 | **0.8** | V4レベル復元 |
++| feet_air_time | 1.0 | 0.5 | **1.0** | V4レベル復元 |
++| single_stance | 0.5 | 0.3 | **0.5** | V4レベル復元 |
++| no_fly | -1.0 | -0.5 | **-1.0** | V4レベル復元 |
++| hip_pitch_alternation | - | - | **1.0** | **新規**: 逆相運動報酬 |
++| **振動抑制** |
++| action_rate | -0.02 | -0.01 | **-0.03** | 3倍強化 |
++| dof_vel | -1e-4 | -5e-4 | **-1e-3** | 2倍強化 |
++| dof_acc | -1e-7 | -2.5e-7 | **-5e-7** | 2倍強化 |
++| **姿勢補正** |
++| orientation | -3.0 | -1.5 | **-2.5** | 強化 |
++| lin_vel_z | -1.5 | -1.0 | **-2.0** | 強化 |
++| pitch_penalty | - | - | **-3.0** | **新規**: Pitch直接補正 |
++
++### V11新規報酬関数
++
++#### hip_pitch_alternation
++
++```python
++def _reward_hip_pitch_alternation(self):
++    """左右hip_pitchの逆相運動報酬
++    
++    左右のhip_pitchが逆方向に動くことを報酬。
++    両脚同期（相関0.957）から交互歩行（相関-1.0）へ誘導。
++    """
++    left_hip_vel = self.dof_vel[:, self.left_hip_pitch_idx]
++    right_hip_vel = self.dof_vel[:, self.right_hip_pitch_idx]
++    
++    # 速度の積が負 = 逆方向に動いている
++    opposite_motion = -left_hip_vel * right_hip_vel
++    reward = torch.clamp(opposite_motion, min=0.0, max=1.0)
++    
++    has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
++    return reward * has_command
++```
++
++#### pitch_penalty
++
++```python
++def _reward_pitch_penalty(self):
++    """Pitch角ペナルティ
++    
++    V10で-17°の前傾が観測されたため、Pitch角を直接ペナルティ。
++    """
++    pitch_rad = self.base_euler[:, 1] * 3.14159 / 180.0
++    return torch.square(pitch_rad)
++```
++
++### 実行方法
++
++```bash
++cd rl_ws
++uv run python scripts/biped_train_v11.py --max_iterations 500
++```
++
++### 数値目標
++
++| 指標 | V10 | V11目標 |
++|------|-----|---------|
++| hip_pitch相関 | 0.957 | **< -0.3** |
++| DOF velocity RMS | 1.005 | **< 0.8** |
++| Pitch角 | -17° | **< 10°** |
++| X移動距離(10s) | 2.28 m | **> 2.0 m** |
++| Yaw回転(10s) | -10° | **< 15°** |
++
++### 評価結果
++
++500イテレーション学習完了後の評価結果：
++
++#### 定量評価（10秒間headless評価）
++
++| 指標 | V10 | V11目標 | V11結果 | 達成 |
++|------|-----|---------|---------|------|
++| hip_pitch相関 | 0.957 | < -0.3 | **0.495** | △ |
++| DOF velocity RMS | 1.005 | < 0.8 | 1.618 | ✗ |
++| Pitch角 | -17° | < 10° | **-11.3°** | ○ |
++| X移動距離(10s) | 2.28 m | > 2.0 m | **2.528 m** | ○ |
++| Yaw回転(10s) | -10° | < 15° | -4.3° | ○ |
++
++#### 詳細統計
++
++```
++Travel distance: X=2.528m, Y=-0.556m, Total=2.589m
++Average velocity: X=0.243 m/s (target: 0.300)
++Base height: Mean=0.434m, Std=0.0037m
++DOF velocity RMS: 1.618 rad/s
++Action RMS: 1.111
++
++DOF position range:
++  hip_pitch: L=[−0.529, 0.000](0.529) R=[−0.196, 0.000](0.196)
++  knee: L=[0.000, 1.002](1.002) R=[−0.084, 0.757](0.841)
++
++Left-Right hip_pitch correlation: 0.495
++Total DOF range sum: 4.982 rad
++```
++
++#### 定性評価
++
++**改善点：**
++- 「生き物っぽく歩いている」脚の振り方が実現
++- V10と比較してhip_pitch相関が大幅に改善（0.957 → 0.495）
++- Pitch角の前傾が改善（-17° → -11.3°）
++- 移動距離が向上
++
++**残存課題：**
++- **脚が交差しない**: 左右の脚が固定的な前後関係のまま歩行
++  - 左hip_pitchの範囲: [-0.529, 0.000]（常に後方〜中立）
++  - 右hip_pitchの範囲: [-0.196, 0.000]（常に後方〜中立）
++  - 正の値（前方への振り出し）が一度も出現していない
++- hip_pitch相関が目標の-0.3に未達（0.495）
++- DOF velocity RMSが目標を超過（振動成分の残存）
++
++#### V12への改善方針
++
++脚の交差を実現するには、hip_pitchが**正負両方の領域**を使用する必要がある：
++1. 歩行サイクル報酬の導入（swing phase/stance phaseの明確化）
++2. hip_pitchの可動範囲全体を活用する報酬
++3. 左右のhip_pitchが反対符号になる報酬（真の逆位相）
++
++### 参考文献
++
++1. Radosavovic et al., "Real-World Humanoid Locomotion with Reinforcement Learning", arXiv:2303.03381, 2023
++2. Haarnoja et al., "Learning Agile Soccer Skills for a Bipedal Robot with Deep Reinforcement Learning", Science Robotics, 2024
++3. Li et al., "Reinforcement Learning for Versatile, Dynamic, and Robust Bipedal Locomotion Control", IJRR, 2024
++4. Kim et al., "Not Only Rewards But Also Constraints: Applications on Legged Robot Locomotion", IEEE T-RO, 2024
++5. Rudin et al., "Learning to Walk in Minutes Using Massively Parallel Deep Reinforcement Learning", CoRL, 2021
++6. leggedrobotics/legged_gym, https://github.com/leggedrobotics/legged_gym
++7. unitreerobotics/unitree_rl_gym, https://github.com/unitreerobotics/unitree_rl_gym
++
++---
++
++## V12: 脚交差問題への対処
++
++V11で「生き物っぽく歩いている」脚の振り方が実現したが、**脚同士が交差しない**問題が残存。
++V12では、hip_pitchが正負両方の領域を使用するように報酬設計を改良する。
++
++### V11の問題点（詳細分析）
++
++| 指標 | 観測値 | 問題 |
++|------|--------|------|
++| 左hip_pitch範囲 | [-0.529, 0.000] | **正の領域（前方）を使用していない** |
++| 右hip_pitch範囲 | [-0.196, 0.000] | **正の領域（前方）を使用していない** |
++| hip_pitch相関 | 0.495 | 目標（< -0.3）に未達 |
++
++**根本原因の仮説：**
++1. `similar_to_default`報酬がdefault位置（hip_pitch=0）への回帰を促進しすぎ
++2. 前方スイング（hip_pitch > 0）を明示的に報酬していない
++3. 左右が「反対符号」になることを報酬していない
++
++### V12の設計
++
++#### 報酬構造の変更
++
++| 報酬名 | V11 | V12 | 理由 |
++|--------|-----|-----|------|
++| similar_to_default | -0.02 | **削除** | 脚の振り幅を制限する原因 |
++| hip_pitch_alternation | 1.0 | **1.5** | 逆相運動を強化 |
++| hip_pitch_opposite_sign | - | **1.5** | 新規：反対符号を報酬 |
++| hip_pitch_range | - | **1.0** | 新規：前方スイングを促進 |
++| stride_length | - | **0.8** | 新規：ストライド長を促進 |
++
++#### 新規報酬関数
++
++##### hip_pitch_opposite_sign
++
++```python
++def _reward_hip_pitch_opposite_sign(self):
++    """左右hip_pitchが反対符号になる報酬
++    
++    V11の問題: 両方のhip_pitchが負の領域のみを使用
++    解決策: 左右のhip_pitchが反対符号（片方が前、片方が後ろ）になることを報酬
++    
++    計算方法:
++    - left_hip_pitch * right_hip_pitch < 0 なら報酬（反対符号）
++    - 積の絶対値が大きいほど報酬が大きい（両方の振幅が大きい）
++    """
++    left_hp = self.dof_pos[:, self.left_hip_pitch_idx]
++    right_hp = self.dof_pos[:, self.right_hip_pitch_idx]
++    
++    # 積が負 = 反対符号
++    product = left_hp * right_hp
++    opposite_sign_reward = torch.clamp(-product, min=0.0)
++    
++    # 正規化（振幅0.5rad x 0.5rad = 0.25を最大として）
++    reward = torch.clamp(opposite_sign_reward / 0.25, max=1.0)
++    
++    has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
++    return reward * has_command
++```
++
++##### hip_pitch_range
++
++```python
++def _reward_hip_pitch_range(self):
++    """hip_pitchの可動範囲利用報酬
++    
++    V11の問題: hip_pitchが[-0.53, 0.0]の狭い範囲しか使わない
++    解決策: 正の領域（前方スイング）も使うことを報酬
++    
++    計算方法:
++    - hip_pitchが正（前方）に行くことを報酬
++    - 前方スイングを明示的に誘導
++    """
++    left_hp = self.dof_pos[:, self.left_hip_pitch_idx]
++    right_hp = self.dof_pos[:, self.right_hip_pitch_idx]
++    
++    # 正の値（前方スイング）を報酬
++    left_forward = torch.clamp(left_hp, min=0.0)
++    right_forward = torch.clamp(right_hp, min=0.0)
++    
++    # 両脚の前方スイング量の合計を報酬
++    reward = (left_forward + right_forward) / 0.5  # 0.5radで正規化
++    
++    has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
++    return reward * has_command
++```
++
++##### stride_length
++
++```python
++def _reward_stride_length(self):
++    """ストライド長報酬
++    
++    左右hip_pitchの差分（ストライド長に相当）を報酬。
++    差が大きいほど大きな歩幅で歩いている。
++    """
++    left_hp = self.dof_pos[:, self.left_hip_pitch_idx]
++    right_hp = self.dof_pos[:, self.right_hip_pitch_idx]
++    
++    # hip_pitch差分の絶対値（ストライド長に相当）
++    stride = torch.abs(left_hp - right_hp)
++    
++    # 0.5rad差で報酬1.0
++    reward = stride / 0.5
++    
++    has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
++    return torch.clamp(reward, max=1.5) * has_command
++```
++
++### 実行方法
++
++```bash
++cd rl_ws
++uv run python scripts/biped_train_v12.py --max_iterations 500
++```
++
++### 数値目標
++
++| 指標 | V11 | V12目標 |
++|------|-----|---------|
++| hip_pitch相関 | 0.495 | **< -0.3** |
++| 左hip_pitch最大値 | 0.000 | **> 0.2** |
++| 右hip_pitch最大値 | 0.000 | **> 0.2** |
++| ストライド長（L-R差分） | ~0.33 | **> 0.5** |
++| X移動距離(10s) | 2.53 m | **> 2.0 m** |
++
++### 評価結果（失敗）
++
++**V12は過去最悪の結果となった。**
++
++#### 定量評価（10秒間headless評価）
++
++| 指標 | V11 | V12目標 | V12結果 | 達成 |
++|------|-----|---------|---------|------|
++| hip_pitch相関 | 0.495 | < -0.3 | **0.936** | ✗✗ |
++| X移動距離(10s) | 2.53 m | > 2.0 m | **0.66 m** | ✗✗ |
++| Roll角 | - | - | **-20°** | ✗✗ |
++| Pitch角 | -11.3° | - | 6° | - |
++| Base高さ | 0.434m | - | **0.326m** | ✗ |
++| DOF velocity RMS | 1.618 | - | 1.747 | ✗ |
++
++#### 詳細統計
++
++```
++Travel distance: X=0.660m, Y=-0.365m, Total=0.754m
++Average velocity: X=0.075 m/s (target: 0.300)  ← 目標の25%しか達成せず
++Base height: Mean=0.326m, Std=0.0146m  ← 大幅に低下
++
++DOF position range:
++  hip_pitch: L=[-0.497, 0.037](0.534) R=[-0.369, 0.000](0.369)
++  hip_roll:  L=[0.000, 0.361](0.361)  R=[0.000, 0.356](0.356)  ← 両脚外側に開いている
++
++Left-Right hip_pitch correlation: 0.936  ← V10より悪化！
++```
++
++#### 定性評価
++
++**致命的な問題：**
++
++![V12の失敗姿勢](両脚を大きく開いて固定した状態)
++
++- **両脚を大きく前後に開いて固定**: stride_length報酬が「脚を開いたまま固定」という局所最適解に収束
++- **Roll角-20°**: hip_roll報酬がないため横方向に大きく傾斜
++- **歩行せずスライド**: 脚を動かさずに重心移動で前進する異常な動作
++- **hip_pitch相関0.936**: V10（0.957）と同様に両脚同期、むしろ悪化
++
++#### 失敗の原因分析
++
++1. **stride_length報酬の設計ミス**
++   - `|left_hp - right_hp|`を報酬 → 脚を開いたまま固定することで常に報酬を得られる
++   - 歩行サイクル内での動的な変化を報酬していない
++
++2. **hip_pitch_opposite_sign報酬の副作用**
++   - `left_hp * right_hp < 0`を報酬 → 片方を前、片方を後ろに固定して報酬を得る
++   - 動的な交差ではなく静的な開脚に収束
++
++3. **similar_to_default削除の影響**
++   - default姿勢への回帰がないため、極端な姿勢に収束
++   - 特にhip_rollが制御されず横傾斜が発生
++
++4. **基本的な姿勢維持報酬の不足**
++   - Roll角へのペナルティが不足
++   - base_height低下へのペナルティが不十分
++
++#### 教訓
++
++**静的な状態量ではなく、動的な変化を報酬すべき**:
++- ✗ `|left_hp - right_hp|` → 開脚固定で報酬
++- ✗ `left_hp * right_hp < 0` → 前後開脚固定で報酬
++- ○ 速度ベースの報酬（hip_pitch_alternation）は有効だった
++
++**V13への改善方針**:
++1. stride_length, hip_pitch_opposite_sign, hip_pitch_range を削除
++2. similar_to_defaultを復元
++3. V11ベースに戻し、別のアプローチを検討
++4. 周期的な歩行パターンを明示的に誘導（phase-based報酬の再検討）
++
++---
++
++## V13: 動的歩行報酬（V12失敗の反省）
++
++V12の失敗を踏まえ、**静的な位置ではなく動的な速度・変化を報酬**する設計に変更。
++
++### V12失敗の教訓
++
++| アプローチ | 結果 | 理由 |
++|-----------|------|------|
++| stride_length（位置差分） | ✗ | 脚を開いたまま固定で報酬獲得 |
++| hip_pitch_opposite_sign（位置積） | ✗ | 前後開脚固定で報酬獲得 |
++| hip_pitch_range（前方位置） | ✗ | 前方に固定で報酬獲得 |
++| **hip_pitch_alternation（速度積）** | **○** | 動いていないと報酬なし |
++
++### V13の設計原則
++
++**「静的な位置を報酬しない、動的な変化のみを報酬する」**
++
++### 報酬構造の変更
++
++| 報酬名 | V11 | V12 | V13 | 備考 |
++|--------|-----|-----|-----|------|
++| similar_to_default | -0.02 | 削除 | **-0.02** | 復元 |
++| hip_pitch_alternation | 1.0 | 1.5 | **2.0** | さらに強化 |
++| stride_length | - | 0.8 | **削除** | 静的→失敗 |
++| hip_pitch_opposite_sign | - | 1.5 | **削除** | 静的→失敗 |
++| hip_pitch_range | - | 1.0 | **削除** | 静的→失敗 |
++| hip_pitch_velocity | - | - | **0.5** | 新規：動的 |
++| contact_alternation | - | - | **0.8** | 新規：動的 |
++| roll_penalty | - | - | **-3.0** | V12対策 |
++
++### 新規報酬関数
++
++#### hip_pitch_velocity（動的）
++
++```python
++def _reward_hip_pitch_velocity(self):
++    """hip_pitchが動いていることを報酬（静的固定を防ぐ）"""
++    left_hip_vel = torch.abs(self.dof_vel[:, self.left_hip_pitch_idx])
++    right_hip_vel = torch.abs(self.dof_vel[:, self.right_hip_pitch_idx])
++    
++    # 速度の合計を報酬（動いていることを報酬）
++    velocity_sum = left_hip_vel + right_hip_vel
++    reward = torch.clamp(velocity_sum / 2.0, max=1.0)
++    
++    has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
++    return reward * has_command
++```
++
++#### contact_alternation（動的）
++
++```python
++def _reward_contact_alternation(self):
++    """接地タイミングの交互性（両脚同時変化にペナルティ）"""
++    contacts = self._get_foot_contacts()
++    
++    left_changed = contacts[:, 0] != self.last_contacts[:, 0]
++    right_changed = contacts[:, 1] != self.last_contacts[:, 1]
++    
++    # 片方だけが変化 = 交互歩行
++    one_changed = left_changed ^ right_changed
++    # 両方同時に変化 = 両脚同期
++    both_changed = left_changed & right_changed
++    
++    return (one_changed.float() - both_changed.float() * 0.5) * has_command
++```
++
++#### roll_penalty（V12対策）
++
++```python
++def _reward_roll_penalty(self):
++    """Roll角ペナルティ（V12の-20°傾斜対策）"""
++    roll_rad = self.base_euler[:, 0] * 3.14159 / 180.0
++    return torch.square(roll_rad)
++```
++
++### 実行方法
++
++```bash
++cd rl_ws
++uv run python scripts/biped_train_v13.py --max_iterations 500
++```
++
++### 数値目標
++
++| 指標 | V11 | V12 | V13目標 |
++|------|-----|-----|---------|
++| hip_pitch相関 | 0.495 | 0.936 | **< 0.5** |
++| X移動距離(10s) | 2.53 m | 0.66 m | **> 2.0 m** |
++| Roll角 | - | -20° | **< 10°** |
++| Base高さ | 0.434m | 0.326m | **> 0.40m** |
++
++### 評価結果（過去最高）
++
++**V13は過去最高の歩行品質を達成！**
++
++#### 定量評価（10秒間headless評価）
++
++| 指標 | V11 | V12 | V13目標 | V13結果 | 達成 |
++|------|-----|-----|---------|---------|------|
++| X移動距離(10s) | 2.53 m | 0.66 m | > 2.0 m | **2.385 m** | ○ |
++| hip_pitch相関 | 0.495 | 0.936 | < 0.5 | 0.797 | △ |
++| Roll角 | - | -20° | < 10° | **~5°** | ○ |
++| Base高さ | 0.434m | 0.326m | > 0.40m | **0.446 m** | ○ |
++| Pitch角 | -11.3° | 6° | - | **-9°** | ○ |
++
++#### 詳細統計
++
++```
++Travel distance: X=2.385m, Y=0.633m, Total=2.468m
++Average velocity: X=0.230 m/s (target: 0.300)  ← 目標の77%達成
++Base height: Mean=0.446m, Std=0.0040m  ← 安定した高さ維持
++
++DOF position range:
++  hip_pitch: L=[-0.082, 0.219](0.301) R=[-0.019, 0.526](0.545)  ← 正の領域も使用！
++  hip_roll:  L=[-0.098, 0.071](0.169) R=[-0.060, 0.101](0.160)  ← 適度な範囲
++  knee:      L=[0.000, 0.751](0.751)  R=[-0.144, 0.820](0.964)
++
++Left-Right hip_pitch correlation: 0.797
++Total DOF range sum: 5.628 rad
++```
++
++#### 定性評価
++
++**過去最高の歩行品質：**
++
++- **自然な歩行動作**: 目視で「良い歩き方」と評価
++- **hip_pitchが正の領域を使用**: V11/V12と異なり、前方スイング（正のhip_pitch）を実現
++  - 左hip_pitch: [-0.082, **0.219**]（正の領域を使用）
++  - 右hip_pitch: [-0.019, **0.526**]（正の領域を使用）
++- **安定した高さ維持**: Base高さ0.446m、標準偏差0.004mと非常に安定
++- **Roll角の改善**: V12の-20°から約5°に大幅改善
++- **脚が固定されていない**: DOF velocity RMS 1.980で活発に動いている
++
++#### V11/V12との比較
++
++| 指標 | V11 | V12 | V13 | 評価 |
++|------|-----|-----|-----|------|
++| X移動距離(10s) | 2.53 m | 0.66 m | 2.39 m | V11に近い |
++| hip_pitch相関 | 0.495 | 0.936 | 0.797 | V11より劣る |
++| 左hip_pitch最大 | 0.000 | 0.037 | **0.219** | **大幅改善** |
++| 右hip_pitch最大 | 0.000 | 0.000 | **0.526** | **大幅改善** |
++| Base高さ | 0.434m | 0.326m | **0.446m** | **最高** |
++| Roll角 | - | -20° | ~5° | **大幅改善** |
++| 目視評価 | 生き物っぽい | 開脚固定 | **過去最高** | **最高** |
++
++#### 成功要因分析
++
++1. **静的報酬の削除**
++   - stride_length, hip_pitch_opposite_sign, hip_pitch_range を削除
++   - 固定姿勢への収束を防止
++
++2. **動的報酬の強化**
++   - hip_pitch_alternation: 1.0 → 2.0（速度ベース）
++   - hip_pitch_velocity: 新規追加（動いていることを報酬）
++   - contact_alternation: 新規追加（接地タイミングの交互性）
++
++3. **similar_to_defaultの復元**
++   - 極端な姿勢への収束を防止
++   - 適度なdefault姿勢への回帰
++
++4. **roll_penaltyの追加**
++   - V12の横傾斜問題を解決
++
++#### 残存課題
++
++- **hip_pitch相関0.797**: まだ両脚同期傾向が残る（目標は負の相関）
++- **Y方向のドリフト**: 0.633mの横ずれ
++- **前傾姿勢**: Pitch角-9°程度の前傾が残存
++
++#### 今後の改善方針
++
++1. hip_pitch_alternation をさらに強化して相関を負に
++2. 横方向移動のペナルティ追加
++3. Pitch角ペナルティの調整
++
++
++## V14: 低重心歩行（失敗）
++
++### 目的
++
++V13の歩行品質を維持しつつ、より低い重心で歩行させる。膝と腰のピッチを深く曲げた姿勢での歩行を目指す。
++
++### 変更点
++
++| パラメータ | V13 | V14 | 目的 |
++|-----------|-----|-----|------|
++| base_height_target | 0.40 m | 0.35 m | 目標重心を下げる |
++| base_height報酬 | -15.0 | -20.0 | 高さ制約を強化 |
++| default_knee_pitch | -0.52 rad | -0.78 rad | 膝を深く曲げた初期姿勢 |
++| default_ankle_pitch | 0.52 rad | 0.78 rad | バランス維持 |
++| base_init_pos Z | 0.45 m | 0.40 m | 初期高さを下げる |
++
++### 評価結果（失敗）
++
++**V14は脚が固定された歩行に退化**
++
++#### 定量評価（10秒間headless評価）
++
++| 指標 | V13 | V14 | 評価 |
++|------|-----|-----|------|
++| X移動距離(10s) | 2.385 m | 2.107 m | 低下 |
++| Y移動距離 | 0.633 m | -0.595 m | 逆方向にドリフト |
++| hip_pitch相関 | 0.797 | **-0.557** | 改善（交互歩行化） |
++| Base高さ | 0.446 m | **0.384 m** | 目標達成 |
++| Roll角 | ~5° | ~6° | 同等 |
++| 平均X速度 | 0.230 m/s | 0.202 m/s | 低下 |
++
++#### 詳細統計
++
++```
++Travel distance: X=2.107m, Y=-0.595m, Total=2.189m
++Average velocity: X=0.202 m/s (target: 0.300) ← 目標の67%
++Base height: Mean=0.384m, Std=0.0079m ← 目標0.35mに近い
++
++DOF position range:
++  hip_pitch: L=[-0.526, 0.000](0.526) R=[-0.164, 0.420](0.584)
++             ↑ 左脚は負の領域のみ使用（後方スイングのみ）
++  knee:      L=[0.000, 1.322](1.323)  R=[-0.233, 0.993](1.226)
++             ↑ 大きな可動域だが左右非対称
++
++Left-Right hip_pitch correlation: -0.557 ← 交互歩行の兆候！
++Total DOF range sum: 7.159 rad ← V13の5.628より大きい
++```
++
++#### 定性評価（目視確認）
++
++**問題点：**
++- 脚が開いた状態で固定される傾向
++- 左脚のhip_pitchが負の領域のみ使用（前方スイングなし）
++- 左右の動きが非対称
++
++**ポジティブな点：**
++- hip_pitch相関が-0.557と初めて負の値に（交互歩行の兆候）
++- 目標の低重心（0.384m）はほぼ達成
++- DOF可動域の総和は増加
++
++### 失敗原因の分析
++
++1. **目標高さの急激な変更**
++   - 0.40m → 0.35m は15%の低下
++   - 初期姿勢と目標姿勢のギャップが大きすぎた可能性
++
++2. **base_height報酬の過度な強化**
++   - -15.0 → -20.0 は高さ維持を優先しすぎ
++   - 歩行動作よりも姿勢維持が優先された
++
++3. **similar_to_defaultとの矛盾**
++   - default姿勢を深く曲げた状態に変更
++   - similar_to_default報酬が新しい固定姿勢への収束を促進した可能性
++
++### V12との類似点
++
++| 問題 | V12 | V14 |
++|------|-----|-----|
++| 原因 | 静的な開脚を報酬 | 静的な低姿勢を強制 |
++| 結果 | 脚を開いたまま固定 | 脚を曲げたまま固定 |
++| 教訓 | 静的位置報酬は危険 | 姿勢制約の急激な変更は危険 |
++
++### V15への改善方針
++
++1. **段階的なアプローチ**
++   - base_height_targetを0.40m → 0.38m → 0.35mと段階的に下げる
++   - 一度に大きな変更を避ける
++
++2. **base_height報酬の調整**
++   - -20.0は強すぎる、-15.0のまま維持
++   - または目標達成時にボーナスを与える形式に変更
++
++3. **default姿勢の維持**
++   - default_joint_anglesはV13のまま維持
++   - 学習で自然に低姿勢を獲得させる
++
++4. **代替アプローチ：knee_bent報酬**
++   - 膝の曲げを直接報酬する
++   - 静的位置ではなく、適度な範囲での曲げを報酬
++
++```python
++# V15候補：段階的低重心化
++reward_cfg = {
++    "base_height_target": 0.38,  # 0.40 → 0.38 (段階的)
++    "base_height": -15.0,        # 維持
++    # default_joint_anglesはV13のまま
++}
++```
++
++
++## V15: 低重心歩行（V13ベース・目標高さのみ変更）
++
++### 目的
++
++V14の失敗を踏まえ、V13をベースに`base_height_target`のみを変更。
++学習で自然に低姿勢を獲得させるアプローチ。
++
++### 変更点
++
++| パラメータ | V13 | V14 | V15 | 
++|-----------|-----|-----|-----|
++| base_height_target | 0.40 m | 0.35 m | 0.35 m |
++| base_height報酬 | -15.0 | -20.0 | **-15.0** |
++| default_knee_pitch | -0.52 rad | -0.78 rad | **-0.52 rad** |
++| base_init_pos Z | 0.45 m | 0.40 m | **0.45 m** |
++
++V14との違い：base_height_target以外はV13と同一。
++
++### 評価結果（部分的成功）
++
++**歩行品質は維持されたが、目標高さには到達せず**
++
++#### 定量評価（10秒間headless評価）
++
++| 指標 | V13 | V14 | V15 | 目標 | 評価 |
++|------|-----|-----|-----|------|------|
++| X移動距離(10s) | 2.385 m | 2.107 m | 2.140 m | - | V13に近い |
++| Base高さ | 0.446 m | 0.384 m | **0.452 m** | 0.35 m | **未達成** |
++| hip_pitch相関 | 0.797 | -0.557 | **-0.395** | < 0 | 改善 |
++| Roll角 | ~5° | ~6° | ~5° | - | 良好 |
++| Yaw角 | - | - | **-26°** | - | **問題** |
++
++#### 詳細統計
++
++```
++Travel distance: X=2.140m, Y=-0.764m, Total=2.272m
++Average velocity: X=0.225 m/s (target: 0.300) ← 目標の75%
++Base height: Mean=0.452m, Std=0.0040m ← 目標0.35mに全く近づかない
++
++DOF position range:
++  hip_pitch: L=[-0.299, 0.000](0.299) R=[-0.086, 0.413](0.499)
++  knee:      L=[0.000, 0.725](0.725)  R=[-0.134, 0.632](0.766)
++
++Left-Right hip_pitch correlation: -0.395 ← 交互歩行の兆候
++Total DOF range sum: 5.281 rad
++```
++
++#### 定性評価（目視確認）
++
++**ポジティブな点：**
++- 「足先の運びはよくなった」との評価
++- hip_pitch相関が-0.395と負の値（V13の0.797から大幅改善）
++- V13と同等の移動距離を維持
++
++**問題点：**
++- 胴体位置が全く下がっていない（0.452m ≈ V13の0.446m）
++- Yaw角が-26°と大きく回転してしまっている
++- Y方向のドリフト（-0.764m）
++
++### 失敗原因の分析
++
++1. **base_height報酬の強度不足**
++   - -15.0では目標高さ0.35mへの収束が不十分
++   - 高さ0.45mでも歩行できるため、わざわざ低くならない
++
++2. **初期高さと目標高さのギャップ**
++   - 初期高さ0.45m → 目標0.35m（23%の低下）
++   - 学習初期に低い姿勢を探索する機会がない
++
++3. **similar_to_defaultの影響**
++   - default姿勢（膝-0.52rad）への回帰が優先される
++   - 低姿勢（膝をもっと曲げる）への探索が抑制される
++
++### V13/V14/V15の比較
++
++| 指標 | V13 | V14 | V15 |
++|------|-----|-----|-----|
++| Base高さ | 0.446 m | 0.384 m | 0.452 m |
++| X移動距離 | 2.385 m | 2.107 m | 2.140 m |
++| hip_pitch相関 | 0.797 | -0.557 | -0.395 |
++| 歩行品質 | ○ | × | ○ |
++| 低重心達成 | × | △ | × |
++
++**観察：**
++- V14は低重心に近づいたが歩行品質が低下
++- V15は歩行品質を維持したが低重心に近づかない
++- トレードオフの関係にある
++
++### V16への改善方針
++
++目標高さを維持しつつ、ペナルティを強化するか、別のアプローチが必要。
++
++**案1: base_height報酬を強化**
++```python
++"base_height": -25.0,  # -15.0 → -25.0
++```
++
++**案2: 高さに応じたボーナス/ペナルティ**
++```python
++# 目標より高い場合のみペナルティを強化
++def _reward_base_height(self):
++    height_error = self.base_pos[:, 2] - self.reward_cfg["base_height_target"]
++    # 高すぎる場合はペナルティ強化
++    penalty = torch.where(height_error > 0, 
++                          height_error ** 2 * 2.0,  # 高すぎる場合は2倍
++                          height_error ** 2)
++    return penalty
++```
++
++**案3: similar_to_defaultを弱化**
++```python
++"similar_to_default": -0.01,  # -0.02 → -0.01
++```
++
++**推奨: 案1（base_height報酬強化）を試す**
++
++
++## V16: 低重心歩行（base_height報酬強化）- 失敗
++
++### 目的
++
++V15でbase_height報酬-15.0では目標高さに収束しなかったため、報酬を強化して収束を促進。
++
++### 変更点
++
++| パラメータ | V13 | V15 | V16 |
++|-----------|-----|-----|-----|
++| base_height_target | 0.40 m | 0.35 m | 0.35 m |
++| base_height報酬 | -15.0 | -15.0 | **-30.0** |
++
++### 評価結果（失敗）
++
++**報酬強化しても胴体高さは全く下がらず、歩行品質が低下**
++
++#### 定量評価（10秒間headless評価）
++
++| 指標 | V13 | V15 | V16 | 目標 | 評価 |
++|------|-----|-----|-----|------|------|
++| X移動距離(10s) | 2.385 m | 2.140 m | **1.588 m** | - | **大幅低下** |
++| Base高さ | 0.446 m | 0.452 m | **0.433 m** | 0.35 m | 未達成 |
++| hip_pitch相関 | 0.797 | -0.395 | **0.155** | < 0 | 退化 |
++| Yaw角 | - | -26° | **-29°** | ~0° | 悪化 |
++| 平均X速度 | 0.230 m/s | 0.225 m/s | **0.176 m/s** | 0.3 m/s | 低下 |
++
++#### 詳細統計
++
++```
++Travel distance: X=1.588m, Y=-0.799m, Total=1.778m
++Average velocity: X=0.176 m/s (target: 0.300) ← 目標の59%に低下
++Base height: Mean=0.433m, Std=0.003m ← 目標0.35mに全く近づかない
++
++DOF position range:
++  hip_pitch: L=[-0.179, 0.000](0.179) R=[0.000, 0.520](0.520)
++             ↑ 左脚の可動域が極端に狭い
++  knee:      L=[0.000, 0.907](0.907)  R=[-0.083, 0.811](0.893)
++
++Left-Right hip_pitch correlation: 0.155 ← V15の-0.395から退化
++Total DOF range sum: 5.099 rad
++```
++
++#### 定性評価（目視確認）
++
++**問題点：**
++- 「足先の交差がまだやっぱり甘い」
++- 「胴体が全然下がってない」
++- 「今の半分の高さくらいまで下げたい」（現在0.433m → 目標0.22m程度）
++- Yaw角が-29°と大きく回転
++
++**観察：**
++- base_height報酬を2倍（-15.0 → -30.0）にしても効果なし
++- むしろ歩行品質（移動距離、交互歩行）が低下
++
++### 失敗原因の分析
++
++1. **報酬強度の問題ではない**
++   - -15.0 → -30.0 でも胴体高さは0.452m → 0.433mとわずか2cm低下
++   - 報酬の形式自体に問題がある可能性
++
++2. **初期姿勢と目標姿勢のギャップが大きすぎる**
++   - 初期高さ0.45m、default姿勢（膝-0.52rad）から
++   - 目標0.35mに到達するには膝を大幅に曲げる必要がある
++   - 探索空間が広すぎて最適解に到達できない
++
++3. **similar_to_defaultとの矛盾**
++   - default姿勢への回帰報酬が低姿勢探索を阻害
++
++4. **報酬設計の根本的問題**
++   - 現在の`base_height`報酬は二乗誤差
++   - 高さ0.45mと0.35mの差（0.1m）の二乗 = 0.01
++   - ペナルティ-30.0 × 0.01 = -0.3 は他の報酬に比べて小さい
++
++### V13-V16の比較総括
++
++| 指標 | V13 | V14 | V15 | V16 |
++|------|-----|-----|-----|-----|
++| Base高さ | 0.446 m | 0.384 m | 0.452 m | 0.433 m |
++| X移動距離 | 2.385 m | 2.107 m | 2.140 m | 1.588 m |
++| hip_pitch相関 | 0.797 | -0.557 | -0.395 | 0.155 |
++| base_height報酬 | -15.0 | -20.0 | -15.0 | -30.0 |
++| default姿勢変更 | × | ○ | × | × |
++| 歩行品質 | ○ | × | ○ | △ |
++
++**観察：**
++- V14は低重心（0.384m）に近づいたが、default姿勢変更で歩行崩壊
++- V15/V16は報酬のみ変更したが、胴体高さがほぼ変わらない
++- 単純な報酬強化では解決しない
++
++### V17への改善方針
++
++**根本的なアプローチ変更が必要**
++
++**案1: 非対称報酬（高すぎる場合のみ強ペナルティ）**
++```python
++def _reward_base_height(self):
++    height_error = self.base_pos[:, 2] - self.reward_cfg["base_height_target"]
++    # 目標より高い場合は10倍のペナルティ
++    penalty = torch.where(height_error > 0, 
++                          height_error ** 2 * 10.0,
++                          height_error ** 2)
++    return penalty
++```
++
++**案2: 目標高さに近い初期状態から開始**
++```python
++"base_init_pos": [0.0, 0.0, 0.35],  # 目標と同じ高さから開始
++```
++
++**案3: カリキュラム学習**
++- まず0.40mで学習 → 0.38m → 0.35m と段階的に
++
++**案4: 目標高さを現実的な値に変更**
++- 現在の半分（0.22m）は物理的に困難な可能性
++- まず0.38m達成を目指す
++
++**推奨: 案2（初期高さを目標と同じに）または案1（非対称報酬）を試す**
+ 
+-- [ ] 500イテレーション学習完了
+-- [ ] 10秒間のheadless評価
+-- [ ] GUI評価で歩行品質確認
+-- [ ] V4との比較（X移動距離、Yaw回転、高さ安定性）
+diff --git a/rl_ws/README.md b/rl_ws/README.md
+index 974847f..6e6a842 100644
+--- a/rl_ws/README.md
++++ b/rl_ws/README.md
+@@ -271,7 +271,11 @@ uv run python scripts/biped_eval.py -e biped-walking-v4
+ | V4 | biped-walking-v4 | **交互歩行報酬追加。足を交互に出す歩行◎** |
+ | V7 | biped-walking-v7 | Phase-based参照軌道。歩けるが4ステップカクカク |
+ | V8 | biped-walking-v8 | 過度なペナルティで失敗（倒れる） |
+-| V9 | biped-walking-v9 | V7ベース+対称歩行報酬（控えめ） |
++| V9 | biped-walking-v9 | V7ベース+対称歩行報酬。振動による移動 |
++| V10 | biped-walking-v10 | 研究ベース報酬。両脚同期（hip相関0.957） |
++| V11 | biped-walking-v11 | V10+V4交互報酬復元+hip逆相報酬。生き物っぽい歩行◎ |
++| V12 | biped-walking-v12 | 静的報酬で失敗。開脚固定（過去最悪）✗ |
++| V13 | biped-walking-v13 | **V11+動的報酬。過去最高の歩行品質◎** |
+ 
+ ## 依存パッケージ
+ 
+diff --git a/rl_ws/envs/__init__.py b/rl_ws/envs/__init__.py
+index ad63370..5832bdc 100644
+--- a/rl_ws/envs/__init__.py
++++ b/rl_ws/envs/__init__.py
+@@ -12,6 +12,13 @@ from .biped_env_v7 import BipedEnvV7
+ from .biped_env_v8 import BipedEnvV8
+ from .biped_env_v9 import BipedEnvV9
+ from .biped_env_v10 import BipedEnvV10
++from .biped_env_v11 import BipedEnvV11
++from .biped_env_v12 import BipedEnvV12
++from .biped_env_v13 import BipedEnvV13
++from .biped_env_v14 import BipedEnvV14
++from .biped_env_v15 import BipedEnvV15
++from .biped_env_v16 import BipedEnvV16
++from .biped_env_v17 import BipedEnvV17
+ 
+ __all__ = [
+     "BipedEnvV2",
+@@ -22,4 +29,12 @@ __all__ = [
+     "BipedEnvV8",
+     "BipedEnvV9",
+     "BipedEnvV10",
++    "BipedEnvV11",
++    "BipedEnvV12",
++    "BipedEnvV13",
++    "BipedEnvV14",
++    "BipedEnvV15",
++    "BipedEnvV16",
++    "BipedEnvV17",
+ ]
++
+diff --git a/rl_ws/logs/.gitignore b/rl_ws/logs/.gitignore
+deleted file mode 100644
+index adbb6a3..0000000
+--- a/rl_ws/logs/.gitignore
++++ /dev/null
+@@ -1,2 +0,0 @@
+-# PyTorch model weights
+-*.pt
+diff --git a/rl_ws/scripts/biped_eval.py b/rl_ws/scripts/biped_eval.py
+index c51c774..84b635d 100644
+--- a/rl_ws/scripts/biped_eval.py
++++ b/rl_ws/scripts/biped_eval.py
+@@ -15,12 +15,16 @@ Usage:
+ 
+     # 特定チェックポイントを使用
+     uv run python scripts/biped_eval.py -e biped-walking-v9 --ckpt 400
++
++    # MP4録画（ヘッドレスモード推奨）
++    uv run python scripts/biped_eval.py -e biped-walking-v13 --record v13_walking.mp4 --duration 10
+ """
+ 
+ import argparse
+ import os
+ import pickle
+ from importlib import metadata
++from pathlib import Path
+ 
+ import torch
+ 
+@@ -81,6 +85,10 @@ def main():
+                         help="Run without GUI viewer (headless mode)")
+     parser.add_argument("--duration", type=float, default=10.0,
+                         help="Evaluation duration in seconds (default: 10.0)")
++    parser.add_argument("--record", type=str, default=None,
++                        help="Record to MP4 file (e.g., --record output.mp4)")
++    parser.add_argument("--fps", type=int, default=30,
++                        help="FPS for recorded video (default: 30)")
+     args = parser.parse_args()
+ 
+     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=1)
+@@ -91,6 +99,12 @@ def main():
+     with open(f"{log_dir}/cfgs.pkl", "rb") as f:
+         env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = pickle.load(f)
+ 
++    # URDFパスを現在の環境に合わせて上書き（異なるマシンで学習した場合の互換性）
++    script_dir = Path(__file__).resolve().parent
++    rl_ws_dir = script_dir.parent
++    urdf_path = rl_ws_dir / "assets" / "biped_digitigrade.urdf"
++    env_cfg["urdf_path"] = str(urdf_path)
++
+     # チェックポイントを決定
+     if args.ckpt is None:
+         available = [f for f in os.listdir(log_dir) if f.startswith("model_") and f.endswith(".pt")]
+@@ -122,9 +136,16 @@ def main():
+         obs_cfg=obs_cfg,
+         reward_cfg=reward_cfg,
+         command_cfg=command_cfg,
+-        show_viewer=not args.no_viewer,
++        show_viewer=not args.no_viewer and not args.record,  # 録画時はviewerオフ
++        recording_camera=args.record is not None,  # 録画用カメラを追加
+     )
+ 
++    # 録画用カメラの参照を取得
++    recording_cam = env.recording_cam if hasattr(env, 'recording_cam') else None
++    if recording_cam is not None:
++        recording_cam.start_recording()
++        print(f"Recording to: {args.record}")
++
+     # ポリシーを読み込み
+     policy = ActorCritic(
+         num_actor_obs=env.num_obs,
+@@ -140,7 +161,9 @@ def main():
+     print(f"Loaded: {ckpt_path}")
+     print()
+     
+-    if args.no_viewer:
++    if args.record:
++        print(f"Recording evaluation for {args.duration} seconds...")
++    elif args.no_viewer:
+         print(f"Running headless evaluation for {args.duration} seconds...")
+     else:
+         print("Running evaluation... Press Ctrl+C to stop.")
+@@ -148,7 +171,7 @@ def main():
+ 
+     obs, _ = env.reset()
+     step = 0
+-    max_steps = int(args.duration / env.dt) if args.no_viewer else float('inf')
++    max_steps = int(args.duration / env.dt) if (args.no_viewer or args.record) else float('inf')
+     
+     # 統計収集用
+     positions = []
+@@ -163,6 +186,16 @@ def main():
+             actions = policy.act_inference(obs)
+             obs, rew, done, info = env.step(actions)
+             
++            # 録画用カメラのレンダリング（ロボットを追従）
++            if recording_cam is not None:
++                robot_pos = env.base_pos[0].cpu().numpy()
++                # カメラをロボットの斜め後方に配置して追従
++                recording_cam.set_pose(
++                    pos=(robot_pos[0] - 0.5, robot_pos[1] - 2.0, 1.2),
++                    lookat=(robot_pos[0], robot_pos[1], 0.4),
++                )
++                recording_cam.render()
++            
+             # データ収集
+             pos = env.base_pos[0].cpu().numpy()
+             vel = env.base_lin_vel[0].cpu().numpy()
+@@ -194,6 +227,11 @@ def main():
+             
+             step += 1
+     
++    # 録画を保存
++    if recording_cam is not None:
++        recording_cam.stop_recording(save_to_filename=args.record, fps=args.fps)
++        print(f"\nVideo saved to: {args.record}")
++    
+     # 統計出力
+     import numpy as np
+     positions = np.array(positions)
+@@ -217,6 +255,42 @@ def main():
+     print(f"  Std: {np.std(positions[:, 2]):.4f} m")
+     print(f"\nDOF velocity RMS: {np.sqrt(np.mean(dof_vels**2)):.3f} rad/s")
+     print(f"Action RMS: {np.sqrt(np.mean(actions_list**2)):.3f}")
++    
++    # 左右脚の分離分析
++    # 関節インデックス: [L_hip_pitch, L_hip_roll, L_knee, L_ankle_pitch, L_ankle_roll,
++    #                   R_hip_pitch, R_hip_roll, R_knee, R_ankle_pitch, R_ankle_roll]
++    left_leg_indices = [0, 1, 2, 3, 4]
++    right_leg_indices = [5, 6, 7, 8, 9]
++    joint_names = ["hip_pitch", "hip_roll", "knee", "ankle_pitch", "ankle_roll"]
++    
++    print(f"\n=== Joint Movement Analysis ===")
++    print(f"\nDOF position range (rad) [min, max, range]:")
++    for i, name in enumerate(joint_names):
++        left_min = np.min(dof_pos_list[:, left_leg_indices[i]])
++        left_max = np.max(dof_pos_list[:, left_leg_indices[i]])
++        right_min = np.min(dof_pos_list[:, right_leg_indices[i]])
++        right_max = np.max(dof_pos_list[:, right_leg_indices[i]])
++        print(f"  {name:12s}: L=[{left_min:6.3f}, {left_max:6.3f}] ({left_max-left_min:.3f})  "
++              f"R=[{right_min:6.3f}, {right_max:6.3f}] ({right_max-right_min:.3f})")
++    
++    print(f"\nDOF velocity std (rad/s):")
++    left_vel_std = np.std(dof_vels[:, left_leg_indices], axis=0)
++    right_vel_std = np.std(dof_vels[:, right_leg_indices], axis=0)
++    for i, name in enumerate(joint_names):
++        print(f"  {name:12s}: L={left_vel_std[i]:.3f}  R={right_vel_std[i]:.3f}")
++    
++    # 左右の位相差分析（hip_pitchの相関）
++    left_hip = dof_pos_list[:, 0]
++    right_hip = dof_pos_list[:, 5]
++    correlation = np.corrcoef(left_hip, right_hip)[0, 1]
++    print(f"\nLeft-Right hip_pitch correlation: {correlation:.3f}")
++    print(f"  (-1.0 = perfect alternating, +1.0 = perfect synchronized)")
++    
++    # 歩行品質スコア
++    total_dof_range = np.sum([np.max(dof_pos_list[:, i]) - np.min(dof_pos_list[:, i]) for i in range(10)])
++    print(f"\nGait quality indicators:")
++    print(f"  Total DOF range sum: {total_dof_range:.3f} rad")
++    print(f"  (Higher = more movement, typically >2.0 for good walking)")
+     print()
+ 
+ 
