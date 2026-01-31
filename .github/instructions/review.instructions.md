@@ -1,12 +1,12 @@
 ---
-description: 'GitHub Copilot Code Review用カスタム指示 - BSL-Droid ROS 2制御システム'
+description: 'GitHub Copilot Code Review用カスタム指示 - BSL-Droid 制御システム'
 applyTo: '**'
 excludeAgent: ["coding-agent"]
 ---
 
-# BSL-Droid ROS 2 コードレビュー指示
+# BSL-Droid Control コードレビュー指示
 
-このリポジトリは二脚ロボット（BSL-Droid）のROS 2制御システムです．Jetson Orin Nano Super（実機・RT制御）とMacBook（可視化・机上開発）の分散構成で動作します．
+このリポジトリは二脚ロボット（BSL-Droid）の制御に関するソフトウェア全般を扱います．Jetson Orin Nano Super（実機・リアルタイム制御）とMacBook（可視化・机上開発）の分散構成で動作します．
 
 ## レビュー言語
 
@@ -16,7 +16,8 @@ excludeAgent: ["coding-agent"]
 
 ### アーキテクチャ理解
 
-- **pixi環境**: ROS 2環境は`ros2_ws/`配下でpixiにより管理
+- **ROS 2環境（pixi）**: `ros2_ws/`配下でpixiにより管理
+- **強化学習環境（uv）**: `rl_ws/`配下でuvにより管理（ROS 2とは独立）
 - **プラットフォーム分離**: Jetson (linux-aarch64)とmacOS (osx-arm64)で利用可能な機能が異なる
 - **ros2_control**: macOSでは利用不可（RoboStack Jazzyの制約）
 - **リアルタイム制御**: Jetsonでは200Hz制御ループ、SCHED_FIFO優先度90推奨
@@ -24,11 +25,25 @@ excludeAgent: ["coding-agent"]
 ### ディレクトリ構造
 
 ```
-ros2_ws/src/
-├── biped_description/      # URDF/可視化/GUI
-├── biped_gait_control/     # 歩容生成
-├── robstride_hardware/     # ros2_control HW Interface（Jetson専用）
-└── pub_sub_cpp|python/     # サンプル
+bsl_droid_control/
+├── ros2_ws/                        # ROS 2ワークスペース（pixi管理）
+│   └── src/
+│       ├── biped_description/      # URDF/可視化/GUI
+│       ├── biped_gait_control/     # 歩容生成サンプル
+│       ├── robstride_hardware/     # ros2_control用インターフェース（Jetson専用・開発中）
+│       └── pub_sub_cpp|python/     # ROS 2チュートリアル
+├── rl_ws/                          # 強化学習環境（uv管理）
+│   ├── biped_walking/              # 二脚ロボット環境・訓練スクリプト
+│   │   ├── envs/                   # 環境定義（biped_env.py, droid_env.py）
+│   │   └── train/                  # 訓練スクリプト群
+│   ├── assets/                     # URDFモデル
+│   ├── logs/                       # 訓練ログ・チェックポイント
+│   ├── genesis_official/           # Genesis物理シミュレータ（submodule）
+│   └── mujoco_menagerie/           # MuJoCoモデル集（submodule）
+├── doc/                            # 設計資料
+│   ├── design/                     # システム設計ドキュメント
+│   └── experiments/                # 実験レポート群
+└── ref/                            # 参考実装・外部ライブラリ
 ```
 
 ---
@@ -233,7 +248,38 @@ for (int i = 0; i < joints_.size(); i++) {  // ❌ インデックスループ
 
 - 新規パッケージには`README.md`を作成
 - 主要コマンドはリポジトリルートの`README.md`に記載（パッケージ内では参照のみ）
-- 図は`.drawio.svg`形式で作成（DrawIO XML形式，純粋SVGは不可）
+- 図は`.drawio.svg`形式で作成（**DrawIO XML形式**，純粋SVGは不可）
+
+### 実験レポート構造
+
+`doc/experiments/`以下の実験レポートは以下の規則に従うこと：
+
+```
+doc/experiments/exp{NNN}_{実験名}/
+├── exp{NNN}_{実験名}.md                    # 主レポート（必須）
+├── exp{NNN}_rules.md                       # 実験ルール・手順（推奨）
+└── exp{NNN}_{実験名}_{補足}.drawio.svg     # 図（任意）
+```
+
+- `{NNN}`: 3桁の通し番号（001, 002, ...）
+- 補足ファイルは必ず主レポートから参照すること（孤立ファイル禁止）
+
+### DrawIO図の形式【厳守】
+
+`.drawio.svg`ファイルは**DrawIO XML形式**（`<mxfile>`タグ）で作成すること．
+
+```xml
+<!-- 正しい形式 -->
+<mxfile host="65bd71144e">
+    <diagram name="Diagram Name" id="diagram-id">
+        <mxGraphModel ...>
+            ...
+        </mxGraphModel>
+    </diagram>
+</mxfile>
+```
+
+**禁止**: 純粋なSVG形式（`<svg>`タグ）は不可（DrawIOで編集できなくなる）
 
 ---
 
@@ -252,3 +298,22 @@ for (int i = 0; i < joints_.size(); i++) {  // ❌ インデックスループ
 - 問題点だけでなく「なぜ」問題なのかを説明
 - 良いパターンは積極的に称賛
 - 安全性とリアルタイム性の問題を最優先で指摘
+
+---
+
+## 強化学習環境（rl_ws）固有のチェック項目
+
+### 環境設定
+
+- エピソード終了条件が妥当か
+- 物理パラメータ（慣性，摩擦等）が現実的か
+
+### 訓練スクリプト
+
+- ハイパーパラメータがハードコードされていないか
+- チェックポイント保存が適切に実装されているか
+
+### 実験管理
+
+- 実験名が命名規則（`biped-walking-v{N}`, `droid-walking-v{N}`）に従っているか
+- 対応する`exp{NNN}_rules.md`のルールに従っているか
