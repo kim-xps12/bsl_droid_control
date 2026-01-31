@@ -18,6 +18,7 @@ logs/*/events.out.tfevents.*
 logs/*/checkpoints/
 logs/*/videos/
 logs/*/wandb/
+logs/*/git/
 
 # Generated media
 *.png
