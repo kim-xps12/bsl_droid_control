@@ -1,7 +1,8 @@
-# AGENTS.md — bsl_droid_ros2
+# AGENTS.md — bsl_droid_control
 
 ## 目的
-このリポジトリは「BSL-Droid」のROS 2制御システム。Jetson Orin Nano Super（実機・RT制御）とMacBook（可視化・机上開発）の分散構成を前提にしています。
+- このリポジトリは「BSL-Droid」の制御に関するソフトウェア全般を扱う
+- 動作環境はJetson Orin Nano Super（実機・RT制御）とMacBook（可視化・机上開発）の分散構成を前提にしています。
 
 ## リポジトリ構成（要点）
 - `ros2_ws/` — ROS 2ワークスペース（実作業は基本ここ）
@@ -99,6 +100,80 @@ pixi run ros2 launch biped_description display_rviz_only.launch.py
 - 必ず日本語で執筆し，N1相当の流暢で自然な日本語を用いること．
 - 図は`drawio.svg`形式のファイル名に`drawio`の規格に準じたxmlタグを格納することで，独立して作成すること．
 - 図をmarkdownドキュメント内にアスキーアートで描くことは行なってはいけない．二重管理の状態を避けるために厳守する．
+
+### 実験レポートの構成ルール[厳守]
+
+`doc/experiments/` 以下に実験レポートを作成する際は、以下のルールに従うこと。
+
+#### ディレクトリ構造
+
+```
+doc/experiments/
+├── README.md                          # 実験一覧インデックス（任意）
+├── roadmap_unified_interface.md       # 横断的ドキュメント（直下に残す）
+├── exp001_slider_control_rs02/
+│   ├── exp001_slider_control_rs02.md              # 主レポート（必須）
+│   ├── exp001_slider_control_rs02_architecture.drawio.svg
+│   └── exp001_slider_control_rs02_sequence.drawio.svg
+├── exp002_biped_sim2sim/
+│   └── exp002_biped_sim2sim.md
+└── ...
+```
+
+#### 命名規則
+
+| 要素 | 形式 | 例 |
+|------|------|-----|
+| ディレクトリ名 | `exp{NNN}_{実験名}` | `exp001_slider_control_rs02` |
+| 主レポート | `exp{NNN}_{実験名}.md` | `exp001_slider_control_rs02.md` |
+| 補足ファイル | `exp{NNN}_{実験名}_{補足}.{拡張子}` | `exp001_slider_control_rs02_architecture.drawio.svg` |
+
+- `{NNN}`: 3桁の通し番号（001, 002, ...）
+- `{実験名}`: snake_caseで簡潔に（長すぎる場合は略称を使用）
+- `{補足}`: 図や画像の内容を示すsuffix（`_architecture`, `_sequence`, `_screenshot_01` 等）
+
+#### ルールの意図
+
+1. **自己完結性**: ファイル単体で実験番号と内容が判別できる（移動・共有に強い）
+2. **検索性**: `exp002`で検索すれば関連ファイルがすべてヒット
+3. **整理性**: 各実験の関連ファイルがディレクトリ内にカプセル化される
+
+#### 補足ファイルの扱い
+
+- 補足ファイル（図・画像等）は必ず主レポート（`.md`）から参照すること
+- 参照されていない孤立ファイルは作成しない
+- 参照例: `![システムアーキテクチャ](./exp001_slider_control_rs02_architecture.drawio.svg)`
+
+#### 実験ルールファイル（rules.md）【重要】
+
+各実験ディレクトリには `exp{NNN}_rules.md` を作成し、その実験固有の手順・コマンド・ルールを記載する。以下は例である．
+
+```
+doc/experiments/exp004_droid_rl_walking/
+├── exp004_droid_rl_walking.md      # 実験結果と知見（累積）
+├── exp004_rules.md                 # 実験ルール・手順・コマンド
+└── exp004_reward_design_survey.md  # 調査結果（任意）
+```
+
+**Coding Agentへの義務**:
+
+実験に関連する作業（コード修正、トレーニング実行、評価、デバッグ等）を行う際は、**必ず対応する `exp{NNN}_rules.md` を最初に読み込み、記載されたルールに従うこと**。
+
+```
+# 例: exp004に関連する作業を行う場合
+1. doc/experiments/exp004_droid_rl_walking/exp004_rules.md を読む
+2. 記載されたバージョン管理原則、コマンド、トラブルシューティングを確認
+3. ルールに従って作業を実行
+```
+
+**rules.mdに記載すべき内容**:
+- 実験目的に基づく振る舞いの原則
+- 実験目的に基づく考察の基本軸や方針
+- バージョン管理原則（コピー原則、最小変更原則等）
+- 主要コマンド（トレーニング、評価、分析等）
+- スクリプトの使い方
+- トラブルシューティング
+- 実験固有の注意事項
 
 ### DrawIO図の作成ルール【厳守】
 
