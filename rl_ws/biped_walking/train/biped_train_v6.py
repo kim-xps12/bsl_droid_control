@@ -1,17 +1,15 @@
 """
-BSL-Droid二脚ロボット Genesis訓練スクリプト v4
+BSL-Droid二脚ロボット Genesis訓練スクリプト v6
 
-V3からの修正:
-- 足の交互接地報酬（alternating_gait）を追加: 左右の足が交互に動くことを促進
-- 足のスイング報酬（foot_swing）を追加: 歩行中に足を持ち上げることを報酬
-- feet_air_time報酬を強化: 長いストライドを促進
-- 両足同時接地ペナルティ（no_fly）を強化
+V5からの修正:
+- feet_namesのバグ修正: URDFの正しいリンク名（left_foot_link, right_foot_link）を使用
+- V5で追加した報酬関数（foot_clearance, stride_length等）が正常に機能するようになる
 
-目標: すり足ではなく、人間やアヒルのように足を交互に出す歩行を実現
+目標: 大きな歩幅と高い足上げを伴う自然な交互歩行
 
 Usage:
     cd rl_ws
-    uv run python scripts/biped_train_v4.py --max_iterations 1000
+    uv run python scripts/biped_train_v6.py --max_iterations 500
 """
 
 import argparse
@@ -40,7 +38,7 @@ from pathlib import Path
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(rl_ws_dir))
-from envs.biped_env_v4 import BipedEnvV4
+from biped_walking.envs.biped_env import BipedEnv
 
 
 def get_train_cfg(exp_name, max_iterations):
@@ -93,7 +91,7 @@ def get_train_cfg(exp_name, max_iterations):
 def get_cfgs():
     """環境設定を取得"""
     script_dir = Path(__file__).parent
-    rl_ws_dir = script_dir.parent.parent.parent
+    rl_ws_dir = script_dir.parent
     urdf_path = rl_ws_dir / "assets" / "biped_digitigrade.urdf"
 
     env_cfg = {
@@ -123,7 +121,7 @@ def get_cfgs():
             "right_knee_pitch_joint": -0.52,
             "right_ankle_pitch_joint": 0.52,
         },
-        "feet_names": ["left_toe", "right_toe"],
+        "feet_names": ["left_foot_link", "right_foot_link"],
         # PD gains
         "kp": 35.0,
         "kd": 2.0,
@@ -148,21 +146,25 @@ def get_cfgs():
         },
     }
 
-    # V4: 交互歩行を促進する報酬設定
+    # V5: 大きな歩幅を促進する報酬設定
     reward_cfg = {
         "tracking_sigma": 0.25,
         "base_height_target": 0.40,
-        "feet_air_time_target": 0.25,  # 目標滞空時間を長めに
+        "feet_air_time_target": 0.30,  # V5: さらに長めに（0.25→0.30）
         "reward_scales": {
             # === 追従報酬 ===
             "tracking_lin_vel": 2.0,
             "tracking_ang_vel": 0.3,
             
-            # === 交互歩行報酬（新規・重要）===
+            # === 大きな歩幅報酬（V5新規）===
+            "foot_clearance": 1.0,       # 足を高く上げる（10cm以上）
+            "stride_length": 0.8,        # 歩幅を長く（20cm以上）
+            
+            # === 交互歩行報酬（V4から継続）===
             "alternating_gait": 1.5,     # 左右の足が交互に接地することを報酬
             "foot_swing": 0.8,           # 歩行中に足を持ち上げることを報酬
-            "feet_air_time": 1.0,        # 強化: 長いストライドを促進
-            "no_fly": -1.0,              # 強化: 両足同時離地を強くペナルティ
+            "feet_air_time": 1.0,        # 長いストライドを促進
+            "no_fly": -1.0,              # 両足同時離地を強くペナルティ
             "single_stance": 0.5,        # 片足立ちを報酬（交互歩行の前提）
             
             # === 滑らかさペナルティ ===
@@ -177,7 +179,7 @@ def get_cfgs():
             "ang_vel_xy": -0.05,
             
             # === その他 ===
-            "similar_to_default": -0.03,  # 緩和: 歩行を阻害しない
+            "similar_to_default": -0.03,
             "torques": -0.0001,
         },
     }
@@ -194,7 +196,7 @@ def get_cfgs():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v4")
+    parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v6")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
     parser.add_argument("--max_iterations", type=int, default=1000)
     args = parser.parse_args()
@@ -214,7 +216,7 @@ def main():
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 
-    env = BipedEnvV4(
+    env = BipedEnv(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
     )
 

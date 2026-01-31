@@ -1,17 +1,18 @@
 """
-BSL-Droid二脚ロボット Genesis訓練スクリプト v8
+BSL-Droid二脚ロボット Genesis訓練スクリプト v7
 
-V7からの修正:
-- Yaw補正強化: tracking_ang_velを0.3→1.5に増加、直進性を重視
-- ロール安定化: orientationペナルティを-3.0→-8.0、ang_vel_xyを-0.05→-0.2に強化
-- 歩行周波数調整: step_frequency 0.8→0.6Hzに下げて自然なペースに
-- trajectory_tracking係数を5.0→3.0に下げ、速度追従とのバランスを改善
+V6からの修正:
+- Phase-based Reference軌道追従: ROS2のbiped_gait_controlから移植した楕円弧軌道
+- 観測空間にphase信号を追加（39→43次元）
+- trajectory_tracking報酬: つま先位置の参照軌道追従を報酬
+- phase_consistency報酬: 足の接地状態が位相と一致しているかを報酬
+- 歩容パラメータ（gait_cfg）: step_height, step_length, step_frequency
 
-目標: V7の滑らかさを維持しつつ、直進性とロール安定性を改善
+目標: 明示的な参照軌道に沿った周期的な歩行を実現
 
 Usage:
     cd rl_ws
-    uv run python scripts/biped_train_v8.py --max_iterations 500
+    uv run python scripts/biped_train_v7.py --max_iterations 1000
 """
 
 import argparse
@@ -40,7 +41,7 @@ from pathlib import Path
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(rl_ws_dir))
-from envs.biped_env_v8 import BipedEnvV8
+from biped_walking.envs.biped_env import BipedEnv
 
 
 def get_train_cfg(exp_name, max_iterations):
@@ -137,17 +138,17 @@ def get_cfgs():
         "action_scale": 0.4,
         "simulate_action_latency": True,
         "clip_actions": 10.0,
-        # ===== V8: 歩容パラメータ（周波数を下げて自然なペースに）=====
+        # ===== V7: 歩容パラメータ（ROS2 biped_gait_controlと一致）=====
         "gait_cfg": {
             "step_height": 0.04,      # 足の持ち上げ高さ [m]
             "step_length": 0.08,      # 歩幅 [m]
-            "step_frequency": 0.6,    # 歩行周波数 [Hz]（V7の0.8Hzから下げる）
+            "step_frequency": 0.8,    # 歩行周波数 [Hz]（ROS2の0.5Hzより少し速め）
             "thigh_length": 0.18,     # 大腿長 [m]（URDFと一致）
             "shank_length": 0.20,     # 下腿長 [m]（URDFと一致）
         },
     }
 
-    # V8: 観測空間（V7と同じ43次元）
+    # V7: 観測空間を39→43次元に拡張（phase信号4次元追加）
     obs_cfg = {
         "num_obs": 43,
         "obs_scales": {
@@ -158,43 +159,38 @@ def get_cfgs():
         },
     }
 
-    # V8: Yaw補正・ロール安定化を強化した報酬設定
+    # V7: Phase-based Reference報酬を追加
     reward_cfg = {
         "tracking_sigma": 0.25,
         "base_height_target": 0.40,
         "feet_air_time_target": 0.25,
-        "trajectory_tracking_sigma": 0.05,
+        "trajectory_tracking_sigma": 0.05,  # V7: 軌道追従の誤差許容（5cm）
         "reward_scales": {
-            # === 追従報酬（V8: 角速度追従を大幅強化）===
+            # === 追従報酬 ===
             "tracking_lin_vel": 2.0,
-            "tracking_ang_vel": 1.5,       # V7: 0.3 → V8: 1.5 (直進性強化)
+            "tracking_ang_vel": 0.3,
 
-            # ===== Phase-based Reference報酬（係数を下げてバランス調整）=====
-            "trajectory_tracking": 3.0,    # V7: 5.0 → V8: 3.0
-            "phase_consistency": 1.5,      # V7: 2.0 → V8: 1.5
+            # ===== V7: Phase-based Reference報酬（新規・最重要）=====
+            "trajectory_tracking": 5.0,    # 参照軌道追従（高い重み）
+            "phase_consistency": 2.0,      # 位相と接地状態の一致
 
-            # === 交互歩行報酬 ===
-            "alternating_gait": 1.0,
+            # === 交互歩行報酬（V4から継続）===
+            "alternating_gait": 1.0,       # 緩和（trajectory_trackingが主導）
             "foot_swing": 0.5,
             "feet_air_time": 0.8,
             "no_fly": -0.8,
             "single_stance": 0.3,
 
-            # ===== V8: 新規報酬関数 =====
-            "symmetric_gait": 1.0,         # 左右対称な歩行を促進
-            "smooth_joint_velocity": -1.0, # ジャーク（急激な速度変化）を抑制
-            "heading_alignment": 0.8,      # 進行方向と向きを一致させる
-
             # === 滑らかさペナルティ ===
-            "action_rate": -0.015,         # V7: -0.02 → V8: -0.015 (少し緩和)
+            "action_rate": -0.02,
             "dof_vel": -0.0001,
             "dof_acc": -1e-7,
 
-            # === 姿勢・高さ維持（V8: ロール安定化強化）===
-            "orientation": -8.0,           # V7: -3.0 → V8: -8.0 (大幅強化)
+            # === 姿勢・高さ維持 ===
+            "orientation": -3.0,
             "base_height": -30.0,
             "lin_vel_z": -1.5,
-            "ang_vel_xy": -0.2,            # V7: -0.05 → V8: -0.2 (4倍強化)
+            "ang_vel_xy": -0.05,
 
             # === その他 ===
             "similar_to_default": -0.02,
@@ -214,7 +210,7 @@ def get_cfgs():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v8")
+    parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v7")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
     parser.add_argument("--max_iterations", type=int, default=1000)
     args = parser.parse_args()
@@ -234,7 +230,7 @@ def main():
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 
-    env = BipedEnvV8(
+    env = BipedEnv(
         num_envs=args.num_envs, env_cfg=env_cfg, obs_cfg=obs_cfg, reward_cfg=reward_cfg, command_cfg=command_cfg
     )
 
