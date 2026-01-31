@@ -58,9 +58,20 @@ pixi install
 pixi run colcon build --symlink-install
 ```
 
-> **Note**: このリポジトリはsubmoduleを含んでいます（`rl_ws/genesis_official`, `rl_ws/mujoco_menagerie`）。
-> `--recursive`オプションを付けてcloneするか、clone後に`git submodule update --init`を実行してください。
-> `--shallow-submodules`または`--depth 1`を使用することで、submoduleの履歴を取得せず高速にcloneできます。
+### Git Submoduleについて
+
+このリポジトリは以下のsubmoduleを含んでいます：
+
+| Submodule | パス | 用途 |
+|-----------|------|------|
+| [Genesis](https://github.com/Genesis-Embodied-AI/Genesis) | `rl_ws/genesis_official/` | 物理シミュレータ（強化学習環境） |
+| [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) | `rl_ws/mujoco_menagerie/` | ロボットモデル集（Sim2Sim比較用） |
+
+- **新規clone時**: `--recursive`オプションを付けてcloneしてください
+- **既存リポジトリ**: `git submodule update --init`を実行してください
+- **高速化**: `--shallow-submodules`または`--depth 1`でsubmoduleの履歴を省略できます
+
+> **Note**: 強化学習環境（rl_ws）を使用しない場合、submoduleの取得は不要です。
 
 ### pixi環境について
 
