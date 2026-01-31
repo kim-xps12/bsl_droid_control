@@ -6,7 +6,7 @@ excludeAgent: ["coding-agent"]
 
 # BSL-Droid Control コードレビュー指示
 
-このリポジトリは二脚ロボット（BSL-Droid）の制御に関するソフトウェア全般を扱います．Jetson Orin Nano Super（実機・Real Time制御）とMacBook（可視化・机上開発）の分散構成で動作します．
+このリポジトリは二脚ロボット（BSL-Droid）の制御に関するソフトウェア全般を扱います．Jetson Orin Nano Super（実機・リアルタイム制御）とMacBook（可視化・机上開発）の分散構成で動作します．
 
 ## レビュー言語
 
