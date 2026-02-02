@@ -12,3 +12,6 @@
 [submodule "ref/RobStride_Control"]
 	path = ref/RobStride_Control
 	url = https://github.com/Seeed-Projects/RobStride_Control.git
+[submodule "isaac_ws/IsaacLab"]
+	path = isaac_ws/IsaacLab
+	url = https://github.com/isaac-sim/IsaacLab.git
