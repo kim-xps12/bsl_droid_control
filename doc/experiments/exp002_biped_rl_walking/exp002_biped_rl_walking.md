@@ -194,7 +194,7 @@ uv run python genesis_official/examples/locomotion/biped_eval.py
 
 ```bash
 cd rl_ws
-uv run tensorboard --logdir logs/biped-walking
+uv run python -m tensorboard.main --logdir logs/biped-walking
 ```
 
 #### 3.4 チェックポイント
