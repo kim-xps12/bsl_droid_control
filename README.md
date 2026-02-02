@@ -213,7 +213,7 @@ uv run python genesis_official/examples/locomotion/go2_train.py -B 64 --max_iter
 
 ```bash
 cd rl_ws
-uv run tensorboard --logdir logs
+uv run python -m tensorboard.main --logdir logs
 
 # ブラウザで http://localhost:6006 を開く
 ```

@@ -199,7 +199,7 @@ class BipedEnv:
 
         # 関節名からインデックスを取得
         self.motors_dof_idx = torch.tensor(
-            [self.robot.get_joint(name).dof_start for name in self.env_cfg["joint_names"]],
+            [self.robot.get_joint(name).dofs_idx_local[0] for name in self.env_cfg["joint_names"]],
             dtype=gs.tc_int,
             device=gs.device,
         )

@@ -1,6 +1,6 @@
-# EXP004: 実験の進め方とルール
+# EXP006: 実験の進め方とルール
 
-本ドキュメントは、exp004（BSL-Droid Simplified二脚ロボットの強化学習歩容獲得実験）を進める上での手順、コマンド、スクリプト、ルールを記載する。
+本ドキュメントは、exp006（BSL-Droid Simplified二脚ロボットの足先空間強化学習歩容獲得実験）を進める上での手順、コマンド、スクリプト、ルールを記載する。
 
 ## 1. バージョン管理とコード信頼性
 
@@ -44,9 +44,9 @@ cp train/droid_train_v19.py train/droid_train_v20.py
 
 | ファイル | 責務 |
 |----------|------|
-| `exp004_droid_rl_walking.md` | 各バージョンの目的・変更内容・結果を累積（失敗も含む） |
-| `exp004_rules.md` | 本ドキュメント（実験ルール・手順・コマンド） |
-| `exp004_reward_design_survey.md` | 報酬設計に関する先行研究調査**のみ** |
+| `exp006_droid_rl_walking_taskspace.md` | 各バージョンの目的・変更内容・結果を累積（失敗も含む） |
+| `exp006_rules.md` | 本ドキュメント（実験ルール・手順・コマンド） |
+| `exp006_reward_design_survey.md` | 報酬設計に関する先行研究調査**のみ** |
 
 ---
 
@@ -266,5 +266,5 @@ V9〜V19の実験から得られた原則:
 ## 8. 参考リンク
 
 - [Genesis公式ドキュメント](https://genesis-world.readthedocs.io/)
-- [exp004_reward_design_survey.md](exp004_reward_design_survey.md) - 報酬設計の先行研究
-- [exp004_droid_rl_walking.md](exp004_droid_rl_walking.md) - 実験結果
+- [exp006_reward_design_survey.md](exp006_reward_design_survey.md) - 報酬設計の先行研究
+- [exp006_droid_rl_walking_taskspace.md](exp006_droid_rl_walking_taskspace.md) - 実験結果
