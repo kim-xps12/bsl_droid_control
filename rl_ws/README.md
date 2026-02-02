@@ -103,11 +103,11 @@ uv run python genesis_official/examples/locomotion/go2_eval.py
 cd rl_ws
 
 # TensorBoardを起動（ブラウザで http://localhost:6006 を開く）
-uv run tensorboard --logdir logs/
+uv run python -m tensorboard.main --logdir logs/
 
 # 特定の実験のみ監視
-uv run tensorboard --logdir logs/go2-walking
-uv run tensorboard --logdir logs/biped-walking
+uv run python -m tensorboard.main --logdir logs/go2-walking
+uv run python -m tensorboard.main --logdir logs/biped-walking
 ```
 
 主要なメトリクス：

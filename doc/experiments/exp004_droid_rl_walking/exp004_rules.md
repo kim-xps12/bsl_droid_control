@@ -95,7 +95,7 @@ uv run python biped_walking/biped_eval.py -e droid-walking-v{VERSION} --no-viewe
 
 ```bash
 cd rl_ws
-uv run tensorboard --logdir logs
+uv run python -m tensorboard.main --logdir logs
 # ブラウザで http://localhost:6006 を開く
 ```
 
