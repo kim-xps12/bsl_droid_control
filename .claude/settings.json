@@ -1,0 +1,19 @@
+{
+  "env": {
+    "PATH": "$HOME/.local/bin:$HOME/.pixi/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/lint-check.sh",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

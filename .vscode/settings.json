@@ -1,0 +1,111 @@
+{
+  // =============================================================================
+  // GitHub Copilot Agent Mode - Terminal Auto-Approve Settings
+  // =============================================================================
+  // 
+  // 以下の設定により、Copilot Agent Modeが「情報を読み取るコマンド」を
+  // ユーザーの許可なしで自動実行できるようになります。
+  //
+  // 参考: https://code.visualstudio.com/docs/copilot/reference/copilot-settings
+  // =============================================================================
+
+  "chat.tools.terminal.autoApprove": {
+    // -------------------------------------------------------------------------
+    // 強化学習環境（rl_ws）の読み取り系コマンド
+    // -------------------------------------------------------------------------
+    
+    // 評価スクリプト（ヘッドレス・読み取り専用）
+    "/^cd.*&&\\s*uv run python biped_walking\\/biped_eval\\.py.*--no-viewer/": true,
+    "/^uv run python biped_walking\\/biped_eval\\.py.*--no-viewer/": true,
+    
+    // 訓練ログ分析スクリプト
+    "/^uv run python scripts\\/analyze_training_log\\.py/": true,
+    
+    // 報酬コンポーネント表示スクリプト
+    "/^uv run python scripts\\/show_reward_components\\.py/": true,
+    
+    // TensorBoard（ログ可視化）
+    "/^uv run tensorboard --logdir/": true,
+    
+    // -------------------------------------------------------------------------
+    // ファイル読み取り系コマンド
+    // -------------------------------------------------------------------------
+    
+    // tail, head, cat（ログやドキュメントの読み取り）
+    "/^tail\\s/": true,
+    "/^head\\s/": true,
+    "/^cat\\s/": true,
+    
+    // grep, ag, rg（検索）
+    "/^grep\\s/": true,
+    "/^ag\\s/": true,
+    "/^rg\\s/": true,
+    
+    // find, ls, tree（ディレクトリ/ファイル一覧）
+    "/^find\\s/": true,
+    "/^ls\\s/": true,
+    "/^tree\\s/": true,
+    
+    // wc（行数カウント等）
+    "/^wc\\s/": true,
+    
+    // -------------------------------------------------------------------------
+    // Git 読み取り系コマンド
+    // -------------------------------------------------------------------------
+    
+    "/^git status/": true,
+    "/^git log/": true,
+    "/^git diff/": true,
+    "/^git show/": true,
+    "/^git branch/": true,
+    "/^git remote/": true,
+    
+    // -------------------------------------------------------------------------
+    // Python 情報取得系
+    // -------------------------------------------------------------------------
+    
+    "/^python --version/": true,
+    "/^python3 --version/": true,
+    "/^uv --version/": true,
+    "/^uv pip list/": true,
+    "/^uv pip show/": true,
+    
+    // -------------------------------------------------------------------------
+    // ROS 2 読み取り系コマンド
+    // -------------------------------------------------------------------------
+    
+    "/^pixi run ros2 topic list/": true,
+    "/^pixi run ros2 node list/": true,
+    "/^pixi run ros2 param list/": true,
+    "/^pixi run ros2 param get/": true,
+    
+    // -------------------------------------------------------------------------
+    // システム情報取得
+    // -------------------------------------------------------------------------
+    
+    "/^pwd$/": true,
+    "/^echo\\s/": true,
+    "/^env$/": true,
+    "/^printenv/": true,
+    "/^which\\s/": true,
+    "/^type\\s/": true,
+    
+    // -------------------------------------------------------------------------
+    // 危険なコマンドは明示的に禁止（デフォルトでも禁止されているが明示）
+    // -------------------------------------------------------------------------
+    
+    "rm": false,
+    "rmdir": false,
+    "del": false,
+    "kill": false,
+    "curl": false,
+    "wget": false,
+    "eval": false,
+    "chmod": false,
+    "chown": false,
+    "/^Remove-Item\\b/i": false
+  },
+
+  // 自動承認機能を有効化
+  "chat.tools.terminal.enableAutoApprove": true
+}
