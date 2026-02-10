@@ -59,9 +59,30 @@ EXP007: Unitree RL Gym参考実装版（統合環境）
 足引きずり抑制（V10追加）:
   - feet_stumble: 接地中の足の水平速度ペナルティ
 
+hip_pitch可動域対称性（V17追加）:
+  - symmetry_range: hip_pitch可動域の左右対称性報酬
+
+足引きずり抑制（V10追加）:
+  - feet_stumble: 接地中の足の水平速度ペナルティ
+
+hip_pitch可動域対称性（V17追加）:
+  - symmetry_range: hip_pitch可動域の左右対称性報酬
+
 安全性ペナルティ:
   - termination: 終了ペナルティ
   - dof_pos_limits: 関節位置限界ペナルティ
+
+実機パラメータ適合性（V18追加）:
+  - dof_vel_limits: 関節速度ソフトリミットペナルティ（RobStride RS-02対応）
+
+hip_pitch可動域促進（V19追加）:
+  - hip_pitch_range: hip_pitch可動域の大きさ報酬（大股歩行促進）
+
+遊脚時足首角度制限（V22a追加）:
+  - ankle_pitch_range: 遊脚時のankle_pitch角度制限ペナルティ（つま先突き抑制）
+
+接地相足先位置制約（V12 exp008追加）:
+  - stance_foot_lateral_position: 接地足横方向位置ペナルティ（内股解消タスク空間制約）
 
 【観測空間】(50次元)
 - base_lin_vel (3): ボディローカル線速度
@@ -80,15 +101,17 @@ EXP007: Unitree RL Gym参考実装版（統合環境）
 - 各関節の目標位置オフセット（action_scaleでスケーリング）
 """
 
-import math
+from __future__ import annotations
 
-import torch
+import math
+from typing import Any
 
 import genesis as gs
-from genesis.utils.geom import quat_to_xyz, transform_by_quat, inv_quat, transform_quat_by_quat
+import torch
+from genesis.utils.geom import inv_quat, quat_to_xyz, transform_by_quat, transform_quat_by_quat
 
 
-def gs_rand(lower, upper, batch_shape):
+def gs_rand(lower: torch.Tensor, upper: torch.Tensor, batch_shape: tuple[int, ...]) -> torch.Tensor:
     """一様乱数を生成"""
     assert lower.shape == upper.shape
     return (upper - lower) * torch.rand(size=(*batch_shape, *lower.shape), dtype=gs.tc_float, device=gs.device) + lower
@@ -97,12 +120,21 @@ def gs_rand(lower, upper, batch_shape):
 class DroidEnvUnitree:
     """BSL-Droid Simplified二脚ロボットのGenesis強化学習環境（Unitree参考版）"""
 
-    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg, show_viewer=False, recording_camera=False):
-        self.num_envs = num_envs
-        self.num_obs = obs_cfg["num_obs"]
-        self.num_privileged_obs = None
-        self.num_actions = env_cfg["num_actions"]
-        self.num_commands = command_cfg["num_commands"]
+    def __init__(
+        self,
+        num_envs: int,
+        env_cfg: dict[str, Any],
+        obs_cfg: dict[str, Any],
+        reward_cfg: dict[str, Any],
+        command_cfg: dict[str, Any],
+        show_viewer: bool = False,
+        recording_camera: bool = False,
+    ) -> None:
+        self.num_envs: int = num_envs
+        self.num_obs: int = obs_cfg["num_obs"]
+        self.num_privileged_obs: int | None = None
+        self.num_actions: int = env_cfg["num_actions"]
+        self.num_commands: int = command_cfg["num_commands"]
         self.device = gs.device
 
         self.simulate_action_latency = True
@@ -166,6 +198,26 @@ class DroidEnvUnitree:
                 GUI=False,
             )
 
+        # Contact Sensor の追加（V20追加）
+        # Z座標閾値ベースの接地検出から、物理エンジンの実際の接触判定に移行
+        # V21追加: use_contact_sensorオプションでContact Sensorの使用を制御
+        # Falseの場合はZ座標閾値ベースの接地検出にフォールバック
+        self._feet_names_for_sensor = env_cfg.get("feet_names", ["left_foot_link", "right_foot_link"])
+        self.contact_sensors = []
+        if env_cfg.get("use_contact_sensor", True):
+            for foot_name in self._feet_names_for_sensor:
+                try:
+                    link = self.robot.get_link(foot_name)
+                    sensor = self.scene.add_sensor(
+                        gs.sensors.Contact(
+                            entity_idx=self.robot.idx,
+                            link_idx_local=link.idx_local,
+                        )
+                    )
+                    self.contact_sensors.append(sensor)
+                except Exception:
+                    pass
+
         # ビルド
         self.scene.build(n_envs=num_envs)
 
@@ -179,7 +231,16 @@ class DroidEnvUnitree:
 
         # PD制御パラメータ
         self.robot.set_dofs_kp([self.env_cfg["kp"]] * self.num_actions, self.motors_dof_idx)
-        self.robot.set_dofs_kv([self.env_cfg["kd"]] * self.num_actions, self.motors_dof_idx)
+        # kd: デフォルト値で初期化し、kd_overridesで関節個別の値を上書き（V25追加）
+        kd_values = [self.env_cfg["kd"]] * self.num_actions
+        kd_overrides: dict[str, float] = self.env_cfg.get("kd_overrides", {})
+        if kd_overrides:
+            joint_names = self.env_cfg["joint_names"]
+            for joint_name, kd_val in kd_overrides.items():
+                if joint_name in joint_names:
+                    idx = joint_names.index(joint_name)
+                    kd_values[idx] = kd_val
+        self.robot.set_dofs_kv(kd_values, self.motors_dof_idx)
 
         # 重力ベクトル
         self.global_gravity = torch.tensor([0.0, 0.0, -1.0], dtype=gs.tc_float, device=gs.device)
@@ -198,14 +259,16 @@ class DroidEnvUnitree:
 
         # 足のリンクインデックス
         self.feet_names = env_cfg.get("feet_names", ["left_foot_link", "right_foot_link"])
-        self.feet_indices = []
+        _feet_idx_list: list[int] = []
         for name in self.feet_names:
             try:
                 link = self.robot.get_link(name)
-                self.feet_indices.append(link.idx_local)
+                _feet_idx_list.append(link.idx_local)
             except Exception:
                 pass
-        self.feet_indices = torch.tensor(self.feet_indices, dtype=gs.tc_int, device=gs.device) if self.feet_indices else None
+        self.feet_indices: torch.Tensor | None = (
+            torch.tensor(_feet_idx_list, dtype=gs.tc_int, device=gs.device) if _feet_idx_list else None
+        )
 
         # バッファ初期化
         self.base_lin_vel = torch.empty((self.num_envs, 3), dtype=gs.tc_float, device=gs.device)
@@ -227,6 +290,7 @@ class DroidEnvUnitree:
                 self.command_cfg["lin_vel_x_range"],
                 self.command_cfg["lin_vel_y_range"],
                 self.command_cfg["ang_vel_range"],
+                strict=False,
             )
         ]
         self.actions = torch.zeros((self.num_envs, self.num_actions), dtype=gs.tc_float, device=gs.device)
@@ -261,8 +325,12 @@ class DroidEnvUnitree:
         self.leg_phase = torch.zeros((self.num_envs, 2), dtype=gs.tc_float, device=gs.device)
 
         # feet_air_time用バッファ
+        self.feet_air_time: torch.Tensor | None
+        self.last_contacts: torch.Tensor | None
         if self.feet_indices is not None and len(self.feet_indices) > 0:
-            self.feet_air_time = torch.zeros((self.num_envs, len(self.feet_indices)), dtype=gs.tc_float, device=gs.device)
+            self.feet_air_time = torch.zeros(
+                (self.num_envs, len(self.feet_indices)), dtype=gs.tc_float, device=gs.device
+            )
             self.last_contacts = torch.ones((self.num_envs, len(self.feet_indices)), dtype=gs.tc_bool, device=gs.device)
         else:
             self.feet_air_time = None
@@ -285,34 +353,78 @@ class DroidEnvUnitree:
         self.contact_threshold = self.reward_cfg.get("contact_threshold", 0.025)
         # feet_air_time報酬のオフセット（V5追加: デフォルト0.5秒はUnitree向け、小型ロボットは0.25秒推奨）
         self.air_time_offset = self.reward_cfg.get("air_time_offset", 0.5)
+        # contact_no_velの速度次元数（V25追加: 2=XYのみ, 3=XYZ）
+        self.contact_no_vel_dims: int = self.reward_cfg.get("contact_no_vel_dims", 2)
+        # stance_hip_roll_targetのターゲット角度（exp008 V8追加）
+        self.stance_hip_roll_target_angle = self.reward_cfg.get("stance_hip_roll_target_angle", 0.0)
+        # stance_foot_lateral_positionの最小距離閾値（exp008 V12追加）
+        self.stance_foot_lateral_min_distance = self.reward_cfg.get("stance_foot_lateral_min_distance", 0.050)
+        # hip_rollの内向きPDターゲットクランプ値（exp008 V13追加）
+        # Noneの場合はクランプなし（既存バージョンとの互換性維持）
+        self.hip_roll_inward_limit = self.reward_cfg.get("hip_roll_inward_limit", None)
+        # 位相条件付きPDクランプ（exp008 V16追加）
+        # Trueの場合、hip_roll PDターゲットクランプを接地相のみに適用
+        # Falseの場合、全位相で適用（V13-V15互換）
+        self.hip_roll_clamp_stance_only = self.reward_cfg.get("hip_roll_clamp_stance_only", False)
+        # 遊脚相の外向きPDターゲットクランプ値（exp008 V18追加）
+        # Noneの場合はクランプなし（V17以前との互換性維持）
+        # 正の値で指定（左脚の外向き上限、右脚は符号反転で適用）
+        self.hip_roll_outward_limit: float | None = self.reward_cfg.get("hip_roll_outward_limit", None)
 
-        self.extras = dict()
-        self.extras["observations"] = dict()
+        self.extras: dict[str, Any] = {}
+        self.extras["observations"] = {}
 
         # 報酬関数の準備
-        self.reward_functions, self.episode_sums = dict(), dict()
-        for name in self.reward_scales.keys():
+        self.reward_functions, self.episode_sums = {}, {}
+        for name in self.reward_scales:
             self.reward_scales[name] *= self.dt
             self.reward_functions[name] = getattr(self, "_reward_" + name)
             self.episode_sums[name] = torch.zeros((self.num_envs,), dtype=gs.tc_float, device=gs.device)
 
-    def _resample_commands(self, envs_idx):
+    def _resample_commands(self, envs_idx: torch.Tensor | None) -> None:
         """速度コマンドを再サンプリング"""
-        commands = gs_rand(*self.commands_limits, (self.num_envs,))
+        commands = gs_rand(*self.commands_limits, (self.num_envs,))  # type: ignore[arg-type, call-arg]
         if envs_idx is None:
             self.commands.copy_(commands)
         else:
             torch.where(envs_idx[:, None], commands, self.commands, out=self.commands)
 
-    def _get_foot_contacts(self):
-        """足の接地状態を取得（Z座標ベース）"""
+    def _get_foot_contacts(self) -> torch.Tensor | None:
+        """足の接地状態を取得（Contact Sensorベース）
+
+        V20変更: Z座標閾値ベース → Genesis Contact Sensor ベース
+
+        【変更理由】
+        V19まではZ座標閾値で判定していたが、Base高さの変動で
+        誤判定が発生していた（feet_air_time=0, single_foot_contact=0）。
+        GenesisのContact Sensorを使用することで、物理エンジンの
+        実際の接触判定を利用する。
+
+        Returns:
+            torch.Tensor: 接地状態 (n_envs, 2)、True=接地中
+        """
+        # Contact Sensorが利用可能な場合はそれを使用（V20以降）
+        if self.contact_sensors:
+            contacts = []
+            for sensor in self.contact_sensors:
+                contact = sensor.read()  # shape: (n_envs, 1)
+                # (n_envs, 1) → (n_envs,) に変換
+                if contact.dim() > 1:
+                    contact = contact.squeeze(-1)
+                contacts.append(contact)
+            # (n_envs,) × 2 → (n_envs, 2) にスタック
+            result = torch.stack(contacts, dim=-1)
+            # Genesis Contact Sensorはintを返すため、明示的にboolに変換
+            return result.bool() if result.dtype != torch.bool else result
+
+        # フォールバック: Z座標ベースの旧実装（Contact Sensorがない場合）
         if self.feet_indices is None:
             return None
         link_pos = self.robot.get_links_pos()
         feet_z = link_pos[:, self.feet_indices, 2]
         return feet_z < self.contact_threshold
 
-    def _update_feet_state(self):
+    def _update_feet_state(self) -> None:
         """足先の位置と速度を更新"""
         if self.feet_indices is None:
             return
@@ -322,11 +434,65 @@ class DroidEnvUnitree:
             self.feet_pos[:, i, :] = link_pos[:, idx, :]
             self.feet_vel[:, i, :] = link_vel[:, idx, :]
 
-    def step(self, actions):
+    def step(self, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
         """環境を1ステップ進める"""
         self.actions = torch.clip(actions, -self.env_cfg["clip_actions"], self.env_cfg["clip_actions"])
         exec_actions = self.last_actions if self.simulate_action_latency else self.actions
         target_dof_pos = exec_actions * self.env_cfg["action_scale"] + self.default_dof_pos
+
+        # hip_rollのPDターゲットクランプ（V13追加, V16拡張: 位相条件付き, V18拡張: 双方向）
+        if self.hip_roll_inward_limit is not None or self.hip_roll_outward_limit is not None:
+            # 内向きクランプ値（V13-V17）
+            if self.hip_roll_inward_limit is not None:
+                left_inward_clamped = torch.clamp(
+                    target_dof_pos[:, self.left_hip_roll_idx], min=self.hip_roll_inward_limit
+                )
+                right_inward_clamped = torch.clamp(
+                    target_dof_pos[:, self.right_hip_roll_idx], max=-self.hip_roll_inward_limit
+                )
+
+            # 外向きクランプ値（V18新規）
+            if self.hip_roll_outward_limit is not None:
+                left_outward_clamped = torch.clamp(
+                    target_dof_pos[:, self.left_hip_roll_idx], max=self.hip_roll_outward_limit
+                )
+                right_outward_clamped = torch.clamp(
+                    target_dof_pos[:, self.right_hip_roll_idx], min=-self.hip_roll_outward_limit
+                )
+
+            if self.hip_roll_clamp_stance_only:
+                # 位相条件付きクランプ（V16追加, V18拡張: 双方向）
+                # contact_stateは前ステップ値（20ms遅延、stance ~500msに対し十分小さい）
+                left_stance = self.contact_state[:, 0] > 0.5
+                right_stance = self.contact_state[:, 1] > 0.5
+                left_swing = ~left_stance
+                right_swing = ~right_stance
+
+                # 接地相: 内向きクランプ（V13-V17同様）
+                if self.hip_roll_inward_limit is not None:
+                    target_dof_pos[:, self.left_hip_roll_idx] = torch.where(
+                        left_stance, left_inward_clamped, target_dof_pos[:, self.left_hip_roll_idx]
+                    )
+                    target_dof_pos[:, self.right_hip_roll_idx] = torch.where(
+                        right_stance, right_inward_clamped, target_dof_pos[:, self.right_hip_roll_idx]
+                    )
+
+                # 遊脚相: 外向きクランプ（V18新規）
+                if self.hip_roll_outward_limit is not None:
+                    target_dof_pos[:, self.left_hip_roll_idx] = torch.where(
+                        left_swing, left_outward_clamped, target_dof_pos[:, self.left_hip_roll_idx]
+                    )
+                    target_dof_pos[:, self.right_hip_roll_idx] = torch.where(
+                        right_swing, right_outward_clamped, target_dof_pos[:, self.right_hip_roll_idx]
+                    )
+            else:
+                # 全位相クランプ（V13-V15互換）
+                if self.hip_roll_inward_limit is not None:
+                    target_dof_pos[:, self.left_hip_roll_idx] = left_inward_clamped
+                    target_dof_pos[:, self.right_hip_roll_idx] = right_inward_clamped
+                if self.hip_roll_outward_limit is not None:
+                    target_dof_pos[:, self.left_hip_roll_idx] = left_outward_clamped
+                    target_dof_pos[:, self.right_hip_roll_idx] = right_outward_clamped
 
         self.robot.control_dofs_position(target_dof_pos[:, self.actions_dof_idx], slice(6, 6 + self.num_actions))
         self.scene.step()
@@ -363,13 +529,14 @@ class DroidEnvUnitree:
 
         # feet_air_time更新
         if self.feet_air_time is not None and contacts is not None:
+            assert self.last_contacts is not None
             first_contact = (self.feet_air_time > 0.0) & contacts & ~self.last_contacts
             self.feet_air_time += self.dt
             self.feet_air_time = torch.where(contacts, torch.zeros_like(self.feet_air_time), self.feet_air_time)
             self.last_contacts = contacts
             self._first_contact = first_contact
         else:
-            self._first_contact = None
+            self._first_contact = None  # type: ignore[assignment]
 
         # 報酬計算
         self.rew_buf.zero_()
@@ -406,14 +573,14 @@ class DroidEnvUnitree:
 
         return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
 
-    def get_observations(self):
+    def get_observations(self) -> tuple[torch.Tensor, dict[str, Any]]:
         self.extras["observations"]["critic"] = self.obs_buf
         return self.obs_buf, self.extras
 
-    def get_privileged_observations(self):
+    def get_privileged_observations(self) -> None:
         return None
 
-    def _reset_idx(self, envs_idx=None):
+    def _reset_idx(self, envs_idx: torch.Tensor | None = None) -> None:
         """環境をリセット"""
         self.robot.set_qpos(self.init_qpos, envs_idx=envs_idx, zero_velocity=True, skip_forward=True)
 
@@ -436,6 +603,7 @@ class DroidEnvUnitree:
             self.feet_vel.zero_()
             self.contact_state.zero_()
             if self.feet_air_time is not None:
+                assert self.last_contacts is not None
                 self.feet_air_time.zero_()
                 self.last_contacts.fill_(True)
         else:
@@ -459,6 +627,7 @@ class DroidEnvUnitree:
             self.feet_vel.masked_fill_(envs_idx[:, None, None], 0.0)
             self.contact_state.masked_fill_(envs_idx[:, None], 0.0)
             if self.feet_air_time is not None:
+                assert self.last_contacts is not None
                 self.feet_air_time.masked_fill_(envs_idx[:, None], 0.0)
                 self.last_contacts.masked_fill_(envs_idx[:, None], True)
 
@@ -470,14 +639,14 @@ class DroidEnvUnitree:
                 mean = value.mean()
                 value.zero_()
             else:
-                mean = torch.where(n_envs > 0, value[envs_idx].sum() / n_envs, 0.0)
+                mean = torch.where(n_envs > 0, value[envs_idx].sum() / n_envs, 0.0)  # type: ignore[arg-type]
                 self.extras["episode"]["rew_" + key] = mean / self.env_cfg["episode_length_s"]
                 value.masked_fill_(envs_idx, 0.0)
             self.extras["episode"]["rew_" + key] = mean / self.env_cfg["episode_length_s"]
 
         self._resample_commands(envs_idx)
 
-    def _update_observation(self):
+    def _update_observation(self) -> None:
         """観測ベクトルを更新 (50次元)"""
         gait_phase_sin = torch.sin(self.gait_phase * 2 * math.pi).unsqueeze(1)
         gait_phase_cos = torch.cos(self.gait_phase * 2 * math.pi).unsqueeze(1)
@@ -500,7 +669,7 @@ class DroidEnvUnitree:
             dim=-1,
         )
 
-    def reset(self):
+    def reset(self) -> tuple[torch.Tensor, None]:
         self._reset_idx()
         self._update_observation()
         return self.obs_buf, None
@@ -511,56 +680,65 @@ class DroidEnvUnitree:
 
     # ------------ 速度追従報酬（Unitree方式）----------------
 
-    def _reward_tracking_lin_vel(self):
+    def _reward_tracking_lin_vel(self) -> torch.Tensor:
         """線形速度追従報酬（Unitree方式: exp関数）"""
         lin_vel_error = torch.sum(torch.square(self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
         return torch.exp(-lin_vel_error / self.tracking_sigma)
 
-    def _reward_tracking_ang_vel(self):
+    def _reward_tracking_ang_vel(self) -> torch.Tensor:
         """角速度追従報酬（Unitree方式: exp関数）"""
         ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
         return torch.exp(-ang_vel_error / self.tracking_sigma)
 
     # ------------ 安定性ペナルティ（Unitree方式）----------------
 
-    def _reward_lin_vel_z(self):
+    def _reward_lin_vel_z(self) -> torch.Tensor:
         """Z方向速度ペナルティ"""
         return torch.square(self.base_lin_vel[:, 2])
 
-    def _reward_ang_vel_xy(self):
+    def _reward_base_vel_y(self) -> torch.Tensor:
+        """Y方向並進速度ペナルティ（横方向揺れ抑制）
+
+        Added in exp008 V15: 横方向並進速度を直接ペナルティ化。
+        V14で顕在化した横方向並進揺れ（lateral std 48mm, Y速度std 0.225m/s）を抑制する。
+        ang_vel_xyが角速度（回転）を制約するのに対し、本報酬は並進速度を直接制約する。
+        """
+        return torch.square(self.base_lin_vel[:, 1])
+
+    def _reward_ang_vel_xy(self) -> torch.Tensor:
         """XY角速度ペナルティ"""
         return torch.sum(torch.square(self.base_ang_vel[:, :2]), dim=1)
 
-    def _reward_orientation(self):
+    def _reward_orientation(self) -> torch.Tensor:
         """姿勢維持ペナルティ（Unitree方式: projected_gravity）"""
         return torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)
 
-    def _reward_base_height(self):
+    def _reward_base_height(self) -> torch.Tensor:
         """ベース高さペナルティ（Unitree方式）"""
         height = self.base_pos[:, 2]
         return torch.square(height - self.base_height_target)
 
     # ------------ エネルギー効率ペナルティ ----------------
 
-    def _reward_torques(self):
+    def _reward_torques(self) -> torch.Tensor:
         """トルクペナルティ"""
         return torch.sum(torch.square(self.actions), dim=1)
 
-    def _reward_dof_vel(self):
+    def _reward_dof_vel(self) -> torch.Tensor:
         """関節速度ペナルティ"""
         return torch.sum(torch.square(self.dof_vel), dim=1)
 
-    def _reward_dof_acc(self):
+    def _reward_dof_acc(self) -> torch.Tensor:
         """関節加速度ペナルティ"""
         return torch.sum(torch.square((self.dof_vel - self.last_dof_vel) / self.dt), dim=1)
 
-    def _reward_action_rate(self):
+    def _reward_action_rate(self) -> torch.Tensor:
         """アクション変化率ペナルティ"""
         return torch.sum(torch.square(self.last_actions - self.actions), dim=1)
 
     # ------------ 歩行品質報酬（Unitree方式）----------------
 
-    def _reward_feet_air_time(self):
+    def _reward_feet_air_time(self) -> torch.Tensor:
         """滞空時間報酬（Unitree方式）
 
         オフセット値はreward_cfg["air_time_offset"]で設定可能（デフォルト: 0.5秒）。
@@ -570,13 +748,11 @@ class DroidEnvUnitree:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
         # air_time_offsetは設定可能（V5追加）
-        rew_air_time = torch.sum(
-            (self.feet_air_time - self.air_time_offset) * self._first_contact.float(), dim=1
-        )
+        rew_air_time = torch.sum((self.feet_air_time - self.air_time_offset) * self._first_contact.float(), dim=1)
         rew_air_time *= (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return rew_air_time
 
-    def _reward_contact(self):
+    def _reward_contact(self) -> torch.Tensor:
         """接地フェーズ報酬（Unitree G1/H1方式）
 
         脚の接地状態と歩行フェーズの整合性を報酬化。
@@ -598,7 +774,7 @@ class DroidEnvUnitree:
 
         return res
 
-    def _reward_feet_swing_height(self):
+    def _reward_feet_swing_height(self) -> torch.Tensor:
         """遊脚高さペナルティ（Unitree G1/H1方式）
 
         スイング中の足の高さを目標値に近づける。
@@ -612,41 +788,48 @@ class DroidEnvUnitree:
         # 接地していない足のみを対象
         return torch.sum(pos_error * (~contacts).float(), dim=1)
 
-    def _reward_contact_no_vel(self):
-        """接地時足速度ペナルティ（Unitree H1方式）
+    def _reward_contact_no_vel(self) -> torch.Tensor:
+        """接地時足速度ペナルティ（Unitree H1方式、次元数設定可能）
 
         接地中の足の速度をペナルティ化（足滑り防止）。
+
+        【次元数設定】reward_cfg["contact_no_vel_dims"]で制御:
+        - 2 (デフォルト): XY方向のみ（V23以前互換、足滑り防止）
+        - 3: XYZ 3D速度（V24で試行、構造的欠陥によりV25で非推奨）
         """
         contacts = self._get_foot_contacts()
         if contacts is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
-        # 水平方向の速度のみ
-        vel_xy = self.feet_vel[:, :, :2]
-        vel_sq = torch.sum(torch.square(vel_xy), dim=2)  # [num_envs, 2]
+        # 足速度の次元選択（contact_no_vel_dims: 2=XY, 3=XYZ）
+        vel = self.feet_vel[:, :, : self.contact_no_vel_dims]
+        vel_sq = torch.sum(torch.square(vel), dim=2)  # [num_envs, 2]
         return torch.sum(vel_sq * contacts.float(), dim=1)
 
-    def _reward_hip_pos(self):
+    def _reward_hip_pos(self) -> torch.Tensor:
         """股関節位置ペナルティ（Unitree G1/H1方式）
 
         hip_yaw, hip_rollの過度な変位をペナルティ化。
         """
         # BSL-Droid: hip_yaw (0, 5), hip_roll (1, 6)
-        hip_angles = torch.cat([
-            self.dof_pos[:, self.left_hip_yaw_idx:self.left_hip_yaw_idx+1],
-            self.dof_pos[:, self.left_hip_roll_idx:self.left_hip_roll_idx+1],
-            self.dof_pos[:, self.right_hip_yaw_idx:self.right_hip_yaw_idx+1],
-            self.dof_pos[:, self.right_hip_roll_idx:self.right_hip_roll_idx+1],
-        ], dim=1)
+        hip_angles = torch.cat(
+            [
+                self.dof_pos[:, self.left_hip_yaw_idx : self.left_hip_yaw_idx + 1],
+                self.dof_pos[:, self.left_hip_roll_idx : self.left_hip_roll_idx + 1],
+                self.dof_pos[:, self.right_hip_yaw_idx : self.right_hip_yaw_idx + 1],
+                self.dof_pos[:, self.right_hip_roll_idx : self.right_hip_roll_idx + 1],
+            ],
+            dim=1,
+        )
         return torch.sum(torch.square(hip_angles), dim=1)
 
-    def _reward_alive(self):
+    def _reward_alive(self) -> torch.Tensor:
         """生存報酬（Unitree方式）"""
         return torch.ones(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
     # ------------ 静止ポリシー対策（V3追加）----------------
 
-    def _reward_single_foot_contact(self):
+    def _reward_single_foot_contact(self) -> torch.Tensor:
         """片足接地報酬（V3追加）
 
         移動コマンド時に「片足のみ接地」状態を報酬化。
@@ -660,8 +843,8 @@ class DroidEnvUnitree:
         if contacts is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
-        # 移動コマンドかどうかを判定（X速度コマンド > 0.05 m/s）
-        is_moving_command = self.commands[:, 0].abs() > 0.05
+        # 移動コマンドかどうかを判定（XY速度ノルム > 0.1 m/s、多方向対応）
+        is_moving_command = torch.norm(self.commands[:, :2], dim=1) > 0.1
 
         # 接地状態を取得
         left_contact = contacts[:, 0]
@@ -672,14 +855,12 @@ class DroidEnvUnitree:
 
         # 移動コマンド時のみ報酬、静止コマンド時は1.0
         reward = torch.where(
-            is_moving_command,
-            single_contact.float(),
-            torch.ones(self.num_envs, dtype=gs.tc_float, device=gs.device)
+            is_moving_command, single_contact.float(), torch.ones(self.num_envs, dtype=gs.tc_float, device=gs.device)
         )
         return reward
 
-    def _reward_velocity_deficit(self):
-        """目標速度未達ペナルティ（V3追加）
+    def _reward_velocity_deficit(self) -> torch.Tensor:
+        """目標速度未達ペナルティ（V3追加、exp009で多方向対応に汎化）
 
         目標速度を下回っている場合にペナルティを付与。
         「動かない」局所最適を回避する。
@@ -688,18 +869,26 @@ class DroidEnvUnitree:
         - 静止ポリシーでは、velocity_deficit = (target - 0)² > 0 となりペナルティ
         - 歩行ポリシーでは、target近傍でdeficit ≈ 0
         - これにより静止が明示的に不利になる
+
+        【多方向対応（exp009）】
+        コマンド方向への射影ベースに変更。XY平面の任意方向コマンドに対応。
+        exp008以前（Y=0）の場合は旧実装と同一結果を返す。
         """
-        # 目標X速度 - 実際のX速度（正の値 = 目標未達）
-        deficit = torch.clamp(self.commands[:, 0] - self.base_lin_vel[:, 0], min=0)
-        return deficit ** 2
+        cmd_xy = self.commands[:, :2]
+        cmd_mag = torch.norm(cmd_xy, dim=1)
+        is_moving = cmd_mag > 0.05
+        cmd_dir = cmd_xy / (cmd_mag.unsqueeze(1) + 1e-8)
+        vel_along_cmd = torch.sum(self.base_lin_vel[:, :2] * cmd_dir, dim=1)
+        deficit = torch.clamp(cmd_mag - vel_along_cmd, min=0)
+        return deficit**2 * is_moving.float()
 
     # ------------ 安全性ペナルティ ----------------
 
-    def _reward_termination(self):
+    def _reward_termination(self) -> torch.Tensor:
         """終了ペナルティ"""
         return self.reset_buf.float() * (self.episode_length_buf < self.max_episode_length).float()
 
-    def _reward_dof_pos_limits(self):
+    def _reward_dof_pos_limits(self) -> torch.Tensor:
         """関節位置限界ペナルティ
 
         膝関節が0度（まっすぐ）に近づきすぎることを抑制。
@@ -707,13 +896,14 @@ class DroidEnvUnitree:
         knee_upper_limit = -0.2  # rad
         left_knee = self.dof_pos[:, self.left_knee_idx]
         right_knee = self.dof_pos[:, self.right_knee_idx]
-        out_of_limits = torch.clamp(left_knee - knee_upper_limit, min=0) + \
-                        torch.clamp(right_knee - knee_upper_limit, min=0)
+        out_of_limits = torch.clamp(left_knee - knee_upper_limit, min=0) + torch.clamp(
+            right_knee - knee_upper_limit, min=0
+        )
         return out_of_limits
 
     # ------------ 対称性・振動抑制（V5追加）----------------
 
-    def _reward_symmetry(self):
+    def _reward_symmetry(self) -> torch.Tensor:
         """左右脚対称性報酬（V5追加）
 
         hip_roll, knee, ankleの左右差をペナルティ化することで、
@@ -737,17 +927,47 @@ class DroidEnvUnitree:
 
         # 左右差の二乗和
         symmetry_error = (
-            torch.square(left_roll - (-right_roll)) +  # rollは符号反転で対称
-            torch.square(left_knee - right_knee) +
-            torch.square(left_ankle - right_ankle)
+            torch.square(left_roll - (-right_roll))  # rollは符号反転で対称
+            + torch.square(left_knee - right_knee)
+            + torch.square(left_ankle - right_ankle)
         )
 
         # ガウシアン型報酬（誤差が小さいほど報酬が高い）
         return torch.exp(-symmetry_error / 0.5)
 
+    def _reward_symmetry_range(self) -> torch.Tensor:
+        """hip_pitch可動域の左右対称性報酬（V17追加）
+
+        V16問題: hip_pitch可動域 L=0.524 vs R=0.197 rad（2.7倍の非対称）
+        既存の_reward_symmetryはhip_pitchを除外しているため、この問題に対処できない。
+
+        【設計原理】
+        - 既存symmetry報酬はhip_pitchを除外（交互歩行で逆位相が理想のため）
+        - 本報酬は「振幅」の対称性を評価（位相ではなく可動域の大きさ）
+        - 両脚が同程度の可動域で動くことを促進
+        - 片脚だけ大きく動く局所最適を回避
+
+        【参考文献】
+        - Leveraging Symmetry in RL-based Legged Locomotion Control (IROS 2024)
+        - exp007_report_v16.md: 根本原因分析
+        """
+        left_hip_pitch = self.dof_pos[:, self.left_hip_pitch_idx]
+        right_hip_pitch = self.dof_pos[:, self.right_hip_pitch_idx]
+
+        # デフォルトからの偏差（振幅の指標）
+        left_deviation = torch.abs(left_hip_pitch - self.default_dof_pos[self.left_hip_pitch_idx])
+        right_deviation = torch.abs(right_hip_pitch - self.default_dof_pos[self.right_hip_pitch_idx])
+
+        # 偏差の差をペナルティ（対称なら0）
+        deviation_diff = torch.abs(left_deviation - right_deviation)
+
+        # 指数型報酬（対称時に最大1.0）
+        sigma = 0.1  # rad
+        return torch.exp(-deviation_diff / sigma)
+
     # ------------ 交互歩行・足裏制御（V7追加）----------------
 
-    def _reward_alternating_gait(self):
+    def _reward_alternating_gait(self) -> torch.Tensor:
         """hip_pitch逆位相報酬（V7追加）
 
         交互歩行を強化するため、左右のhip_pitchが逆位相であることを報酬化。
@@ -769,7 +989,7 @@ class DroidEnvUnitree:
         # ガウシアン型報酬（和が0に近いほど報酬が高い）
         return torch.exp(-phase_sum / 0.3)
 
-    def _reward_foot_flat(self):
+    def _reward_foot_flat(self) -> torch.Tensor:
         """足裏水平報酬（V7追加）
 
         足首（ankle_pitch）が極端に傾かないように制御。
@@ -787,12 +1007,8 @@ class DroidEnvUnitree:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
         # ankle_pitchのデフォルトからの偏差
-        left_ankle_dev = torch.abs(
-            self.dof_pos[:, self.left_ankle_idx] - self.default_dof_pos[self.left_ankle_idx]
-        )
-        right_ankle_dev = torch.abs(
-            self.dof_pos[:, self.right_ankle_idx] - self.default_dof_pos[self.right_ankle_idx]
-        )
+        left_ankle_dev = torch.abs(self.dof_pos[:, self.left_ankle_idx] - self.default_dof_pos[self.left_ankle_idx])
+        right_ankle_dev = torch.abs(self.dof_pos[:, self.right_ankle_idx] - self.default_dof_pos[self.right_ankle_idx])
 
         # 接地中の足のみを対象（スイング相は除外）
         left_penalty = left_ankle_dev * contacts[:, 0].float()
@@ -801,29 +1017,33 @@ class DroidEnvUnitree:
         # 二乗誤差
         return torch.square(left_penalty) + torch.square(right_penalty)
 
-    def _reward_step_length(self):
-        """歩幅報酬（V7追加）
+    def _reward_step_length(self) -> torch.Tensor:
+        """歩幅報酬（V7追加、exp009で多方向対応に汎化）
 
-        前後の足の距離が大きいことを報酬化し、大股歩行を促進。
+        コマンド方向への足間距離を報酬化し、大股歩行を促進。
 
         【設計原理】
-        - 遊脚時に足が前方に大きく振り出されることを報酬
+        - 遊脚時に足がコマンド方向に大きく振り出されることを報酬
         - 両足が近い位置にある（小刻み歩行）状態を抑制
+
+        【多方向対応（exp009）】
+        X軸固定からコマンド方向への射影に変更。横歩き・後退でも機能。
+        exp008以前（Y=0）の場合は旧実装と同一結果を返す。
         """
-        # 前後方向（X軸）の足間距離
-        left_foot_x = self.feet_pos[:, 0, 0]
-        right_foot_x = self.feet_pos[:, 1, 0]
-        foot_distance_x = torch.abs(left_foot_x - right_foot_x)
+        cmd_xy = self.commands[:, :2]
+        cmd_mag = torch.norm(cmd_xy, dim=1)
+        is_moving = cmd_mag > 0.05
+        cmd_dir = cmd_xy / (cmd_mag.unsqueeze(1) + 1e-8)
 
-        # 移動コマンド時のみ報酬
-        is_moving = self.commands[:, 0].abs() > 0.05
-        reward = foot_distance_x * is_moving.float()
+        foot_delta_x = self.feet_pos[:, 0, 0] - self.feet_pos[:, 1, 0]
+        foot_delta_y = self.feet_pos[:, 0, 1] - self.feet_pos[:, 1, 1]
+        foot_dist_along_cmd = torch.abs(foot_delta_x * cmd_dir[:, 0] + foot_delta_y * cmd_dir[:, 1])
 
-        return reward
+        return foot_dist_along_cmd * is_moving.float()
 
     # ------------ 交互歩行改善・胴体安定化（V8追加）----------------
 
-    def _reward_hip_pitch_antiphase(self):
+    def _reward_hip_pitch_antiphase(self) -> torch.Tensor:
         """hip_pitch速度の逆相関報酬（V8追加）
 
         V7のalternating_gait報酬は「位置の和が0」を報酬化したが、
@@ -845,8 +1065,8 @@ class DroidEnvUnitree:
         # -sign(left_vel * right_vel) は逆相関時に+1、同相関時に-1
         velocity_product = left_vel * right_vel
 
-        # 移動コマンド時のみ適用
-        is_moving = self.commands[:, 0].abs() > 0.05
+        # 移動コマンド時のみ適用（XY速度ノルム > 0.1 m/s、多方向対応）
+        is_moving = torch.norm(self.commands[:, :2], dim=1) > 0.1
 
         # 速度の積が負のとき報酬（逆相関）
         # tanh関数でスケーリングして滑らかな報酬に
@@ -854,7 +1074,27 @@ class DroidEnvUnitree:
 
         return reward * is_moving.float()
 
-    def _reward_ankle_roll(self):
+    def _reward_hip_yaw_pos(self) -> torch.Tensor:
+        """hip_yaw位置ペナルティ（exp008 V3追加）
+
+        hip_posのcompound penalty（hip_yaw²+hip_roll²）を分離し、
+        hip_yaw²のみをペナルティ化する。
+
+        【設計原理】
+        - hip_posはhip_yawとhip_rollを同時にペナルティ化していたが、
+          narrow URDFではhip_rollの必要自由度が増加するため構造的矛盾が発生
+        - hip_yaw制約はYawドリフト抑制に不可欠（V2で実証）
+        - hip_roll制御はankle_rollに委任し、独立制御を実現
+
+        【参考文献】
+        exp008_report_v2.md: compound penalty構造の問題を壊滅的に実証
+        """
+        left_yaw = self.dof_pos[:, self.left_hip_yaw_idx]
+        right_yaw = self.dof_pos[:, self.right_hip_yaw_idx]
+
+        return torch.square(left_yaw) + torch.square(right_yaw)
+
+    def _reward_ankle_roll(self) -> torch.Tensor:
         """足首ロール角ペナルティ（V8追加）
 
         V7ではfoot_flat報酬がankle_pitch（ピッチ方向）のみを対象としていたが、
@@ -877,9 +1117,87 @@ class DroidEnvUnitree:
         # ロール角の二乗和
         return torch.square(left_roll) + torch.square(right_roll)
 
+    def _reward_stance_hip_roll_target(self) -> torch.Tensor:
+        """接地相限定hip_rollペナルティ（exp008 V4追加, V8拡張: ターゲット角度対応）
+
+        接地脚のみに(hip_roll - target)²ペナルティを適用する。
+
+        【設計原理】
+        - V4: hip_roll²で内股offset ±15°が持続 → 0°ターゲットでは矯正力不足
+        - V8: 明示的な外向きターゲット角度を設定し、(hip_roll - target)²で直接制約
+        - ターゲット角度はreward_cfg["stance_hip_roll_target_angle"]で設定（rad）
+        - L脚: +target（外向き）, R脚: -target（外向き）の符号規則
+        - target=0の場合はV4と同一動作（後方互換）
+
+        【参考文献】
+        exp008_report_v7.md: 代替案B（ターゲット角度設定）
+        """
+        contacts = self._get_foot_contacts()
+        if contacts is None:
+            return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
+
+        left_roll = self.dof_pos[:, self.left_hip_roll_idx]
+        right_roll = self.dof_pos[:, self.right_hip_roll_idx]
+
+        # ターゲット角度: L=+target(外向き), R=-target(外向き)
+        target = self.stance_hip_roll_target_angle
+        penalty = (
+            torch.square(left_roll - target) * contacts[:, 0].float()
+            + torch.square(right_roll + target) * contacts[:, 1].float()
+        )
+
+        return penalty
+
+    def _reward_stance_foot_lateral_position(self) -> torch.Tensor:
+        """接地足横方向位置ペナルティ（exp008 V12追加）
+
+        接地足が胴体中心に近すぎる場合にペナルティを適用する。
+        関節角度（hip_roll）ではなく足位置を直接制約することで、
+        FK鎖全体（hip_roll, hip_pitch, knee等の組合せ）を活用した
+        内股解消の新経路を提供する。
+
+        【設計原理】
+        - V4-V11: hip_roll角度ペナルティでは飽和域（99.8%）で壁に当たり突破不可能
+        - V12: 足の横方向位置を直接ペナルティ化（タスク空間ペナルティ）
+        - 片側制約: 最小距離以下のみペナルティ（それ以上は完全に自由）
+        - 接地相のみ適用（遊脚は自由に動ける）
+        - 距離を閾値で正規化し、(1 - dist/threshold)²形式で0~1の範囲にスケーリング
+
+        【ペナルティ計算】
+        - 各足の横方向距離: |foot_y - base_y|（ワールドフレーム）
+        - 閾値: stance_foot_lateral_min_distance (default: 0.050m)
+        - 正規化不足量: max(1 - lateral_distance / min_distance, 0)
+        - ペナルティ: 正規化不足量²（0~1の範囲、閾値で0、胴体直下で1）
+
+        【stance_hip_roll_targetとの違い】
+        - stance_hip_roll_target: hip_roll²（間接指標、1関節のみ制約）
+        - stance_foot_lateral_position: 足横位置（直接指標、全関節で達成可能）
+
+        【参考文献】
+        exp008_report_v11.md: パラダイムシフト提案（関節角度→足位置）
+        """
+        contacts = self._get_foot_contacts()
+        if contacts is None:
+            return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
+
+        # 各足の横方向距離（胴体中心からの距離）
+        left_lateral_dist = torch.abs(self.feet_pos[:, 0, 1] - self.base_pos[:, 1])
+        right_lateral_dist = torch.abs(self.feet_pos[:, 1, 1] - self.base_pos[:, 1])
+
+        # 正規化された片側制約: (1 - dist/threshold)² で0~1の範囲
+        min_dist = self.stance_foot_lateral_min_distance
+        left_deficit_norm = torch.clamp(1.0 - left_lateral_dist / min_dist, min=0.0)
+        right_deficit_norm = torch.clamp(1.0 - right_lateral_dist / min_dist, min=0.0)
+
+        # 接地脚のみペナルティ適用
+        return (
+            torch.square(left_deficit_norm) * contacts[:, 0].float()
+            + torch.square(right_deficit_norm) * contacts[:, 1].float()
+        )
+
     # ------------ 対称性・両脚動作強化（V9追加）----------------
 
-    def _reward_hip_pitch_antiphase_v2(self):
+    def _reward_hip_pitch_antiphase_v2(self) -> torch.Tensor:
         """hip_pitch速度の逆相関報酬・修正版（V9追加）
 
         V8のhip_pitch_antiphaseは「速度の積が負」を報酬化したが、
@@ -917,11 +1235,11 @@ class DroidEnvUnitree:
         # 両脚が動いている場合のみ報酬を与える
         reward = antiphase_reward * both_active.float()
 
-        # 移動コマンド時のみ適用
-        is_moving = self.commands[:, 0].abs() > 0.05
+        # 移動コマンド時のみ適用（XY速度ノルム > 0.1 m/s、多方向対応）
+        is_moving = torch.norm(self.commands[:, :2], dim=1) > 0.1
         return reward * is_moving.float()
 
-    def _reward_both_legs_active(self):
+    def _reward_both_legs_active(self) -> torch.Tensor:
         """両脚動作報酬（V9追加）
 
         V8では片脚（右脚）だけが動く局所最適に収束した。
@@ -945,13 +1263,13 @@ class DroidEnvUnitree:
         # 速度を適度にスケーリング（大きすぎる値を抑制）
         reward = torch.tanh(min_vel / 0.5)
 
-        # 移動コマンド時のみ適用
-        is_moving = self.commands[:, 0].abs() > 0.05
+        # 移動コマンド時のみ適用（XY速度ノルム > 0.1 m/s、多方向対応）
+        is_moving = torch.norm(self.commands[:, :2], dim=1) > 0.1
         return reward * is_moving.float()
 
     # ------------ 足引きずり抑制（V10追加）----------------
 
-    def _reward_feet_stumble(self):
+    def _reward_feet_stumble(self) -> torch.Tensor:
         """足引きずりペナルティ（V10追加）
 
         接地中の足が水平方向に大きな速度を持つ場合にペナルティを与える。
@@ -975,3 +1293,308 @@ class DroidEnvUnitree:
 
         # 接地中の足のみを対象
         return torch.sum(vel_xy * contacts.float(), dim=1)
+
+    # ------------ 関節速度制限（V18追加）----------------
+
+    def _reward_dof_vel_limits(self) -> torch.Tensor:
+        """関節角速度のソフトリミット報酬（V18追加）
+
+        【設計原理】
+        実機（RobStride RS-02）の最大角速度は ±44 rad/s。
+        シミュレーションでこの制限を超える動作を学習すると、実機展開時に
+        速度飽和による動作不安定・性能劣化が発生する。
+
+        この報酬はsoft_dof_vel_limit（デフォルト90%）を超えた角速度に
+        ペナルティを与えることで、実機パラメータ内での動作を促す。
+
+        【参考文献】
+        - ETH Zurich Legged Gym:
+          https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/envs/base/legged_robot.py
+        - RobStride RS-02仕様:
+          ros2_ws/src/robstride_hardware/include/robstride_hardware/robstride_driver.hpp
+          constexpr double VELOCITY = 44.0; // ±44 rad/s
+
+        【実装】
+        - dof_vel_limits: 実機の最大速度（44 rad/s）
+        - soft_dof_vel_limit: 制限の何%で報酬を開始するか（0.9 = 90%）
+        - ペナルティは制限超過分を0-1の範囲にクリップして合計
+
+        【使用例】
+        reward_cfg = {
+            "dof_vel_limits": 44.0,      # RobStride RS-02の仕様
+            "soft_dof_vel_limit": 0.9,   # 制限の90%（39.6 rad/s）で報酬開始
+            "reward_scales": {
+                "dof_vel_limits": -0.3,  # ペナルティ係数
+            }
+        }
+        """
+        dof_vel_limits = self.reward_cfg.get("dof_vel_limits", 44.0)  # デフォルト: RS-02仕様
+        soft_limit_factor = self.reward_cfg.get("soft_dof_vel_limit", 0.9)  # デフォルト: 90%
+
+        # 各関節の速度絶対値が制限の何%を超えているか
+        # (|vel| - limit*factor) をクリップして合計
+        out_of_limits = (torch.abs(self.dof_vel) - dof_vel_limits * soft_limit_factor).clip(min=0.0, max=1.0)
+
+        return torch.sum(out_of_limits, dim=1)
+
+    # ------------ hip_pitch可動域促進（V19追加）----------------
+
+    def _reward_hip_pitch_range(self) -> torch.Tensor:
+        """hip_pitch可動域の大きさを報酬（V19追加）
+
+        【設計意図】
+        - V18課題: hip_pitch可動域が小さい（0.368-0.432 rad）
+        - 両脚のhip_pitchがデフォルトから大きく動くことを報酬化
+        - symmetry_rangeと異なり、「動いている」ことを前提とした報酬
+
+        【V17 symmetry_rangeとの違い】
+        - symmetry_range: 左右の偏差の差を評価（静止でも最大報酬）
+        - hip_pitch_range: 偏差の大きさ自体を報酬（動かないと報酬0）
+
+        【参考文献】
+        - exp007_report_v17.md: 静止局所解問題の分析
+        - exp007_report_v18.md: ストライド不足の分析
+        """
+        left_hip = self.dof_pos[:, self.left_hip_pitch_idx]
+        right_hip = self.dof_pos[:, self.right_hip_pitch_idx]
+
+        # デフォルトからの偏差（可動域の大きさ）
+        left_range = torch.abs(left_hip - self.default_dof_pos[self.left_hip_pitch_idx])
+        right_range = torch.abs(right_hip - self.default_dof_pos[self.right_hip_pitch_idx])
+
+        # 両脚の平均可動域を報酬（動かないと0、大きく動くと大きな報酬）
+        avg_range = (left_range + right_range) / 2
+
+        # 目標可動域を0.3 radとし、それ以上で最大報酬
+        target_range = 0.3
+        return torch.clamp(avg_range / target_range, max=1.0)
+
+    # ------------ 遊脚時足首角度制限（V22a追加）----------------
+
+    def _reward_ankle_pitch_range(self) -> torch.Tensor:
+        """遊脚時のankle_pitch角度制限ペナルティ（V22a追加）
+
+        【設計原理】
+        V20課題: つま先を地面に突く動作が発生
+        原因: ankle_pitchの可動域が大きい（L: 0.484 rad, R: 0.369 rad）
+        対策: 遊脚（非接地）時のankle_pitch角度を制限
+
+        つま先が下を向く（ankle_pitchが正方向に大きくなる）動きを抑制することで、
+        足を下ろす際の姿勢を改善する。
+
+        【V7 foot_flatとの違い】
+        - foot_flat: 接地中の足首傾きをペナルティ（足裏を水平に保つ）
+        - ankle_pitch_range: 遊脚時の足首傾きをペナルティ（つま先が下を向く動きを抑制）
+
+        【参考文献】
+        - exp007_report_v20.md: 次バージョンへの提案A
+        - exp007_unitree_rl_gym_survey.md Section 7.5.1 Barrier-Based Style Rewards
+        """
+        contacts = self._get_foot_contacts()
+        if contacts is None:
+            return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
+
+        ankle_pitch_limit = self.reward_cfg.get("ankle_pitch_limit", 0.3)  # rad
+
+        # ankle_pitchのデフォルトからの偏差
+        left_ankle_dev = torch.abs(self.dof_pos[:, self.left_ankle_idx] - self.default_dof_pos[self.left_ankle_idx])
+        right_ankle_dev = torch.abs(self.dof_pos[:, self.right_ankle_idx] - self.default_dof_pos[self.right_ankle_idx])
+
+        # 許容範囲を超えた分をペナルティ
+        left_excess = torch.clamp(left_ankle_dev - ankle_pitch_limit, min=0)
+        right_excess = torch.clamp(right_ankle_dev - ankle_pitch_limit, min=0)
+
+        # 遊脚（非接地）時のみペナルティ
+        left_penalty = torch.square(left_excess) * (~contacts[:, 0]).float()
+        right_penalty = torch.square(right_excess) * (~contacts[:, 1]).float()
+
+        return left_penalty + right_penalty
+
+    # ------------ 遊脚直交速度ペナルティ（V24追加）----------------
+
+    def _reward_swing_foot_lateral_velocity(self) -> torch.Tensor:
+        """遊脚の速度指令直交成分ペナルティ（V24追加）
+
+        【設計原理】
+        V23課題: 遊脚が体の内側を通る軌道（内股）になっている
+        原因: hip rollが脱力気味で、エネルギー最小化のために内側を通る軌道が選択される
+        対策: 遊脚（非接地）時の速度指令と直交する速度成分をペナルティ化
+
+        速度指令ベクトル cmd = (cmd_x, cmd_y) に対して、
+        遊脚速度 vel = (vel_x, vel_y) の直交成分をペナルティ化する。
+
+        数学的には:
+          cmd_dir = cmd / |cmd|  (指令方向の単位ベクトル)
+          vel_parallel = vel · cmd_dir  (指令方向成分)
+          |vel_perp|² = |vel|² - vel_parallel²  (直交成分の二乗)
+
+        これにより、前進コマンド時はY軸成分が、横移動コマンド時はX軸成分が、
+        斜め移動時は指令方向と直交する成分がペナルティ化される。
+        前後左右自由自在に歩けるポリシーを学習できる。
+
+        【contact_no_velとの違い】
+        - contact_no_vel: 接地中の足速度をペナルティ（足滑り防止）
+        - swing_foot_lateral_velocity: 遊脚時の指令直交速度をペナルティ（内股防止）
+
+        【参考文献】
+        - exp007_report_v23.md: 内股軌道の課題分析
+        - ユーザー提案: 遊脚速度成分の方向制御
+        """
+        contacts = self._get_foot_contacts()
+        if contacts is None:
+            return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
+
+        # 速度指令ベクトル (cmd_x, cmd_y)
+        cmd_x = self.commands[:, 0]  # shape: (num_envs,)
+        cmd_y = self.commands[:, 1]  # shape: (num_envs,)
+
+        # 指令ベクトルの大きさ
+        cmd_norm = torch.sqrt(cmd_x**2 + cmd_y**2 + 1e-8)  # ゼロ除算防止
+
+        # 移動コマンドかどうか（静止時はペナルティなし）
+        is_moving = cmd_norm > 0.05
+
+        # 指令方向の単位ベクトル
+        cmd_dir_x = cmd_x / cmd_norm  # shape: (num_envs,)
+        cmd_dir_y = cmd_y / cmd_norm  # shape: (num_envs,)
+
+        # 遊脚速度ベクトル (vel_x, vel_y) - 左右の足
+        vel_x = self.feet_vel[:, :, 0]  # shape: (num_envs, 2)
+        vel_y = self.feet_vel[:, :, 1]  # shape: (num_envs, 2)
+
+        # 速度ベクトルの大きさの二乗
+        vel_sq = vel_x**2 + vel_y**2  # shape: (num_envs, 2)
+
+        # 指令方向成分（内積）: vel · cmd_dir
+        # cmd_dir を (num_envs, 1) に拡張して計算
+        vel_parallel = vel_x * cmd_dir_x.unsqueeze(1) + vel_y * cmd_dir_y.unsqueeze(1)
+
+        # 直交成分の二乗: |vel_perp|² = |vel|² - vel_parallel²
+        vel_perp_sq = vel_sq - vel_parallel**2
+        # 数値誤差で負になる可能性があるのでclamp
+        vel_perp_sq = torch.clamp(vel_perp_sq, min=0)
+
+        # 遊脚（非接地）時のみペナルティ
+        swing_mask = (~contacts).float()
+        penalty = torch.sum(vel_perp_sq * swing_mask, dim=1)
+
+        # 移動コマンド時のみ適用（静止コマンド時は報酬0）
+        return penalty * is_moving.float()
+
+    def _reward_foot_lateral_velocity(self) -> torch.Tensor:
+        """足先の速度指令直交成分ペナルティ - 全相適用（exp008 V7追加）
+
+        【設計原理】
+        _reward_swing_foot_lateral_velocityの拡張版。
+        遊脚のみでなく全フェーズ（遊脚+接地脚）で
+        速度指令と直交する速度成分をペナルティ化する。
+
+        【設計意図】
+        exp008 V6課題: 内股着地が接地相での横方向速度成分にも起因する可能性
+        → 遊脚マスクを除去し、全相でvel_perp²をペナルティ化
+
+        【swing_foot_lateral_velocityとの違い】
+        - swing_foot_lateral_velocity: 遊脚時のみ適用（swing_mask使用）
+        - foot_lateral_velocity: 全フェーズで適用（マスクなし）
+
+        【参考文献】
+        - exp008_report_v6.md: 次バージョンへの提案（推奨案）
+        """
+        # 速度指令ベクトル (cmd_x, cmd_y)
+        cmd_x = self.commands[:, 0]
+        cmd_y = self.commands[:, 1]
+
+        cmd_norm = torch.sqrt(cmd_x**2 + cmd_y**2 + 1e-8)
+        is_moving = cmd_norm > 0.05
+
+        cmd_dir_x = cmd_x / cmd_norm
+        cmd_dir_y = cmd_y / cmd_norm
+
+        vel_x = self.feet_vel[:, :, 0]
+        vel_y = self.feet_vel[:, :, 1]
+
+        vel_sq = vel_x**2 + vel_y**2
+        vel_parallel = vel_x * cmd_dir_x.unsqueeze(1) + vel_y * cmd_dir_y.unsqueeze(1)
+
+        vel_perp_sq = vel_sq - vel_parallel**2
+        vel_perp_sq = torch.clamp(vel_perp_sq, min=0)
+
+        # swing_maskなし: 全フェーズで適用
+        penalty = torch.sum(vel_perp_sq, dim=1)
+
+        return penalty * is_moving.float()
+
+    # ------------ スイング期間報酬（V29追加）----------------
+
+    def _reward_swing_duration(self) -> torch.Tensor:
+        """スイング期間中の累積報酬（V29追加）
+
+        【設計原理】
+        V28課題: feet_air_time報酬のfirst_contact構造がタップダンスを促進している
+        原因: first_contactは接地開始時にのみTrueになり、同じ足で複数回接地すると
+              複数回報酬計算が行われる。短い滞空でも「接地」すれば報酬が発生するため、
+              「足を上げてすぐ下ろす」動作が学習される。
+
+        対策: 「空中にいる間ずっと報酬」方式を導入
+        - 遊脚が空中にいる時間がair_time_offsetを超えた場合に報酬
+        - 毎ステップ報酬を与えることで、長い滞空を促進
+        - first_contactによる「接地直後の一回だけ報酬」ではないため、
+          タップダンス（短い滞空→接地→短い滞空→接地）のメリットがなくなる
+
+        【feet_air_timeとの違い】
+        - feet_air_time: 接地時に滞空時間に応じた報酬を一度だけ付与（first_contact構造）
+        - swing_duration: 空中にいる間ずっと報酬を付与（毎ステップ）
+
+        【参考文献】
+        - exp007_report_v28.md: first_contact構造の問題分析
+        - exp007_unitree_rl_gym_survey.md: 足上げ高さ報酬の設計
+        """
+        if self.feet_air_time is None:
+            return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
+
+        # 移動コマンドがある場合のみ
+        is_moving = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
+
+        # 空中にいる時間がair_time_offsetを超えた場合に報酬
+        # clampで負の値を0にして、air_time_offset未満の滞空では報酬なし
+        reward_per_foot = torch.clamp(self.feet_air_time - self.air_time_offset, min=0.0)
+
+        # 両足の報酬を合計
+        reward = torch.sum(reward_per_foot, dim=1) * is_moving
+
+        return reward
+
+    # ------------ スイング接地ペナルティ（V30追加）----------------
+
+    def _reward_swing_contact_penalty(self) -> torch.Tensor:
+        """スイング位相中の接地ペナルティ（V30追加）
+
+        【設計原理】
+        V29課題: swing_duration報酬が完全に機能しなかった（報酬値0.0000）
+        原因: air_time_offset=0.25秒がBSL-Droidでは達成困難
+        V29結果: 片足接地率が87.8%→75.8%に悪化（タップダンス悪化）
+
+        対策: スイング位相中の接地を直接ペナルティ化
+        - swing_durationと併用し、「空中維持」と「接地抑制」の両面から誘導
+        - スイング位相（leg_phase >= 0.55）中に接地した場合にペナルティ
+
+        【参考文献】
+        - exp007_report_v29.md: 提案B（swing_contact_penalty追加）
+        """
+        if self.contact_state is None:
+            return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
+
+        # 移動コマンドがある場合のみ
+        is_moving = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
+
+        penalty = torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
+
+        for i in range(2):  # 両足
+            # スイング位相の判定（位相が0.55以上）
+            is_swing_phase = self.leg_phase[:, i] >= 0.55
+            # 接地状態の判定
+            is_contact = self.contact_state[:, i] > 0.5
+            # スイング位相中に接地 = ペナルティ
+            penalty += (is_swing_phase & is_contact).float()
+
+        return penalty * is_moving

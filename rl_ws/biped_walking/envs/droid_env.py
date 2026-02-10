@@ -38,15 +38,17 @@
 - 各関節の目標位置オフセット（action_scaleでスケーリング）
 """
 
-import math
+from __future__ import annotations
 
-import torch
+import math
+from typing import Any
 
 import genesis as gs
-from genesis.utils.geom import quat_to_xyz, transform_by_quat, inv_quat, transform_quat_by_quat
+import torch
+from genesis.utils.geom import inv_quat, quat_to_xyz, transform_by_quat, transform_quat_by_quat
 
 
-def gs_rand(lower, upper, batch_shape):
+def gs_rand(lower: torch.Tensor, upper: torch.Tensor, batch_shape: tuple[int, ...]) -> torch.Tensor:
     """一様乱数を生成"""
     assert lower.shape == upper.shape
     return (upper - lower) * torch.rand(size=(*batch_shape, *lower.shape), dtype=gs.tc_float, device=gs.device) + lower
@@ -55,12 +57,21 @@ def gs_rand(lower, upper, batch_shape):
 class DroidEnv:
     """BSL-Droid Simplified二脚ロボットのGenesis強化学習環境（統一版）"""
 
-    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg, show_viewer=False, recording_camera=False):
-        self.num_envs = num_envs
-        self.num_obs = obs_cfg["num_obs"]
-        self.num_privileged_obs = None
-        self.num_actions = env_cfg["num_actions"]
-        self.num_commands = command_cfg["num_commands"]
+    def __init__(
+        self,
+        num_envs: int,
+        env_cfg: dict[str, Any],
+        obs_cfg: dict[str, Any],
+        reward_cfg: dict[str, Any],
+        command_cfg: dict[str, Any],
+        show_viewer: bool = False,
+        recording_camera: bool = False,
+    ) -> None:
+        self.num_envs: int = num_envs
+        self.num_obs: int = obs_cfg["num_obs"]
+        self.num_privileged_obs: int | None = None
+        self.num_actions: int = env_cfg["num_actions"]
+        self.num_commands: int = command_cfg["num_commands"]
         self.device = gs.device
 
         self.simulate_action_latency = True  # 実機では1ステップの遅延がある
@@ -156,14 +167,16 @@ class DroidEnv:
 
         # 足のリンクインデックス
         self.feet_names = env_cfg.get("feet_names", ["left_foot_link", "right_foot_link"])
-        self.feet_indices = []
+        _feet_idx_list: list[int] = []
         for name in self.feet_names:
             try:
                 link = self.robot.get_link(name)
-                self.feet_indices.append(link.idx_local)
+                _feet_idx_list.append(link.idx_local)
             except Exception:
                 pass
-        self.feet_indices = torch.tensor(self.feet_indices, dtype=gs.tc_int, device=gs.device) if self.feet_indices else None
+        self.feet_indices: torch.Tensor | None = (
+            torch.tensor(_feet_idx_list, dtype=gs.tc_int, device=gs.device) if _feet_idx_list else None
+        )
 
         # バッファ初期化
         self.base_lin_vel = torch.empty((self.num_envs, 3), dtype=gs.tc_float, device=gs.device)
@@ -185,6 +198,7 @@ class DroidEnv:
                 self.command_cfg["lin_vel_x_range"],
                 self.command_cfg["lin_vel_y_range"],
                 self.command_cfg["ang_vel_range"],
+                strict=False,
             )
         ]
         self.actions = torch.zeros((self.num_envs, self.num_actions), dtype=gs.tc_float, device=gs.device)
@@ -201,8 +215,12 @@ class DroidEnv:
         )
 
         # feet_air_time用バッファ
+        self.feet_air_time: torch.Tensor | None
+        self.last_contacts: torch.Tensor | None
         if self.feet_indices is not None and len(self.feet_indices) > 0:
-            self.feet_air_time = torch.zeros((self.num_envs, len(self.feet_indices)), dtype=gs.tc_float, device=gs.device)
+            self.feet_air_time = torch.zeros(
+                (self.num_envs, len(self.feet_indices)), dtype=gs.tc_float, device=gs.device
+            )
             self.last_contacts = torch.ones((self.num_envs, len(self.feet_indices)), dtype=gs.tc_bool, device=gs.device)
         else:
             self.feet_air_time = None
@@ -211,11 +229,11 @@ class DroidEnv:
         # hip_pitch/hip_roll位置のトラッキング（交互歩行分析用）
         # joint_names: [L_hip_yaw, L_hip_roll, L_hip_pitch, L_knee, L_ankle,
         #               R_hip_yaw, R_hip_roll, R_hip_pitch, R_knee, R_ankle]
-        self.left_hip_yaw_idx = 0     # left_hip_yaw_joint
-        self.left_hip_roll_idx = 1    # left_hip_roll_joint
-        self.left_hip_pitch_idx = 2   # left_hip_pitch_joint
-        self.right_hip_yaw_idx = 5    # right_hip_yaw_joint
-        self.right_hip_roll_idx = 6   # right_hip_roll_joint
+        self.left_hip_yaw_idx = 0  # left_hip_yaw_joint
+        self.left_hip_roll_idx = 1  # left_hip_roll_joint
+        self.left_hip_pitch_idx = 2  # left_hip_pitch_joint
+        self.right_hip_yaw_idx = 5  # right_hip_yaw_joint
+        self.right_hip_roll_idx = 6  # right_hip_roll_joint
         self.right_hip_pitch_idx = 7  # right_hip_pitch_joint
         self.last_left_hip_pitch = torch.zeros((self.num_envs,), dtype=gs.tc_float, device=gs.device)
         self.last_right_hip_pitch = torch.zeros((self.num_envs,), dtype=gs.tc_float, device=gs.device)
@@ -234,25 +252,25 @@ class DroidEnv:
         # 高さ目標（脚が短いため低く設定）
         self.base_height_target = self.reward_cfg.get("base_height_target", 0.25)
 
-        self.extras = dict()
-        self.extras["observations"] = dict()
+        self.extras: dict[str, Any] = {}
+        self.extras["observations"] = {}
 
         # 報酬関数の準備
-        self.reward_functions, self.episode_sums = dict(), dict()
-        for name in self.reward_scales.keys():
+        self.reward_functions, self.episode_sums = {}, {}
+        for name in self.reward_scales:
             self.reward_scales[name] *= self.dt
             self.reward_functions[name] = getattr(self, "_reward_" + name)
             self.episode_sums[name] = torch.zeros((self.num_envs,), dtype=gs.tc_float, device=gs.device)
 
-    def _resample_commands(self, envs_idx):
+    def _resample_commands(self, envs_idx: torch.Tensor | None) -> None:
         """速度コマンドを再サンプリング"""
-        commands = gs_rand(*self.commands_limits, (self.num_envs,))
+        commands = gs_rand(*self.commands_limits, (self.num_envs,))  # type: ignore[arg-type, call-arg]
         if envs_idx is None:
             self.commands.copy_(commands)
         else:
             torch.where(envs_idx[:, None], commands, self.commands, out=self.commands)
 
-    def _get_foot_contacts(self):
+    def _get_foot_contacts(self) -> torch.Tensor | None:
         """足の接地状態を取得（簡易版：Z座標ベース）"""
         if self.feet_indices is None:
             return None
@@ -262,7 +280,7 @@ class DroidEnv:
         feet_z = link_pos[:, self.feet_indices, 2]
         return feet_z < contact_threshold
 
-    def step(self, actions):
+    def step(self, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
         """環境を1ステップ進める"""
         self.actions = torch.clip(actions, -self.env_cfg["clip_actions"], self.env_cfg["clip_actions"])
         exec_actions = self.last_actions if self.simulate_action_latency else self.actions
@@ -298,24 +316,21 @@ class DroidEnv:
         left_hp = self.dof_pos[:, self.left_hip_pitch_idx]
         right_hp = self.dof_pos[:, self.right_hip_pitch_idx]
         self.hip_pitch_max_recent[:, 0] = torch.maximum(
-            self.hip_pitch_max_recent[:, 0] * (1 - alpha) + left_hp * alpha,
-            left_hp
+            self.hip_pitch_max_recent[:, 0] * (1 - alpha) + left_hp * alpha, left_hp
         )
         self.hip_pitch_max_recent[:, 1] = torch.maximum(
-            self.hip_pitch_max_recent[:, 1] * (1 - alpha) + right_hp * alpha,
-            right_hp
+            self.hip_pitch_max_recent[:, 1] * (1 - alpha) + right_hp * alpha, right_hp
         )
         self.hip_pitch_min_recent[:, 0] = torch.minimum(
-            self.hip_pitch_min_recent[:, 0] * (1 - alpha) + left_hp * alpha,
-            left_hp
+            self.hip_pitch_min_recent[:, 0] * (1 - alpha) + left_hp * alpha, left_hp
         )
         self.hip_pitch_min_recent[:, 1] = torch.minimum(
-            self.hip_pitch_min_recent[:, 1] * (1 - alpha) + right_hp * alpha,
-            right_hp
+            self.hip_pitch_min_recent[:, 1] * (1 - alpha) + right_hp * alpha, right_hp
         )
 
         # feet_air_time更新
         if self.feet_air_time is not None:
+            assert self.last_contacts is not None
             contacts = self._get_foot_contacts()
             if contacts is not None:
                 first_contact = (self.feet_air_time > 0.0) & contacts & ~self.last_contacts
@@ -327,17 +342,15 @@ class DroidEnv:
                 current_time = self.episode_length_buf.float() * self.dt
                 for i in range(2):
                     self.last_contact_change_time[:, i] = torch.where(
-                        contact_changed[:, i],
-                        current_time,
-                        self.last_contact_change_time[:, i]
+                        contact_changed[:, i], current_time, self.last_contact_change_time[:, i]
                     )
 
                 self.last_contacts = contacts
                 self._first_contact = first_contact
             else:
-                self._first_contact = None
+                self._first_contact = None  # type: ignore[assignment]
         else:
-            self._first_contact = None
+            self._first_contact = None  # type: ignore[assignment]
 
         # 報酬計算
         self.rew_buf.zero_()
@@ -379,14 +392,14 @@ class DroidEnv:
 
         return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
 
-    def get_observations(self):
+    def get_observations(self) -> tuple[torch.Tensor, dict[str, Any]]:
         self.extras["observations"]["critic"] = self.obs_buf
         return self.obs_buf, self.extras
 
-    def get_privileged_observations(self):
+    def get_privileged_observations(self) -> None:
         return None
 
-    def _reset_idx(self, envs_idx=None):
+    def _reset_idx(self, envs_idx: torch.Tensor | None = None) -> None:
         """環境をリセット"""
         self.robot.set_qpos(self.init_qpos, envs_idx=envs_idx, zero_velocity=True, skip_forward=True)
 
@@ -410,6 +423,7 @@ class DroidEnv:
             self.hip_pitch_max_recent.zero_()
             self.hip_pitch_min_recent.zero_()
             if self.feet_air_time is not None:
+                assert self.last_contacts is not None
                 self.feet_air_time.zero_()
                 self.last_contacts.fill_(True)
         else:
@@ -434,6 +448,7 @@ class DroidEnv:
             self.hip_pitch_max_recent.masked_fill_(envs_idx[:, None], 0.0)
             self.hip_pitch_min_recent.masked_fill_(envs_idx[:, None], 0.0)
             if self.feet_air_time is not None:
+                assert self.last_contacts is not None
                 self.feet_air_time.masked_fill_(envs_idx[:, None], 0.0)
                 self.last_contacts.masked_fill_(envs_idx[:, None], True)
 
@@ -445,14 +460,14 @@ class DroidEnv:
                 mean = value.mean()
                 value.zero_()
             else:
-                mean = torch.where(n_envs > 0, value[envs_idx].sum() / n_envs, 0.0)
+                mean = torch.where(n_envs > 0, value[envs_idx].sum() / n_envs, 0.0)  # type: ignore[arg-type]
                 self.extras["episode"]["rew_" + key] = mean / self.env_cfg["episode_length_s"]
                 value.masked_fill_(envs_idx, 0.0)
             self.extras["episode"]["rew_" + key] = mean / self.env_cfg["episode_length_s"]
 
         self._resample_commands(envs_idx)
 
-    def _update_observation(self):
+    def _update_observation(self) -> None:
         """観測ベクトルを更新 (39次元)"""
         self.obs_buf = torch.concatenate(
             (
@@ -466,7 +481,7 @@ class DroidEnv:
             dim=-1,
         )
 
-    def reset(self):
+    def reset(self) -> tuple[torch.Tensor, None]:
         self._reset_idx()
         self._update_observation()
         return self.obs_buf, None
@@ -477,81 +492,79 @@ class DroidEnv:
 
     # ------------ 基本報酬関数（V1から存在）----------------
 
-    def _reward_tracking_lin_vel(self):
+    def _reward_tracking_lin_vel(self) -> torch.Tensor:
         """線形速度追従報酬（主タスク）"""
         lin_vel_error = torch.sum(torch.square(self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
         return torch.exp(-lin_vel_error / self.reward_cfg["tracking_sigma"])
 
-    def _reward_tracking_ang_vel(self):
+    def _reward_tracking_ang_vel(self) -> torch.Tensor:
         """角速度追従報酬"""
         ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
         return torch.exp(-ang_vel_error / self.reward_cfg["tracking_sigma"])
 
-    def _reward_lin_vel_z(self):
+    def _reward_lin_vel_z(self) -> torch.Tensor:
         """Z方向速度ペナルティ"""
         return torch.square(self.base_lin_vel[:, 2])
 
-    def _reward_ang_vel_xy(self):
+    def _reward_ang_vel_xy(self) -> torch.Tensor:
         """XY角速度ペナルティ"""
         return torch.sum(torch.square(self.base_ang_vel[:, :2]), dim=1)
 
-    def _reward_orientation(self):
+    def _reward_orientation(self) -> torch.Tensor:
         """姿勢維持ペナルティ"""
         return torch.square(self.projected_gravity[:, 2] + 1.0)
 
-    def _reward_base_height(self):
+    def _reward_base_height(self) -> torch.Tensor:
         """ベース高さペナルティ"""
         height = self.base_pos[:, 2]
         error = height - self.base_height_target
         return torch.square(error)
 
-    def _reward_base_height_high(self):
+    def _reward_base_height_high(self) -> torch.Tensor:
         """高すぎる場合の追加ペナルティ"""
         height = self.base_pos[:, 2]
         error = height - self.base_height_target
         high_error = torch.clamp(error, min=0.0)
         return torch.square(high_error)
 
-    def _reward_backward_velocity(self):
+    def _reward_backward_velocity(self) -> torch.Tensor:
         """後退速度ペナルティ"""
         backward_vel = torch.clamp(-self.base_lin_vel[:, 0], min=0.0)
         return torch.square(backward_vel)
 
-    def _reward_torques(self):
+    def _reward_torques(self) -> torch.Tensor:
         """トルクペナルティ（エネルギー効率）"""
         return torch.sum(torch.square(self.actions), dim=1)
 
-    def _reward_dof_vel(self):
+    def _reward_dof_vel(self) -> torch.Tensor:
         """関節速度ペナルティ（振動抑制）"""
         return torch.sum(torch.square(self.dof_vel), dim=1)
 
-    def _reward_dof_acc(self):
+    def _reward_dof_acc(self) -> torch.Tensor:
         """関節加速度ペナルティ（振動抑制・強化）"""
         return torch.sum(torch.square((self.dof_vel - self.last_dof_vel) / self.dt), dim=1)
 
-    def _reward_action_rate(self):
+    def _reward_action_rate(self) -> torch.Tensor:
         """アクション変化率ペナルティ（振動抑制・強化）"""
         return torch.sum(torch.square(self.last_actions - self.actions), dim=1)
 
-    def _reward_similar_to_default(self):
+    def _reward_similar_to_default(self) -> torch.Tensor:
         """デフォルト姿勢維持ペナルティ"""
         return torch.sum(torch.abs(self.dof_pos - self.default_dof_pos), dim=1)
 
     # ------------ 二脚歩行報酬（V1から存在）----------------
 
-    def _reward_feet_air_time(self):
+    def _reward_feet_air_time(self) -> torch.Tensor:
         """足の滞空時間報酬"""
         if self.feet_air_time is None or self._first_contact is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
         target_air_time = self.reward_cfg.get("feet_air_time_target", 0.25)
-        rew_air_time = torch.sum(
-            (self.feet_air_time - target_air_time) * self._first_contact.float(), dim=1
-        )
+        rew_air_time = torch.sum((self.feet_air_time - target_air_time) * self._first_contact.float(), dim=1)
         rew_air_time *= (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return rew_air_time
 
-    def _reward_no_fly(self):
+    def _reward_no_fly(self) -> torch.Tensor:
         """両足同時離地ペナルティ"""
         if self.feet_air_time is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
@@ -563,7 +576,7 @@ class DroidEnv:
         both_feet_in_air = ~contacts.any(dim=1)
         return both_feet_in_air.float()
 
-    def _reward_alternating_gait(self):
+    def _reward_alternating_gait(self) -> torch.Tensor:
         """交互歩行報酬（接地状態ベース）"""
         contacts = self._get_foot_contacts()
         if contacts is None or contacts.shape[1] != 2:
@@ -575,7 +588,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return alternating.float() * has_command
 
-    def _reward_foot_swing(self):
+    def _reward_foot_swing(self) -> torch.Tensor:
         """足のスイング報酬"""
         if self.feet_air_time is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
@@ -588,7 +601,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return torch.sum(air_time_reward, dim=1) * has_command
 
-    def _reward_single_stance(self):
+    def _reward_single_stance(self) -> torch.Tensor:
         """片足立ち報酬"""
         contacts = self._get_foot_contacts()
         if contacts is None or contacts.shape[1] != 2:
@@ -600,7 +613,7 @@ class DroidEnv:
 
     # ------------ 動的歩行報酬（V1から存在）----------------
 
-    def _reward_hip_pitch_alternation(self):
+    def _reward_hip_pitch_alternation(self) -> torch.Tensor:
         """左右hip_pitchの逆相運動報酬"""
         left_hip_vel = self.dof_vel[:, self.left_hip_pitch_idx]
         right_hip_vel = self.dof_vel[:, self.right_hip_pitch_idx]
@@ -611,7 +624,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_hip_pitch_velocity(self):
+    def _reward_hip_pitch_velocity(self) -> torch.Tensor:
         """hip_pitchの速度報酬"""
         left_hip_vel = torch.abs(self.dof_vel[:, self.left_hip_pitch_idx])
         right_hip_vel = torch.abs(self.dof_vel[:, self.right_hip_pitch_idx])
@@ -622,10 +635,10 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_contact_alternation(self):
+    def _reward_contact_alternation(self) -> torch.Tensor:
         """接地タイミングの交互性報酬"""
         contacts = self._get_foot_contacts()
-        if contacts is None or contacts.shape[1] != 2:
+        if contacts is None or contacts.shape[1] != 2 or self.last_contacts is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
         left_changed = contacts[:, 0] != self.last_contacts[:, 0]
@@ -638,30 +651,30 @@ class DroidEnv:
 
         return (one_changed.float() - both_changed.float() * 0.5) * has_command
 
-    def _reward_forward_progress(self):
+    def _reward_forward_progress(self) -> torch.Tensor:
         """前進進捗報酬"""
         forward_vel = self.base_lin_vel[:, 0]
         target_vel = self.commands[:, 0]
         progress = torch.clamp(forward_vel * torch.sign(target_vel), min=0.0)
         return progress
 
-    def _reward_alive(self):
+    def _reward_alive(self) -> torch.Tensor:
         """生存報酬"""
         return torch.ones(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
-    def _reward_pitch_penalty(self):
+    def _reward_pitch_penalty(self) -> torch.Tensor:
         """Pitch角ペナルティ"""
         pitch_rad = self.base_euler[:, 1] * 3.14159 / 180.0
         return torch.square(pitch_rad)
 
-    def _reward_roll_penalty(self):
+    def _reward_roll_penalty(self) -> torch.Tensor:
         """Roll角ペナルティ"""
         roll_rad = self.base_euler[:, 0] * 3.14159 / 180.0
         return torch.square(roll_rad)
 
     # ------------ V3追加: 膝負角度維持報酬 ----------------
 
-    def _reward_knee_negative(self):
+    def _reward_knee_negative(self) -> torch.Tensor:
         """膝関節が負の角度を維持することを促す報酬
 
         BSL-Droid Simplifiedの膝関節は負角度で後方屈曲（逆関節）。
@@ -674,7 +687,7 @@ class DroidEnv:
         - left_knee_pitch_joint: 3
         - right_knee_pitch_joint: 8
         """
-        left_knee = self.dof_pos[:, 3]   # left_knee_pitch_joint
+        left_knee = self.dof_pos[:, 3]  # left_knee_pitch_joint
         right_knee = self.dof_pos[:, 8]  # right_knee_pitch_joint
 
         # 正の角度にペナルティ（負で0、正で|角度|を返す）
@@ -682,13 +695,13 @@ class DroidEnv:
         return penalty
 
     # 後方互換性のためのエイリアス（V3-V6で使用）
-    def _reward_knee_positive(self):
+    def _reward_knee_positive(self) -> torch.Tensor:
         """後方互換性エイリアス: knee_negativeを呼び出す"""
         return self._reward_knee_negative()
 
     # ------------ V4追加: 膝最大角度制約 ----------------
 
-    def _reward_knee_min_angle(self):
+    def _reward_knee_min_angle(self) -> torch.Tensor:
         """膝が最大角度 (-0.3 rad) を上回らないようにする
 
         デフォルト姿勢の膝角度 (-0.6 rad) に対して、
@@ -696,17 +709,16 @@ class DroidEnv:
         -0.3 rad ≈ -17度（軽い屈曲）
         """
         max_knee_angle = -0.3  # 最大値（0に近い側）
-        left_knee = self.dof_pos[:, 3]   # left_knee_pitch_joint
+        left_knee = self.dof_pos[:, 3]  # left_knee_pitch_joint
         right_knee = self.dof_pos[:, 8]  # right_knee_pitch_joint
 
         # max_knee_angleを上回ったらペナルティ（0に近づきすぎ）
-        penalty = torch.clamp(left_knee - max_knee_angle, min=0) + \
-                  torch.clamp(right_knee - max_knee_angle, min=0)
+        penalty = torch.clamp(left_knee - max_knee_angle, min=0) + torch.clamp(right_knee - max_knee_angle, min=0)
         return penalty
 
     # ------------ V6追加: 関節可動域ソフトリミット ----------------
 
-    def _reward_dof_pos_limits(self):
+    def _reward_dof_pos_limits(self) -> torch.Tensor:
         """関節可動域のソフトリミット（Legged Gym方式）
 
         膝関節が上限（-0.2 rad）を上回った場合に線形ペナルティ。
@@ -722,18 +734,19 @@ class DroidEnv:
         # 膝関節の上限を設定（0に近い側）
         knee_upper_limit = -0.2  # rad (約-11度)
 
-        left_knee = self.dof_pos[:, 3]   # left_knee_pitch_joint
+        left_knee = self.dof_pos[:, 3]  # left_knee_pitch_joint
         right_knee = self.dof_pos[:, 8]  # right_knee_pitch_joint
 
         # 上限を上回った分だけペナルティ（0に近づきすぎ）
-        out_of_limits = torch.clamp(left_knee - knee_upper_limit, min=0) + \
-                        torch.clamp(right_knee - knee_upper_limit, min=0)
+        out_of_limits = torch.clamp(left_knee - knee_upper_limit, min=0) + torch.clamp(
+            right_knee - knee_upper_limit, min=0
+        )
 
         return out_of_limits
 
     # ------------ V8追加: 膝の過度な屈曲制限 ----------------
 
-    def _reward_knee_max_angle(self):
+    def _reward_knee_max_angle(self) -> torch.Tensor:
         """膝が過度に曲がりすぎることを抑制する報酬
 
         膝がURDFリミット（-150°）に近づきすぎないようソフトリミットを設定。
@@ -747,18 +760,19 @@ class DroidEnv:
         # -2.4 rad ≈ -137° が下限、これを下回るとペナルティ
         knee_lower_limit = -2.4  # rad (約-137度)
 
-        left_knee = self.dof_pos[:, 3]   # left_knee_pitch_joint
+        left_knee = self.dof_pos[:, 3]  # left_knee_pitch_joint
         right_knee = self.dof_pos[:, 8]  # right_knee_pitch_joint
 
         # 下限を下回った分だけペナルティ（曲がりすぎ）
-        out_of_limits = torch.clamp(knee_lower_limit - left_knee, min=0) + \
-                        torch.clamp(knee_lower_limit - right_knee, min=0)
+        out_of_limits = torch.clamp(knee_lower_limit - left_knee, min=0) + torch.clamp(
+            knee_lower_limit - right_knee, min=0
+        )
 
         return out_of_limits
 
     # ------------ V9追加: 交互歩行・歩容改善報酬 ----------------
 
-    def _reward_hip_pitch_sync_penalty(self):
+    def _reward_hip_pitch_sync_penalty(self) -> torch.Tensor:
         """左右hip_pitchの同期動作にペナルティ
 
         V8では左右脚が同期して動いていた（hip_pitch相関+0.772）。
@@ -773,7 +787,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return sync_motion * has_command
 
-    def _reward_foot_clearance(self):
+    def _reward_foot_clearance(self) -> torch.Tensor:
         """足のクリアランス（持ち上げ高さ）報酬
 
         スイング中の足が地面から十分に離れていることを報酬化。
@@ -800,7 +814,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return torch.sum(reward, dim=1) * has_command
 
-    def _reward_hip_pitch_range(self):
+    def _reward_hip_pitch_range(self) -> torch.Tensor:
         """hip_pitchの動作範囲報酬
 
         ストライドを大きくするため、hip_pitchの振幅を報酬化。
@@ -816,7 +830,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_hip_pitch_sign_change(self):
+    def _reward_hip_pitch_sign_change(self) -> torch.Tensor:
         """hip_pitchの符号変化報酬（V16新規）
 
         「剣道すり足」問題の解消を目的とした報酬。
@@ -846,7 +860,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_hip_pitch_alternating_sign_change(self):
+    def _reward_hip_pitch_alternating_sign_change(self) -> torch.Tensor:
         """交互符号変化報酬（V18オプション用）
 
         V16のhip_pitch_sign_changeはSUM方式で、両脚同時変化が最大報酬となり
@@ -888,7 +902,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_yaw_rate(self):
+    def _reward_yaw_rate(self) -> torch.Tensor:
         """Yaw角速度ペナルティ
 
         V8ではYawが10秒で-15.7°ドリフトした。
@@ -897,14 +911,14 @@ class DroidEnv:
         yaw_rate = self.base_ang_vel[:, 2]  # Z軸角速度
         return torch.square(yaw_rate)
 
-    def _reward_symmetry(self):
+    def _reward_symmetry(self) -> torch.Tensor:
         """左右対称性報酬
 
         左右の脚の動きが対称（位相差180°）になるよう促す。
         左右の関節角度の差にペナルティを与える（ただしhip_pitchは除く）。
         """
         # hip_roll, knee, ankle_pitchの左右差
-        left_roll = self.dof_pos[:, 1]   # left_hip_roll
+        left_roll = self.dof_pos[:, 1]  # left_hip_roll
         right_roll = self.dof_pos[:, 6]  # right_hip_roll
         left_knee = self.dof_pos[:, 3]
         right_knee = self.dof_pos[:, 8]
@@ -912,13 +926,15 @@ class DroidEnv:
         right_ankle = self.dof_pos[:, 9]
 
         # 左右差のペナルティ（hip_pitchは交互であるべきなので除外）
-        diff = torch.abs(left_roll - right_roll) + \
-               torch.abs(left_knee - right_knee) * 0.5 + \
-               torch.abs(left_ankle - right_ankle) * 0.5
+        diff = (
+            torch.abs(left_roll - right_roll)
+            + torch.abs(left_knee - right_knee) * 0.5
+            + torch.abs(left_ankle - right_ankle) * 0.5
+        )
 
         return diff
 
-    def _reward_base_height_low(self):
+    def _reward_base_height_low(self) -> torch.Tensor:
         """低すぎる高さへの追加ペナルティ
 
         base_height_targetより大幅に低い場合に追加ペナルティ。
@@ -936,7 +952,7 @@ class DroidEnv:
     # CPG（Central Pattern Generator）インスパイアの正弦波参照軌道
     # ============================================================
 
-    def _reward_phase_hip_pitch_tracking(self):
+    def _reward_phase_hip_pitch_tracking(self) -> torch.Tensor:
         """位相同期hip_pitch参照軌道追従報酬
 
         正弦波の参照軌道を生成し、hip_pitchがそれに追従するよう報酬化。
@@ -972,7 +988,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_phase_contact_sync(self):
+    def _reward_phase_contact_sync(self) -> torch.Tensor:
         """位相-接地同期報酬
 
         歩行位相と足の接地タイミングが同期しているかを報酬化。
@@ -983,7 +999,7 @@ class DroidEnv:
         if contacts is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
-        left_contact = contacts[:, 0].float()   # 左足接地
+        left_contact = contacts[:, 0].float()  # 左足接地
         right_contact = contacts[:, 1].float()  # 右足接地
 
         # 期待される接地状態（正弦波ベース）
@@ -1006,7 +1022,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_phase_velocity_sync(self):
+    def _reward_phase_velocity_sync(self) -> torch.Tensor:
         """位相-hip_pitch速度同期報酬
 
         hip_pitchの速度が位相の微分（cos）と同期しているかを報酬化。
@@ -1019,8 +1035,8 @@ class DroidEnv:
         right_vel = self.dof_vel[:, self.right_hip_pitch_idx]
 
         # 参照速度（正弦波の微分 = 余弦波）
-        amplitude = self.reward_cfg.get("ref_hip_pitch_amplitude", 0.3)
-        omega = 2 * math.pi * self.gait_frequency  # 角速度
+        self.reward_cfg.get("ref_hip_pitch_amplitude", 0.3)
+        2 * math.pi * self.gait_frequency  # 角速度
 
         # 期待される速度の符号
         # left: d/dt[sin(phase)] = cos(phase)
@@ -1037,7 +1053,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_smooth_action(self):
+    def _reward_smooth_action(self) -> torch.Tensor:
         """滑らかなアクション報酬
 
         action_rateはペナルティだが、こちらは滑らかな変化を正の報酬として与える。
@@ -1049,7 +1065,7 @@ class DroidEnv:
 
         return action_smoothness
 
-    def _reward_periodic_foot_lift(self):
+    def _reward_periodic_foot_lift(self) -> torch.Tensor:
         """周期的な足の持ち上げ報酬
 
         歩行位相に同期して足を持ち上げることを報酬化。
@@ -1076,7 +1092,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_natural_rhythm(self):
+    def _reward_natural_rhythm(self) -> torch.Tensor:
         """自然なリズム報酬
 
         歩行周波数が目標に近いことを報酬化。
@@ -1093,9 +1109,10 @@ class DroidEnv:
 
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
+
     # ------------ V11追加: ハイブリッドアプローチ報酬 ----------------
 
-    def _reward_symmetry_hip_roll(self):
+    def _reward_symmetry_hip_roll(self) -> torch.Tensor:
         """左右hip_rollの対称性報酬（V11新規）
 
         斜行対策。左右のhip_rollは符号反転で対称であるべき。
@@ -1115,7 +1132,7 @@ class DroidEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_ground_contact_bonus(self):
+    def _reward_ground_contact_bonus(self) -> torch.Tensor:
         """接地ボーナス報酬（V11新規）
 
         少なくとも片足が接地している時に正の報酬。
@@ -1133,7 +1150,7 @@ class DroidEnv:
 
     # ------------ V12追加: 同期歩行修正用報酬 ----------------
 
-    def _reward_strict_alternating_contact(self):
+    def _reward_strict_alternating_contact(self) -> torch.Tensor:
         """厳格な交互接地報酬（V12新規）
 
         接地状態が厳密に交互（片足のみ接地）であることを報酬化。
@@ -1151,7 +1168,7 @@ class DroidEnv:
         if contacts is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
-        left_contact = contacts[:, 0].float()   # 左足接地
+        left_contact = contacts[:, 0].float()  # 左足接地
         right_contact = contacts[:, 1].float()  # 右足接地
 
         # XOR: 片足のみ接地の場合に1
@@ -1160,3 +1177,46 @@ class DroidEnv:
 
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return alternating * has_command
+
+    # ------------ V18追加: 関節角速度制限 ----------------
+
+    def _reward_dof_vel_limits(self) -> torch.Tensor:
+        """関節角速度のソフトリミット報酬（V18追加）
+
+        【設計原理】
+        実機（RobStride RS-02）の最大角速度は ±44 rad/s。
+        シミュレーションでこの制限を超える動作を学習すると、実機展開時に
+        速度飽和による動作不安定・性能劣化が発生する。
+
+        この報酬はsoft_dof_vel_limit（デフォルト90%）を超えた角速度に
+        ペナルティを与えることで、実機パラメータ内での動作を促す。
+
+        【参考文献】
+        - ETH Zurich Legged Gym:
+          https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/envs/base/legged_robot.py
+        - RobStride RS-02仕様:
+          ros2_ws/src/robstride_hardware/include/robstride_hardware/robstride_driver.hpp
+          constexpr double VELOCITY = 44.0; // ±44 rad/s
+
+        【実装】
+        - dof_vel_limits: 実機の最大速度（44 rad/s）
+        - soft_dof_vel_limit: 制限の何%で報酬を開始するか（0.9 = 90%）
+        - ペナルティは制限超過分を0-1の範囲にクリップして合計
+
+        【使用例】
+        reward_cfg = {
+            "dof_vel_limits": 44.0,      # RobStride RS-02の仕様
+            "soft_dof_vel_limit": 0.9,   # 制限の90%（39.6 rad/s）で報酬開始
+            "reward_scales": {
+                "dof_vel_limits": -0.3,  # ペナルティ係数
+            }
+        }
+        """
+        dof_vel_limits = self.reward_cfg.get("dof_vel_limits", 44.0)  # デフォルト: RS-02仕様
+        soft_limit_factor = self.reward_cfg.get("soft_dof_vel_limit", 0.9)  # デフォルト: 90%
+
+        # 各関節の速度絶対値が制限の何%を超えているか
+        # (|vel| - limit*factor) をクリップして合計
+        out_of_limits = (torch.abs(self.dof_vel) - dof_vel_limits * soft_limit_factor).clip(min=0.0, max=1.0)
+
+        return torch.sum(out_of_limits, dim=1)

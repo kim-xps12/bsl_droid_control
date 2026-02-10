@@ -37,15 +37,17 @@ BSL-Droid二脚ロボット Genesis環境 - 統一版
 - V20追加: backward_velocity, yaw_rate_penalty
 """
 
-import math
+from __future__ import annotations
 
-import torch
+import math
+from typing import Any
 
 import genesis as gs
-from genesis.utils.geom import quat_to_xyz, transform_by_quat, inv_quat, transform_quat_by_quat
+import torch
+from genesis.utils.geom import inv_quat, quat_to_xyz, transform_by_quat, transform_quat_by_quat
 
 
-def gs_rand(lower, upper, batch_shape):
+def gs_rand(lower: torch.Tensor, upper: torch.Tensor, batch_shape: tuple[int, ...]) -> torch.Tensor:
     """一様乱数を生成"""
     assert lower.shape == upper.shape
     return (upper - lower) * torch.rand(size=(*batch_shape, *lower.shape), dtype=gs.tc_float, device=gs.device) + lower
@@ -60,18 +62,20 @@ class CamberTrajectory:
     - Swing相（0.5-1.0）: 半楕円リフト（前→後）
     """
 
-    def __init__(self, step_height=0.04, step_length=0.08, device=None):
+    def __init__(
+        self, step_height: float = 0.04, step_length: float = 0.08, device: torch.device | None = None
+    ) -> None:
         """
         Args:
             step_height: 足の持ち上げ高さ [m]
             step_length: 歩幅 [m]
             device: PyTorchデバイス
         """
-        self.step_height = step_height
-        self.step_length = step_length
+        self.step_height: float = step_height
+        self.step_length: float = step_length
         self.device = device or gs.device
 
-    def generate(self, phase):
+    def generate(self, phase: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         位相から足先の目標位置を計算
 
@@ -108,12 +112,21 @@ class CamberTrajectory:
 class BipedEnv:
     """BSL-Droid二脚ロボットのGenesis強化学習環境（統一版）"""
 
-    def __init__(self, num_envs, env_cfg, obs_cfg, reward_cfg, command_cfg, show_viewer=False, recording_camera=False):
-        self.num_envs = num_envs
-        self.num_obs = obs_cfg["num_obs"]
-        self.num_privileged_obs = None
-        self.num_actions = env_cfg["num_actions"]
-        self.num_commands = command_cfg["num_commands"]
+    def __init__(
+        self,
+        num_envs: int,
+        env_cfg: dict[str, Any],
+        obs_cfg: dict[str, Any],
+        reward_cfg: dict[str, Any],
+        command_cfg: dict[str, Any],
+        show_viewer: bool = False,
+        recording_camera: bool = False,
+    ) -> None:
+        self.num_envs: int = num_envs
+        self.num_obs: int = obs_cfg["num_obs"]
+        self.num_privileged_obs: int | None = None
+        self.num_actions: int = env_cfg["num_actions"]
+        self.num_commands: int = command_cfg["num_commands"]
         self.device = gs.device
 
         self.simulate_action_latency = True  # 実機では1ステップの遅延がある
@@ -226,14 +239,16 @@ class BipedEnv:
 
         # 足のリンクインデックス
         self.feet_names = env_cfg.get("feet_names", ["left_foot_link", "right_foot_link"])
-        self.feet_indices = []
+        _feet_idx_list: list[int] = []
         for name in self.feet_names:
             try:
                 link = self.robot.get_link(name)
-                self.feet_indices.append(link.idx_local)
+                _feet_idx_list.append(link.idx_local)
             except Exception:
                 pass
-        self.feet_indices = torch.tensor(self.feet_indices, dtype=gs.tc_int, device=gs.device) if self.feet_indices else None
+        self.feet_indices: torch.Tensor | None = (
+            torch.tensor(_feet_idx_list, dtype=gs.tc_int, device=gs.device) if _feet_idx_list else None
+        )
 
         # バッファ初期化
         self.base_lin_vel = torch.empty((self.num_envs, 3), dtype=gs.tc_float, device=gs.device)
@@ -255,6 +270,7 @@ class BipedEnv:
                 self.command_cfg["lin_vel_x_range"],
                 self.command_cfg["lin_vel_y_range"],
                 self.command_cfg["ang_vel_range"],
+                strict=False,
             )
         ]
         self.actions = torch.zeros((self.num_envs, self.num_actions), dtype=gs.tc_float, device=gs.device)
@@ -272,11 +288,18 @@ class BipedEnv:
         )
 
         # feet_air_time用バッファ
+        self.feet_air_time: torch.Tensor | None
+        self.last_contacts: torch.Tensor | None
+        self.last_feet_pos: torch.Tensor | None
         if self.feet_indices is not None and len(self.feet_indices) > 0:
-            self.feet_air_time = torch.zeros((self.num_envs, len(self.feet_indices)), dtype=gs.tc_float, device=gs.device)
+            self.feet_air_time = torch.zeros(
+                (self.num_envs, len(self.feet_indices)), dtype=gs.tc_float, device=gs.device
+            )
             self.last_contacts = torch.ones((self.num_envs, len(self.feet_indices)), dtype=gs.tc_bool, device=gs.device)
             # V5: 前ステップの足の位置を保存（歩幅計算用）
-            self.last_feet_pos = torch.zeros((self.num_envs, len(self.feet_indices), 3), dtype=gs.tc_float, device=gs.device)
+            self.last_feet_pos = torch.zeros(
+                (self.num_envs, len(self.feet_indices), 3), dtype=gs.tc_float, device=gs.device
+            )
         else:
             self.feet_air_time = None
             self.last_contacts = None
@@ -285,7 +308,7 @@ class BipedEnv:
         # V13: hip_pitch位置のトラッキング（交互歩行分析用）
         # joint_names: [L_hip_yaw, L_hip_roll, L_hip_pitch, L_knee, L_ankle,
         #               R_hip_yaw, R_hip_roll, R_hip_pitch, R_knee, R_ankle]
-        self.left_hip_pitch_idx = 2   # left_hip_pitch_joint
+        self.left_hip_pitch_idx = 2  # left_hip_pitch_joint
         self.right_hip_pitch_idx = 7  # right_hip_pitch_joint
         self.last_left_hip_pitch = torch.zeros((self.num_envs,), dtype=gs.tc_float, device=gs.device)
         self.last_right_hip_pitch = torch.zeros((self.num_envs,), dtype=gs.tc_float, device=gs.device)
@@ -311,25 +334,25 @@ class BipedEnv:
         self.height_penalty_high = self.reward_cfg.get("height_penalty_high", 40.0)
         self.height_penalty_low = self.reward_cfg.get("height_penalty_low", 5.0)
 
-        self.extras = dict()
-        self.extras["observations"] = dict()
+        self.extras: dict[str, Any] = {}
+        self.extras["observations"] = {}
 
         # 報酬関数の準備
-        self.reward_functions, self.episode_sums = dict(), dict()
-        for name in self.reward_scales.keys():
+        self.reward_functions, self.episode_sums = {}, {}
+        for name in self.reward_scales:
             self.reward_scales[name] *= self.dt
             self.reward_functions[name] = getattr(self, "_reward_" + name)
             self.episode_sums[name] = torch.zeros((self.num_envs,), dtype=gs.tc_float, device=gs.device)
 
-    def _resample_commands(self, envs_idx):
+    def _resample_commands(self, envs_idx: torch.Tensor | None) -> None:
         """速度コマンドを再サンプリング"""
-        commands = gs_rand(*self.commands_limits, (self.num_envs,))
+        commands = gs_rand(*self.commands_limits, (self.num_envs,))  # type: ignore[arg-type, call-arg]
         if envs_idx is None:
             self.commands.copy_(commands)
         else:
             torch.where(envs_idx[:, None], commands, self.commands, out=self.commands)
 
-    def _get_foot_contacts(self):
+    def _get_foot_contacts(self) -> torch.Tensor | None:
         """足の接地状態を取得（簡易版：Z座標ベース）"""
         if self.feet_indices is None:
             return None
@@ -338,27 +361,27 @@ class BipedEnv:
         feet_z = link_pos[:, self.feet_indices, 2]
         return feet_z < contact_threshold
 
-    def _get_foot_positions(self):
+    def _get_foot_positions(self) -> torch.Tensor | None:
         """足の位置を取得（ワールド座標）- V5用"""
         if self.feet_indices is None:
             return None
         link_pos = self.robot.get_links_pos()  # (n_envs, n_links, 3)
         return link_pos[:, self.feet_indices, :]  # (n_envs, n_feet, 3)
 
-    def _get_foot_heights(self):
+    def _get_foot_heights(self) -> torch.Tensor | None:
         """足の高さを取得（地面からの高さ）- V5用"""
         if self.feet_indices is None:
             return None
         link_pos = self.robot.get_links_pos()  # (n_envs, n_links, 3)
         return link_pos[:, self.feet_indices, 2]  # (n_envs, n_feet)
 
-    def _update_gait_phase(self):
+    def _update_gait_phase(self) -> None:
         """歩行位相を更新 - V8用"""
         # 位相を進める: phase += dt * frequency
         phase_increment = self.dt * self.step_frequency
         self.gait_phase = (self.gait_phase + phase_increment) % 1.0
 
-    def _get_foot_position_from_joints(self, leg_joints, is_left=True):
+    def _get_foot_position_from_joints(self, leg_joints: torch.Tensor, is_left: bool = True) -> torch.Tensor:
         """
         関節角度からつま先のX-Z相対位置を計算（簡易2リンク順運動学）- V8用
 
@@ -371,7 +394,7 @@ class BipedEnv:
             foot_xz: torch.Tensor (num_envs, 2) つま先の相対位置 [x, z]
         """
         # 関節角度を取得（hip_pitch, knee_pitch が主に影響）
-        hip_pitch = leg_joints[:, 2]   # index 2: hip_pitch
+        hip_pitch = leg_joints[:, 2]  # index 2: hip_pitch
         knee_pitch = leg_joints[:, 3]  # index 3: knee_pitch
 
         # 順運動学（X-Z平面、股関節からの相対位置）
@@ -386,7 +409,7 @@ class BipedEnv:
 
         return torch.stack([ankle_x, ankle_z], dim=1)
 
-    def step(self, actions):
+    def step(self, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
         """環境を1ステップ進める"""
         self.actions = torch.clip(actions, -self.env_cfg["clip_actions"], self.env_cfg["clip_actions"])
         exec_actions = self.last_actions if self.simulate_action_latency else self.actions
@@ -422,20 +445,16 @@ class BipedEnv:
         left_hp = self.dof_pos[:, self.left_hip_pitch_idx]
         right_hp = self.dof_pos[:, self.right_hip_pitch_idx]
         self.hip_pitch_max_recent[:, 0] = torch.maximum(
-            self.hip_pitch_max_recent[:, 0] * (1 - alpha) + left_hp * alpha,
-            left_hp
+            self.hip_pitch_max_recent[:, 0] * (1 - alpha) + left_hp * alpha, left_hp
         )
         self.hip_pitch_max_recent[:, 1] = torch.maximum(
-            self.hip_pitch_max_recent[:, 1] * (1 - alpha) + right_hp * alpha,
-            right_hp
+            self.hip_pitch_max_recent[:, 1] * (1 - alpha) + right_hp * alpha, right_hp
         )
         self.hip_pitch_min_recent[:, 0] = torch.minimum(
-            self.hip_pitch_min_recent[:, 0] * (1 - alpha) + left_hp * alpha,
-            left_hp
+            self.hip_pitch_min_recent[:, 0] * (1 - alpha) + left_hp * alpha, left_hp
         )
         self.hip_pitch_min_recent[:, 1] = torch.minimum(
-            self.hip_pitch_min_recent[:, 1] * (1 - alpha) + right_hp * alpha,
-            right_hp
+            self.hip_pitch_min_recent[:, 1] * (1 - alpha) + right_hp * alpha, right_hp
         )
 
         # V12: hip_pitchの最大・最小値を更新
@@ -446,6 +465,7 @@ class BipedEnv:
 
         # feet_air_time更新
         if self.feet_air_time is not None:
+            assert self.last_contacts is not None
             contacts = self._get_foot_contacts()
             if contacts is not None:
                 first_contact = (self.feet_air_time > 0.0) & contacts & ~self.last_contacts
@@ -457,9 +477,7 @@ class BipedEnv:
                 current_time = self.episode_length_buf.float() * self.dt
                 for i in range(2):
                     self.last_contact_change_time[:, i] = torch.where(
-                        contact_changed[:, i],
-                        current_time,
-                        self.last_contact_change_time[:, i]
+                        contact_changed[:, i], current_time, self.last_contact_change_time[:, i]
                     )
 
                 # V5: 足の位置を更新（歩幅計算用）
@@ -470,15 +488,15 @@ class BipedEnv:
                         self.last_feet_pos = torch.where(
                             contacts.unsqueeze(-1),  # (n_envs, n_feet, 1)
                             current_feet_pos,
-                            self.last_feet_pos
+                            self.last_feet_pos,
                         )
 
                 self.last_contacts = contacts
                 self._first_contact = first_contact
             else:
-                self._first_contact = None
+                self._first_contact = None  # type: ignore[assignment]
         else:
-            self._first_contact = None
+            self._first_contact = None  # type: ignore[assignment]
 
         # 報酬計算
         self.rew_buf.zero_()
@@ -508,14 +526,14 @@ class BipedEnv:
 
         return self.obs_buf, self.rew_buf, self.reset_buf, self.extras
 
-    def get_observations(self):
+    def get_observations(self) -> tuple[torch.Tensor, dict[str, Any]]:
         self.extras["observations"]["critic"] = self.obs_buf
         return self.obs_buf, self.extras
 
-    def get_privileged_observations(self):
+    def get_privileged_observations(self) -> None:
         return None
 
-    def _reset_idx(self, envs_idx=None):
+    def _reset_idx(self, envs_idx: torch.Tensor | None = None) -> None:
         """環境をリセット"""
         self.robot.set_qpos(self.init_qpos, envs_idx=envs_idx, zero_velocity=True, skip_forward=True)
 
@@ -542,6 +560,7 @@ class BipedEnv:
             self.hip_pitch_max.zero_()
             self.hip_pitch_min.zero_()
             if self.feet_air_time is not None:
+                assert self.last_contacts is not None
                 self.feet_air_time.zero_()
                 self.last_contacts.fill_(True)
             if self.last_feet_pos is not None:
@@ -571,6 +590,7 @@ class BipedEnv:
             self.hip_pitch_max.masked_fill_(envs_idx[:, None], 0.0)
             self.hip_pitch_min.masked_fill_(envs_idx[:, None], 0.0)
             if self.feet_air_time is not None:
+                assert self.last_contacts is not None
                 self.feet_air_time.masked_fill_(envs_idx[:, None], 0.0)
                 self.last_contacts.masked_fill_(envs_idx[:, None], True)
             if self.last_feet_pos is not None:
@@ -584,14 +604,14 @@ class BipedEnv:
                 mean = value.mean()
                 value.zero_()
             else:
-                mean = torch.where(n_envs > 0, value[envs_idx].sum() / n_envs, 0.0)
+                mean = torch.where(n_envs > 0, value[envs_idx].sum() / n_envs, 0.0)  # type: ignore[arg-type]
                 self.extras["episode"]["rew_" + key] = mean / self.env_cfg["episode_length_s"]
                 value.masked_fill_(envs_idx, 0.0)
             self.extras["episode"]["rew_" + key] = mean / self.env_cfg["episode_length_s"]
 
         self._resample_commands(envs_idx)
 
-    def _update_observation(self):
+    def _update_observation(self) -> None:
         """観測ベクトルを更新 (39次元)"""
         self.obs_buf = torch.concatenate(
             (
@@ -605,7 +625,7 @@ class BipedEnv:
             dim=-1,
         )
 
-    def reset(self):
+    def reset(self) -> tuple[torch.Tensor, None]:
         self._reset_idx()
         self._update_observation()
         return self.obs_buf, None
@@ -614,29 +634,29 @@ class BipedEnv:
     # 報酬関数 - 基本報酬 (V2-)
     # ============================================================================
 
-    def _reward_tracking_lin_vel(self):
+    def _reward_tracking_lin_vel(self) -> torch.Tensor:
         """線形速度追従報酬（主タスク）"""
         lin_vel_error = torch.sum(torch.square(self.commands[:, :2] - self.base_lin_vel[:, :2]), dim=1)
         return torch.exp(-lin_vel_error / self.reward_cfg["tracking_sigma"])
 
-    def _reward_tracking_ang_vel(self):
+    def _reward_tracking_ang_vel(self) -> torch.Tensor:
         """角速度追従報酬"""
         ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
         return torch.exp(-ang_vel_error / self.reward_cfg["tracking_sigma"])
 
-    def _reward_lin_vel_z(self):
+    def _reward_lin_vel_z(self) -> torch.Tensor:
         """Z方向速度ペナルティ"""
         return torch.square(self.base_lin_vel[:, 2])
 
-    def _reward_ang_vel_xy(self):
+    def _reward_ang_vel_xy(self) -> torch.Tensor:
         """XY角速度ペナルティ"""
         return torch.sum(torch.square(self.base_ang_vel[:, :2]), dim=1)
 
-    def _reward_orientation(self):
+    def _reward_orientation(self) -> torch.Tensor:
         """姿勢維持ペナルティ"""
         return torch.square(self.projected_gravity[:, 2] + 1.0)
 
-    def _reward_base_height(self):
+    def _reward_base_height(self) -> torch.Tensor:
         """V21: ベース高さペナルティ（対称版）
 
         V19のバグを修正: error²のみを返す。
@@ -646,7 +666,7 @@ class BipedEnv:
         error = height - self.base_height_target
         return torch.square(error)
 
-    def _reward_base_height_high(self):
+    def _reward_base_height_high(self) -> torch.Tensor:
         """V21: 高すぎる場合の追加ペナルティ
 
         目標より高い場合のみerror²を返す。
@@ -659,7 +679,7 @@ class BipedEnv:
         high_error = torch.clamp(error, min=0.0)
         return torch.square(high_error)
 
-    def _reward_base_height_asymmetric(self):
+    def _reward_base_height_asymmetric(self) -> torch.Tensor:
         """V18: 非対称ベース高さペナルティ
 
         高すぎる場合は強いペナルティ、低すぎる場合は弱いペナルティ。
@@ -675,28 +695,28 @@ class BipedEnv:
         penalty = torch.where(
             error > 0,
             self.height_penalty_high * torch.square(error),  # 高い: 強いペナルティ
-            self.height_penalty_low * torch.square(error)    # 低い: 弱いペナルティ
+            self.height_penalty_low * torch.square(error),  # 低い: 弱いペナルティ
         )
 
         return penalty
 
-    def _reward_torques(self):
+    def _reward_torques(self) -> torch.Tensor:
         """トルクペナルティ（エネルギー効率）"""
         return torch.sum(torch.square(self.actions), dim=1)
 
-    def _reward_dof_vel(self):
+    def _reward_dof_vel(self) -> torch.Tensor:
         """関節速度ペナルティ（振動抑制）"""
         return torch.sum(torch.square(self.dof_vel), dim=1)
 
-    def _reward_dof_acc(self):
+    def _reward_dof_acc(self) -> torch.Tensor:
         """関節加速度ペナルティ（振動抑制・強化）"""
         return torch.sum(torch.square((self.dof_vel - self.last_dof_vel) / self.dt), dim=1)
 
-    def _reward_action_rate(self):
+    def _reward_action_rate(self) -> torch.Tensor:
         """アクション変化率ペナルティ（振動抑制・強化）"""
         return torch.sum(torch.square(self.last_actions - self.actions), dim=1)
 
-    def _reward_similar_to_default(self):
+    def _reward_similar_to_default(self) -> torch.Tensor:
         """デフォルト姿勢維持ペナルティ"""
         return torch.sum(torch.abs(self.dof_pos - self.default_dof_pos), dim=1)
 
@@ -704,19 +724,17 @@ class BipedEnv:
     # 報酬関数 - 二脚歩行報酬
     # ============================================================================
 
-    def _reward_feet_air_time(self):
+    def _reward_feet_air_time(self) -> torch.Tensor:
         """足の滞空時間報酬"""
         if self.feet_air_time is None or self._first_contact is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
         target_air_time = self.reward_cfg.get("feet_air_time_target", 0.25)
-        rew_air_time = torch.sum(
-            (self.feet_air_time - target_air_time) * self._first_contact.float(), dim=1
-        )
+        rew_air_time = torch.sum((self.feet_air_time - target_air_time) * self._first_contact.float(), dim=1)
         rew_air_time *= (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return rew_air_time
 
-    def _reward_no_fly(self):
+    def _reward_no_fly(self) -> torch.Tensor:
         """両足同時離地ペナルティ"""
         if self.feet_air_time is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
@@ -728,7 +746,7 @@ class BipedEnv:
         both_feet_in_air = ~contacts.any(dim=1)
         return both_feet_in_air.float()
 
-    def _reward_alternating_gait(self):
+    def _reward_alternating_gait(self) -> torch.Tensor:
         """交互歩行報酬（接地状態ベース）
 
         左右の足が交互に接地している状態を報酬。
@@ -743,7 +761,7 @@ class BipedEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return alternating.float() * has_command
 
-    def _reward_foot_swing(self):
+    def _reward_foot_swing(self) -> torch.Tensor:
         """足のスイング報酬"""
         if self.feet_air_time is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
@@ -756,7 +774,7 @@ class BipedEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return torch.sum(air_time_reward, dim=1) * has_command
 
-    def _reward_single_stance(self):
+    def _reward_single_stance(self) -> torch.Tensor:
         """片足立ち報酬（legged_gym Cassieスタイル）
 
         片足だけが接地している状態を報酬。
@@ -773,14 +791,14 @@ class BipedEnv:
     # 報酬関数 - V2追加: 対称性・滑らかさ
     # ============================================================================
 
-    def _reward_joint_symmetry(self):
+    def _reward_joint_symmetry(self) -> torch.Tensor:
         """左右対称性報酬（自然な歩行）- V2"""
         # 左脚と右脚の対応する関節速度の振幅が同程度かをチェック
         left_vel = self.dof_vel[:, :5]
         right_vel = self.dof_vel[:, 5:]
         return torch.sum(torch.square(torch.abs(left_vel) - torch.abs(right_vel)), dim=1)
 
-    def _reward_smoothness(self):
+    def _reward_smoothness(self) -> torch.Tensor:
         """動作の滑らかさ報酬（2次微分ペナルティ）- V2"""
         return torch.sum(torch.square(self.dof_vel - self.last_dof_vel), dim=1)
 
@@ -788,7 +806,7 @@ class BipedEnv:
     # 報酬関数 - V5追加: 大きな歩幅
     # ============================================================================
 
-    def _reward_foot_clearance(self):
+    def _reward_foot_clearance(self) -> torch.Tensor:
         """足の高さ報酬: 遊脚時に足を高く上げることを促進 - V5"""
         foot_heights = self._get_foot_heights()
         if foot_heights is None:
@@ -811,7 +829,7 @@ class BipedEnv:
 
         return torch.sum(clearance_reward, dim=1) * has_command
 
-    def _reward_stride_length(self):
+    def _reward_stride_length(self) -> torch.Tensor:
         """ストライド長報酬 - V12版
 
         左右hip_pitchの差分（ストライド長に相当）を報酬。
@@ -829,7 +847,7 @@ class BipedEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return torch.clamp(reward, max=1.5) * has_command
 
-    def _reward_stride_length_v5(self):
+    def _reward_stride_length_v5(self) -> torch.Tensor:
         """歩幅報酬: 前回接地位置からの距離を報酬 - V5版"""
         if self.last_feet_pos is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
@@ -854,7 +872,7 @@ class BipedEnv:
     # 報酬関数 - V8追加: Phase-based Reference
     # ============================================================================
 
-    def _reward_trajectory_tracking(self):
+    def _reward_trajectory_tracking(self) -> torch.Tensor:
         """
         Phase-based Reference軌道追従報酬 - V8
 
@@ -879,12 +897,10 @@ class BipedEnv:
 
         # 誤差を計算（X-Z平面上のユークリッド距離）
         left_error = torch.sqrt(
-            torch.square(left_foot_xz[:, 0] - left_ref_x) +
-            torch.square(left_foot_xz[:, 1] - left_ref_z)
+            torch.square(left_foot_xz[:, 0] - left_ref_x) + torch.square(left_foot_xz[:, 1] - left_ref_z)
         )
         right_error = torch.sqrt(
-            torch.square(right_foot_xz[:, 0] - right_ref_x) +
-            torch.square(right_foot_xz[:, 1] - right_ref_z)
+            torch.square(right_foot_xz[:, 0] - right_ref_x) + torch.square(right_foot_xz[:, 1] - right_ref_z)
         )
 
         # ガウス分布で報酬に変換（σ=0.05m、5cm以内で高報酬）
@@ -898,7 +914,7 @@ class BipedEnv:
 
         return total_reward * has_command
 
-    def _reward_phase_consistency(self):
+    def _reward_phase_consistency(self) -> torch.Tensor:
         """
         位相一貫性報酬 - V8
 
@@ -928,7 +944,7 @@ class BipedEnv:
 
         return consistency * has_command
 
-    def _reward_symmetric_gait(self):
+    def _reward_symmetric_gait(self) -> torch.Tensor:
         """
         左右対称な歩行を促進する報酬 - V8
 
@@ -959,7 +975,7 @@ class BipedEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_smooth_joint_velocity(self):
+    def _reward_smooth_joint_velocity(self) -> torch.Tensor:
         """
         関節速度の急激な変化（ジャーク）を抑制する報酬 - V8
         """
@@ -972,7 +988,7 @@ class BipedEnv:
         # スケーリング（値が非常に大きくなるため）
         return jerk_penalty * 1e-8
 
-    def _reward_heading_alignment(self):
+    def _reward_heading_alignment(self) -> torch.Tensor:
         """
         進行方向とロボットの向きを一致させる報酬 - V8
         """
@@ -996,7 +1012,7 @@ class BipedEnv:
     # 報酬関数 - V12追加: hip_pitch関連
     # ============================================================================
 
-    def _reward_hip_pitch_alternation(self):
+    def _reward_hip_pitch_alternation(self) -> torch.Tensor:
         """左右hip_pitchの逆相運動報酬（V11から継続、強化）
 
         左右のhip_pitchが逆方向に動くことを報酬。
@@ -1014,7 +1030,7 @@ class BipedEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_hip_pitch_opposite_sign(self):
+    def _reward_hip_pitch_opposite_sign(self) -> torch.Tensor:
         """左右hip_pitchが反対符号になる報酬 - V12
 
         左右のhip_pitchが反対符号（片方が前、片方が後ろ）になることを報酬
@@ -1032,7 +1048,7 @@ class BipedEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_hip_pitch_range(self):
+    def _reward_hip_pitch_range(self) -> torch.Tensor:
         """hip_pitchの可動範囲利用報酬 - V12
 
         hip_pitchが正（前方）に行くことを報酬。
@@ -1051,18 +1067,18 @@ class BipedEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_forward_progress(self):
+    def _reward_forward_progress(self) -> torch.Tensor:
         """前進進捗報酬"""
         forward_vel = self.base_lin_vel[:, 0]
         target_vel = self.commands[:, 0]
         progress = torch.clamp(forward_vel * torch.sign(target_vel), min=0.0)
         return progress
 
-    def _reward_alive(self):
+    def _reward_alive(self) -> torch.Tensor:
         """生存報酬"""
         return torch.ones(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
-    def _reward_pitch_penalty(self):
+    def _reward_pitch_penalty(self) -> torch.Tensor:
         """Pitch角ペナルティ
 
         前傾姿勢を抑制。
@@ -1074,7 +1090,7 @@ class BipedEnv:
     # 報酬関数 - V13追加: 動的歩行報酬
     # ============================================================================
 
-    def _reward_hip_pitch_velocity(self):
+    def _reward_hip_pitch_velocity(self) -> torch.Tensor:
         """hip_pitchの速度報酬 - V13
 
         hip_pitchが動いていること（速度が0でない）を報酬。
@@ -1092,14 +1108,14 @@ class BipedEnv:
         has_command = (torch.norm(self.commands[:, :2], dim=1) > 0.1).float()
         return reward * has_command
 
-    def _reward_contact_alternation(self):
+    def _reward_contact_alternation(self) -> torch.Tensor:
         """接地タイミングの交互性報酬 - V13
 
         左右の足が交互に接地・離地することを報酬。
         同時に状態が変わる（両脚同期）ことにペナルティ。
         """
         contacts = self._get_foot_contacts()
-        if contacts is None or contacts.shape[1] != 2:
+        if contacts is None or contacts.shape[1] != 2 or self.last_contacts is None:
             return torch.zeros(self.num_envs, dtype=gs.tc_float, device=gs.device)
 
         # 接地状態の変化を検出
@@ -1117,7 +1133,7 @@ class BipedEnv:
         # 片方だけ変化したら報酬、両方変化したらペナルティ
         return (one_changed.float() - both_changed.float() * 0.5) * has_command
 
-    def _reward_roll_penalty(self):
+    def _reward_roll_penalty(self) -> torch.Tensor:
         """Roll角ペナルティ - V13
 
         横傾斜を抑制。
@@ -1129,7 +1145,7 @@ class BipedEnv:
     # 報酬関数 - V18追加: 前進方向制御
     # ============================================================================
 
-    def _reward_backward_penalty(self):
+    def _reward_backward_penalty(self) -> torch.Tensor:
         """後方移動ペナルティ - V18
 
         前進コマンドがあるときに後退するとペナルティ
@@ -1141,11 +1157,11 @@ class BipedEnv:
         backward = torch.where(
             target_vel > 0.1,
             torch.clamp(-forward_vel, min=0.0),  # 後退速度をペナルティ
-            torch.zeros_like(forward_vel)
+            torch.zeros_like(forward_vel),
         )
         return backward
 
-    def _reward_yaw_penalty(self):
+    def _reward_yaw_penalty(self) -> torch.Tensor:
         """Yaw角ペナルティ（方向安定性）- V18
 
         Yaw角が0から離れるとペナルティ
@@ -1153,7 +1169,7 @@ class BipedEnv:
         yaw_rad = self.base_euler[:, 2] * 3.14159 / 180.0
         return torch.square(yaw_rad)
 
-    def _reward_lateral_velocity_penalty(self):
+    def _reward_lateral_velocity_penalty(self) -> torch.Tensor:
         """横方向速度ペナルティ - V18
 
         Y方向の速度にペナルティを与えて直進性を向上
@@ -1165,7 +1181,7 @@ class BipedEnv:
     # 報酬関数 - V20追加: 後退ペナルティ
     # ============================================================================
 
-    def _reward_backward_velocity(self):
+    def _reward_backward_velocity(self) -> torch.Tensor:
         """後退速度ペナルティ - V20/V21
 
         ボディローカルX軸の負方向（後退）速度にペナルティ。
@@ -1173,7 +1189,7 @@ class BipedEnv:
         backward_vel = torch.clamp(-self.base_lin_vel[:, 0], min=0.0)
         return torch.square(backward_vel)
 
-    def _reward_yaw_rate_penalty(self):
+    def _reward_yaw_rate_penalty(self) -> torch.Tensor:
         """Yaw角速度ペナルティ - V20
 
         旋回を抑制。

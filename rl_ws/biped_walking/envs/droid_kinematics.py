@@ -16,28 +16,31 @@
                    └─ ankle_pitch_joint (Y軸回転)
 """
 
+from __future__ import annotations
+
 import math
+
 import torch
 
 
 class DroidKinematics:
     """BSL-Droid Simplified の運動学計算クラス"""
 
-    def __init__(self, device="cpu"):
+    def __init__(self, device: str = "cpu") -> None:
         """
         Args:
             device: 計算デバイス ('cpu' or 'cuda')
         """
-        self.device = device
+        self.device: str = device
 
         # URDFから抽出したパラメータ [m]
-        self.hip_offset_y = 0.10       # 胴体中心から股関節ヨー軸まで
-        self.hip_yaw_length = 0.025    # ヨー軸リンク長（下向き）
-        self.hip_roll_length = 0.03   # ロール軸リンク長（外側へ）
-        self.thigh_length = 0.11       # 大腿部長さ
-        self.shank_length = 0.12       # 下腿部長さ
-        self.foot_height = 0.035       # 足部高さ
-        self.ankle_offset_x = 0.02     # 足首から足先中心へのオフセット
+        self.hip_offset_y = 0.10  # 胴体中心から股関節ヨー軸まで
+        self.hip_yaw_length = 0.025  # ヨー軸リンク長（下向き）
+        self.hip_roll_length = 0.03  # ロール軸リンク長（外側へ）
+        self.thigh_length = 0.11  # 大腿部長さ
+        self.shank_length = 0.12  # 下腿部長さ
+        self.foot_height = 0.035  # 足部高さ
+        self.ankle_offset_x = 0.02  # 足首から足先中心へのオフセット
 
         # 脚の到達範囲
         self.max_reach = self.thigh_length + self.shank_length - 0.005  # 0.225m
@@ -45,10 +48,10 @@ class DroidKinematics:
 
         # 関節限界 [rad]
         self.joint_limits = {
-            "hip_yaw": (-0.524, 0.524),      # ±30°
-            "hip_roll": (-0.436, 0.436),     # ±25°
-            "hip_pitch": (-2.094, 1.571),    # -120° ~ +90°
-            "knee_pitch": (-2.618, 0.0),     # -150° ~ 0°（逆関節）
+            "hip_yaw": (-0.524, 0.524),  # ±30°
+            "hip_roll": (-0.436, 0.436),  # ±25°
+            "hip_pitch": (-2.094, 1.571),  # -120° ~ +90°
+            "knee_pitch": (-2.618, 0.0),  # -150° ~ 0°（逆関節）
             "ankle_pitch": (-1.571, 1.571),  # ±90°
         }
 
@@ -56,12 +59,12 @@ class DroidKinematics:
         self.default_joint_angles = {
             "hip_yaw": 0.0,
             "hip_roll": 0.0,
-            "hip_pitch": 1.047,      # 60°
-            "knee_pitch": -1.745,    # -100°
-            "ankle_pitch": 0.785,    # 45°
+            "hip_pitch": 1.047,  # 60°
+            "knee_pitch": -1.745,  # -100°
+            "ankle_pitch": 0.785,  # 45°
         }
 
-    def forward_kinematics(self, joint_angles, is_left=True):
+    def forward_kinematics(self, joint_angles: torch.Tensor, is_left: bool = True) -> torch.Tensor:
         """
         順運動学: 関節角度 → 足先位置（hip_pitch起点からの相対位置）
 
@@ -85,7 +88,7 @@ class DroidKinematics:
         hip_roll = joint_angles[:, 1]
         hip_pitch = joint_angles[:, 2]
         knee_pitch = joint_angles[:, 3]
-        ankle_pitch = joint_angles[:, 4]
+        joint_angles[:, 4]
 
         # XZ平面での計算（サジタル面）
         # 膝位置（大腿先端）
@@ -120,7 +123,7 @@ class DroidKinematics:
 
         return foot_pos
 
-    def inverse_kinematics(self, foot_pos, is_left=True):
+    def inverse_kinematics(self, foot_pos: torch.Tensor, is_left: bool = True) -> torch.Tensor:
         """
         逆運動学: 足先位置 → 関節角度（3D対応）
 
@@ -159,9 +162,9 @@ class DroidKinematics:
         # FKでは: foot_x_rotated = foot_x * cos(yaw) - foot_y * sin(yaw)
         #         foot_y_rotated = foot_x * sin(yaw) + foot_y * cos(yaw)
         # ここで foot_y = default_y (hip_roll=0の場合)
-        # 
+        #
         # IKでは yaw を逆算: yaw = atan2(p_y - foot_x*sin(yaw), p_x)...複雑
-        # 
+        #
         # 近似アプローチ: yaw角が小さい場合、foot_x ≈ p_x
         # したがって: yaw ≈ atan2(p_y - default_y, p_x) は不正確
         #
@@ -180,21 +183,21 @@ class DroidKinematics:
         # default_yは既知なので、yawを求める:
         # p_y * cos(yaw) - p_x * sin(yaw) = default_y
         # sqrt(p_x^2 + p_y^2) * sin(atan2(p_y, p_x) - yaw) = default_y
-        # 
+        #
         # 別アプローチ: p_x^2 + p_y^2 = foot_x^2 + default_y^2
         # foot_x = sqrt(p_x^2 + p_y^2 - default_y^2)
-        
+
         r_sq = p_x**2 + p_y**2
         default_y_sq = default_y**2
-        
+
         # foot_x^2 = r^2 - default_y^2 (負になる場合はクリップ)
         foot_x_sq = torch.clamp(r_sq - default_y_sq, min=0.0001)
         foot_x = torch.sqrt(foot_x_sq)
-        
+
         # yawの計算: atan2で回転角を求める
         # p_y = foot_x * sin(yaw) + default_y * cos(yaw)
         # p_x = foot_x * cos(yaw) - default_y * sin(yaw)
-        # 
+        #
         # これは foot_x, default_y の回転なので:
         # yaw = atan2(p_y, p_x) - atan2(default_y, foot_x)
         hip_yaw = torch.atan2(p_y, p_x) - torch.atan2(torch.full_like(p_x, default_y), foot_x)
@@ -250,7 +253,7 @@ class DroidKinematics:
 
         return joint_angles
 
-    def inverse_kinematics_xz(self, foot_xz, is_left=True):
+    def inverse_kinematics_xz(self, foot_xz: torch.Tensor, is_left: bool = True) -> torch.Tensor:
         """
         簡略化IK: 足先XZ位置のみから関節角度を計算
 
@@ -284,24 +287,27 @@ class DroidKinematics:
 
         return joint_angles
 
-    def get_default_foot_position(self, is_left=True):
+    def get_default_foot_position(self, is_left: bool = True) -> torch.Tensor:
         """
         デフォルト姿勢での足先位置を取得
 
         Returns:
             foot_pos: torch.Tensor (3,)
         """
-        default_angles = torch.tensor([
-            self.default_joint_angles["hip_yaw"],
-            self.default_joint_angles["hip_roll"],
-            self.default_joint_angles["hip_pitch"],
-            self.default_joint_angles["knee_pitch"],
-            self.default_joint_angles["ankle_pitch"],
-        ], device=self.device)
+        default_angles = torch.tensor(
+            [
+                self.default_joint_angles["hip_yaw"],
+                self.default_joint_angles["hip_roll"],
+                self.default_joint_angles["hip_pitch"],
+                self.default_joint_angles["knee_pitch"],
+                self.default_joint_angles["ankle_pitch"],
+            ],
+            device=self.device,
+        )
 
         return self.forward_kinematics(default_angles, is_left)
 
-    def get_workspace_bounds(self):
+    def get_workspace_bounds(self) -> dict[str, float]:
         """
         足先の作業空間の境界を取得（近似）
 
@@ -310,10 +316,10 @@ class DroidKinematics:
         """
         # 簡易的な境界（実際の可動範囲より保守的）
         return {
-            "x_min": -0.15,   # 後方
-            "x_max": 0.15,    # 前方
-            "z_min": -0.25,   # 下方（伸展時）
-            "z_max": -0.08,   # 上方（屈曲時）
+            "x_min": -0.15,  # 後方
+            "x_max": 0.15,  # 前方
+            "z_min": -0.25,  # 下方（伸展時）
+            "z_max": -0.08,  # 上方（屈曲時）
         }
 
 
@@ -323,10 +329,10 @@ def test_fk_ik_consistency():
 
     # テストケース: 様々な関節角度
     test_angles_list = [
-        [0, 0, 0.5, -1.0, 0.5],          # 中間姿勢
-        [0, 0, 1.0, -1.5, 0.5],          # 前傾
-        [0, 0, 0.3, -0.8, 0.5],          # 後傾
-        [0, 0, 1.047, -1.745, 0.785],    # デフォルト姿勢
+        [0, 0, 0.5, -1.0, 0.5],  # 中間姿勢
+        [0, 0, 1.0, -1.5, 0.5],  # 前傾
+        [0, 0, 0.3, -0.8, 0.5],  # 後傾
+        [0, 0, 1.047, -1.745, 0.785],  # デフォルト姿勢
     ]
 
     print("=== FK-IK Consistency Test ===")
@@ -337,7 +343,7 @@ def test_fk_ik_consistency():
         recovered_pos = kin.forward_kinematics(recovered_angles)
 
         pos_error = torch.norm(foot_pos - recovered_pos).item()
-        print(f"Test {i+1}: pos_error = {pos_error*1000:.3f} mm")
+        print(f"Test {i + 1}: pos_error = {pos_error * 1000:.3f} mm")
         print(f"  Original angles: {angles}")
         print(f"  Foot position:   [{foot_pos[0]:.4f}, {foot_pos[1]:.4f}, {foot_pos[2]:.4f}]")
         print(f"  Recovered:       [{recovered_pos[0]:.4f}, {recovered_pos[1]:.4f}, {recovered_pos[2]:.4f}]")
