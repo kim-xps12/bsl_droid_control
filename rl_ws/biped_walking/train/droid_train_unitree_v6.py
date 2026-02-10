@@ -52,12 +52,15 @@ sigma=0.10（V6案）での報酬識別能力:
 ============================================================
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os
 import pickle
 import shutil
 from pathlib import Path
+from typing import Any
 
 import genesis as gs
 
@@ -67,7 +70,7 @@ from rsl_rl.runners.on_policy_runner import OnPolicyRunner
 from biped_walking.envs.droid_env_unitree import DroidEnvUnitree
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -114,7 +117,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
@@ -239,7 +242,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     """メインエントリーポイント"""
     parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V6)")
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v6")

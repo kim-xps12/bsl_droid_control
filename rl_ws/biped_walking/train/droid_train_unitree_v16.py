@@ -1,30 +1,44 @@
 #!/usr/bin/env python3
 """
-BSL-Droid Simplified 歩行学習スクリプト（Unitree参考版V14）
+BSL-Droid Simplified 歩行学習スクリプト（Unitree参考版V16）
 
 ============================================================
-【EXP007 V14: V1ベース + 速度目標のみ低下】
+【EXP007 V16: V15ベース + 振動抑制・大股歩行強化】
 ============================================================
 
 【設計方針】
-V13レポートの教訓「1変更1検証」を厳守し、V1から速度目標のみを変更する。
-V2-V13で複数変更を同時に行い、V1の歩行パターンを壊してしまった反省に基づく。
+V15は0.198 m/sで歩行に成功したが、「小刻み振動」問題が残った。
+V16では**関節角速度の制御**と**ストライド長の増加**の2軸で
+「ゆったりと大股の歩容」を実現する。
 
-【V1からの変更点】（1点のみ）
-- lin_vel_x_range: [0.2, 0.3] → [0.15, 0.20]（速度目標を下げる）
+【問題の根本原因】（V15レポートより）
+- knee_pitch可動域: 0.099 rad（V3の0.305 radの約1/3）
+- dof_velペナルティ未使用により高周波振動が抑制されていない
+- feet_air_timeオフセット0.5秒がBSL-Droidには大きすぎ、滞空報酬を獲得しにくい
+- action_rate=-0.01が大きな関節動作を抑制している
 
-【V1と同じ設定（維持）】
-- gait_frequency: 1.5 Hz
-- 報酬項目数: 15項目
-- tracking_sigma: 0.25
-- action_rate: -0.01
-- hip_pos: -0.5
-- その他全てのパラメータ
+【V15からの変更点】（5点）
+1. dof_vel: (なし) → -0.005（振動抑制）
+2. step_length: (なし) → 0.5（ストライド長報酬）
+3. action_rate: -0.01 → -0.005（大きな動作許容）
+4. swing_height_target: 0.03 m → 0.04 m（足上げ誘導）
+5. air_time_offset: 0.5秒 → 0.3秒（滞空報酬獲得しやすく）
+
+【V15から維持する設定】（静止ポリシー回避の要）
+- 報酬項目数: 16 → 18項目（+2: dof_vel, step_length）
+- tracking_lin_vel: 1.5（動く動機を維持）
+- single_foot_contact: 0.3（片足接地報酬）
+- velocity_deficit: -0.5（速度未達ペナルティ）
+- alive: 削除（静止の報酬価値を除去）
+- gait_frequency: 1.0 Hz（V15と同じ）
+- lin_vel_x_range: [0.15, 0.25]（V15と同じ）
 
 【成功基準】
-- X速度: 0.15-0.20 m/s（目標速度に追従）
-- 歩行品質: V1レベルを維持
-- 目視評価: V1と同等
+- X速度: 0.15-0.20 m/s（V15と同等を維持）
+- knee_pitch可動域: > 0.20 rad（V15の0.099 radから改善）
+- DOF range sum: > 2.0 rad（V15の1.834 radから改善）
+- 関節速度std: < 1.0 rad/s（振動抑制確認）
+- 目視評価: ゆったり大股
 
 ============================================================
 """
@@ -100,7 +114,7 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
     rl_ws_dir = script_dir.parent.parent
     urdf_path = rl_ws_dir / "assets" / "bsl_droid_simplified.urdf"
 
-    # V1と同じ初期姿勢
+    # V3と同じ初期姿勢
     hip_pitch_rad = 60 * math.pi / 180
     knee_pitch_rad = -100 * math.pi / 180
     ankle_pitch_rad = 45 * math.pi / 180
@@ -149,7 +163,7 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
     }
 
     obs_cfg = {
-        "num_obs": 50,  # Unitree方式の観測空間（V1と同じ）
+        "num_obs": 50,  # V3と同じ観測空間
         "obs_scales": {
             "lin_vel": 2.0,
             "ang_vel": 0.25,
@@ -159,53 +173,63 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
     }
 
     # ============================================================
-    # V1と同じ報酬設計（15項目）
+    # V16: V15ベース + 振動抑制・大股歩行強化
     # ============================================================
     reward_cfg = {
-        "tracking_sigma": 0.25,  # V1と同じ
-        "base_height_target": 0.20,  # V1と同じ
-        "swing_height_target": 0.03,  # V1と同じ
-        "gait_frequency": 1.5,  # V1と同じ（周期0.67秒）
-        "contact_threshold": 0.025,  # V1と同じ
+        "tracking_sigma": 0.25,  # V15と同じ
+        "base_height_target": 0.20,  # V15と同じ
+        "swing_height_target": 0.04,  # ★変更: V15 0.03 → V16 0.04 m（足上げ誘導）
+        "gait_frequency": 1.0,  # V15と同じ
+        "contact_threshold": 0.025,  # V15と同じ
+        "air_time_offset": 0.3,  # ★変更: デフォルト0.5 → V16 0.3秒（滞空報酬獲得しやすく）
         "reward_scales": {
             # ============================================================
-            # 【主報酬】速度追従（V1と同じ）
+            # 【主報酬】速度追従（V15と同じ）
             # ============================================================
-            "tracking_lin_vel": 1.0,  # V1と同じ
-            "tracking_ang_vel": 0.5,  # V1と同じ
+            "tracking_lin_vel": 1.5,  # V15と同じ（動く動機を維持）
+            "tracking_ang_vel": 0.5,  # V15と同じ
             # ============================================================
-            # 【歩行品質報酬】（V1と同じ）
+            # 【歩行品質報酬】（V15の静止ポリシー回避機構を維持）
             # ============================================================
-            "feet_air_time": 1.0,  # V1と同じ
-            "contact": 0.2,  # V1と同じ
-            "alive": 0.1,  # V1と同じ
+            "feet_air_time": 1.5,  # V15と同じ
+            "contact": 0.2,  # V15と同じ
+            # alive: 削除（V15と同じ、静止の報酬価値を除去）
+            # V15の静止ポリシー回避機構を維持
+            "single_foot_contact": 0.3,  # V15と同じ（片足接地報酬）
             # ============================================================
-            # 【安定性ペナルティ】（V1と同じ）
+            # 【大股歩行強化】（V16新規）
             # ============================================================
-            "lin_vel_z": -2.0,  # V1と同じ
-            "ang_vel_xy": -0.05,  # V1と同じ
-            "orientation": -0.5,  # V1と同じ
-            "base_height": -5.0,  # V1と同じ
+            "step_length": 0.5,  # ★新規: ストライド長報酬
             # ============================================================
-            # 【歩行品質ペナルティ】（V1と同じ）
+            # 【安定性ペナルティ】（V15と同じ）
             # ============================================================
-            "feet_swing_height": -5.0,  # V1と同じ
-            "contact_no_vel": -0.1,  # V1と同じ
-            "hip_pos": -0.5,  # V1と同じ
+            "lin_vel_z": -2.0,  # V15と同じ
+            "ang_vel_xy": -0.05,  # V15と同じ
+            "orientation": -0.5,  # V15と同じ
+            "base_height": -5.0,  # V15と同じ
             # ============================================================
-            # 【エネルギー効率ペナルティ】（V1と同じ）
+            # 【歩行品質ペナルティ】（V15と同じ）
             # ============================================================
-            "torques": -1e-5,  # V1と同じ
-            "action_rate": -0.01,  # V1と同じ
-            "dof_acc": -2.5e-7,  # V1と同じ
+            "feet_swing_height": -5.0,  # V15と同じ
+            "contact_no_vel": -0.1,  # V15と同じ
+            "hip_pos": -0.5,  # V15と同じ
+            # V15の静止ポリシー回避機構を維持
+            "velocity_deficit": -0.5,  # V15と同じ（速度未達ペナルティ）
+            # ============================================================
+            # 【エネルギー効率・振動抑制ペナルティ】
+            # ============================================================
+            "torques": -1e-5,  # V15と同じ
+            "action_rate": -0.005,  # ★変更: V15 -0.01 → V16 -0.005（大きな動作許容）
+            "dof_acc": -2.5e-7,  # V15と同じ
+            "dof_vel": -0.005,  # ★新規: 関節角速度ペナルティ（振動抑制）
         },
     }
 
     command_cfg = {
         "num_commands": 3,
-        "lin_vel_x_range": [0.15, 0.20],  # ★唯一の変更点: V1 [0.2, 0.3] → V14 [0.15, 0.20]
-        "lin_vel_y_range": [0, 0],  # V1と同じ
-        "ang_vel_range": [0, 0],  # V1と同じ
+        "lin_vel_x_range": [0.15, 0.25],  # ★変更: V3 [0.2, 0.3] → V15 [0.15, 0.25]
+        "lin_vel_y_range": [0, 0],  # V3と同じ
+        "ang_vel_range": [0, 0],  # V3と同じ
     }
 
     return env_cfg, obs_cfg, reward_cfg, command_cfg
@@ -213,8 +237,8 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
 
 def main() -> None:
     """メインエントリーポイント"""
-    parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V14)")
-    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v14")
+    parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V16)")
+    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v16")
     parser.add_argument("--num_envs", type=int, default=4096)
     parser.add_argument("--max_iterations", type=int, default=500)
     args = parser.parse_args()
@@ -258,22 +282,27 @@ def main() -> None:
     runner = OnPolicyRunner(env, train_cfg, log_dir=str(log_dir), device="mps")
 
     # 訓練開始
-    print(f"\n{'=' * 60}")
-    print("EXP007 V14: V1ベース + 速度目標のみ低下")
-    print(f"{'=' * 60}")
-    print("【V1からの変更点】（1点のみ）")
-    print("- lin_vel_x_range: [0.2, 0.3] → [0.15, 0.20]")
-    print(f"{'=' * 60}")
-    print("【V1と同じ設定（維持）】")
-    print("- gait_frequency: 1.5 Hz")
-    print(f"- 報酬項目数: {len(reward_cfg['reward_scales'])}項目")
-    print("- tracking_sigma: 0.25")
-    print("- action_rate: -0.01")
-    print("- hip_pos: -0.5")
-    print(f"{'=' * 60}")
+    print(f"\n{'=' * 70}")
+    print("EXP007 V16: V15ベース + 振動抑制・大股歩行強化")
+    print(f"{'=' * 70}")
+    print("【V15からの変更点】（5点）")
+    print("  1. dof_vel: (なし) → -0.005（振動抑制）")
+    print("  2. step_length: (なし) → 0.5（ストライド長報酬）")
+    print("  3. action_rate: -0.01 → -0.005（大きな動作許容）")
+    print("  4. swing_height_target: 0.03 → 0.04 m（足上げ誘導）")
+    print("  5. air_time_offset: 0.5 → 0.3秒（滞空報酬獲得しやすく）")
+    print(f"{'=' * 70}")
+    print("【V15から維持する設定】（静止ポリシー回避の要）")
+    print("  - tracking_lin_vel: 1.5（動く動機を維持）")
+    print("  - single_foot_contact: 0.3（片足接地報酬）")
+    print("  - velocity_deficit: -0.5（速度未達ペナルティ）")
+    print("  - alive: 削除（静止の報酬価値を除去）")
+    print("  - gait_frequency: 1.0 Hz（V15と同じ）")
+    print(f"{'=' * 70}")
     print(f"観測空間: {obs_cfg['num_obs']}次元")
     print(f"行動空間: {env_cfg['num_actions']}次元")
-    print(f"{'=' * 60}\n")
+    print(f"報酬項目数: {len(reward_cfg['reward_scales'])}")
+    print(f"{'=' * 70}\n")
 
     # 報酬スケール表示
     print("報酬スケール:")

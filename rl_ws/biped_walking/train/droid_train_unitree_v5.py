@@ -31,22 +31,25 @@ V4は接地検出を修正し、0.192 m/sで前進するようになった。
 ============================================================
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os
 import pickle
 import shutil
 from pathlib import Path
+from typing import Any
 
 import genesis as gs
-
-from biped_walking.envs.droid_env_unitree import DroidEnvUnitree
 
 # rsl-rl-lib==2.2.4のインポート
 from rsl_rl.runners.on_policy_runner import OnPolicyRunner
 
+from biped_walking.envs.droid_env_unitree import DroidEnvUnitree
 
-def get_train_cfg(exp_name, max_iterations):
+
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -93,7 +96,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
@@ -161,72 +164,64 @@ def get_cfgs():
     # V5: 足首振動抑制と対称性改善
     # ============================================================
     reward_cfg = {
-        "tracking_sigma": 0.25,         # 速度追従のガウシアン幅
-        "base_height_target": 0.20,     # 目標胴体高さ（BSL-Droid用に調整）
-        "swing_height_target": 0.03,    # 遊脚の目標高さ
-        "gait_frequency": 0.8,          # 歩行周波数（V4: 1.0Hz → V5: 0.8Hz、遊脚期延長）
-        "contact_threshold": 0.08,      # 接地判定閾値
-        "air_time_offset": 0.25,        # 滞空時間オフセット（V4: 0.5s → V5: 0.25s、小型ロボット用）
-
+        "tracking_sigma": 0.25,  # 速度追従のガウシアン幅
+        "base_height_target": 0.20,  # 目標胴体高さ（BSL-Droid用に調整）
+        "swing_height_target": 0.03,  # 遊脚の目標高さ
+        "gait_frequency": 0.8,  # 歩行周波数（V4: 1.0Hz → V5: 0.8Hz、遊脚期延長）
+        "contact_threshold": 0.08,  # 接地判定閾値
+        "air_time_offset": 0.25,  # 滞空時間オフセット（V4: 0.5s → V5: 0.25s、小型ロボット用）
         "reward_scales": {
             # ============================================================
             # 【主報酬】速度追従
             # ============================================================
-            "tracking_lin_vel": 1.5,    # 線速度追従
-            "tracking_ang_vel": 0.5,    # 角速度追従
-
+            "tracking_lin_vel": 1.5,  # 線速度追従
+            "tracking_ang_vel": 0.5,  # 角速度追従
             # ============================================================
             # 【歩行品質報酬】（V5: 対称性追加）
             # ============================================================
-            "feet_air_time": 1.5,       # 滞空時間報酬（offset=0.25sで正常化）
-            "contact": 0.2,             # 接地フェーズ整合性
-            "alive": 0.03,              # 生存報酬
-
+            "feet_air_time": 1.5,  # 滞空時間報酬（offset=0.25sで正常化）
+            "contact": 0.2,  # 接地フェーズ整合性
+            "alive": 0.03,  # 生存報酬
             # 片足接地報酬
-            "single_foot_contact": 0.8, # 交互歩行誘導
-
+            "single_foot_contact": 0.8,  # 交互歩行誘導
             # 【V5新規】左右対称性報酬
-            "symmetry": 0.3,            # 左右脚の対称性を報酬化
-
+            "symmetry": 0.3,  # 左右脚の対称性を報酬化
             # ============================================================
             # 【安定性ペナルティ】（Unitree方式）
             # ============================================================
-            "lin_vel_z": -2.0,          # Z軸速度ペナルティ
-            "ang_vel_xy": -0.05,        # XY角速度ペナルティ
-            "orientation": -0.5,        # 姿勢ペナルティ（BSL-Droid向け緩和）
-            "base_height": -5.0,        # 高さ維持（BSL-Droid向け緩和）
-
+            "lin_vel_z": -2.0,  # Z軸速度ペナルティ
+            "ang_vel_xy": -0.05,  # XY角速度ペナルティ
+            "orientation": -0.5,  # 姿勢ペナルティ（BSL-Droid向け緩和）
+            "base_height": -5.0,  # 高さ維持（BSL-Droid向け緩和）
             # ============================================================
             # 【歩行品質ペナルティ】
             # ============================================================
             "feet_swing_height": -5.0,  # 遊脚高さ
-            "contact_no_vel": -0.1,     # 接地時足速度
-            "hip_pos": -0.5,            # 股関節位置（開脚抑制）
-
+            "contact_no_vel": -0.1,  # 接地時足速度
+            "hip_pos": -0.5,  # 股関節位置（開脚抑制）
             # 速度未達ペナルティ
-            "velocity_deficit": -0.5,   # 目標速度を下回るとペナルティ
-
+            "velocity_deficit": -0.5,  # 目標速度を下回るとペナルティ
             # ============================================================
             # 【エネルギー効率ペナルティ】（V5: 振動抑制強化）
             # ============================================================
-            "torques": -1e-5,           # トルクペナルティ
-            "action_rate": -0.005,      # アクション変化率
-            "dof_acc": -2.5e-7,         # 関節加速度
-            "dof_vel": -0.005,          # 関節速度（V4: -0.001 → V5: -0.005、振動抑制強化）
+            "torques": -1e-5,  # トルクペナルティ
+            "action_rate": -0.005,  # アクション変化率
+            "dof_acc": -2.5e-7,  # 関節加速度
+            "dof_vel": -0.005,  # 関節速度（V4: -0.001 → V5: -0.005、振動抑制強化）
         },
     }
 
     command_cfg = {
         "num_commands": 3,
         "lin_vel_x_range": [0.10, 0.15],  # 目標前進速度（V4: 0.2-0.3 → V5: 0.10-0.15、低速で交互歩行獲得）
-        "lin_vel_y_range": [0, 0],        # 横移動なし
-        "ang_vel_range": [0, 0],          # 旋回なし
+        "lin_vel_y_range": [0, 0],  # 横移動なし
+        "ang_vel_range": [0, 0],  # 旋回なし
     }
 
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     """メインエントリーポイント"""
     parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V5)")
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v5")
@@ -273,25 +268,25 @@ def main():
     runner = OnPolicyRunner(env, train_cfg, log_dir=str(log_dir), device="mps")
 
     # 訓練開始
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print("EXP007 V5: 足首振動抑制と対称性改善")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print("【V4の成功と課題】")
     print("  成功: 接地検出修正、0.192 m/sで前進")
     print("  課題: hip_pitch相関 +0.792（両脚同期、交互歩行未達成）")
     print("        足首の高速振動、左右非対称な動き")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print("【V5での対策】")
     print("  - lin_vel_x_range: [0.2, 0.3] → [0.10, 0.15]（低速で交互歩行獲得）")
     print("  - gait_frequency: 1.0 → 0.8 Hz（遊脚期延長）")
     print("  - dof_vel: -0.001 → -0.005（振動抑制強化）")
     print("  - air_time_offset: 0.5 → 0.25 s（小型ロボット用調整）")
     print("  - symmetry: 新規追加 0.3（左右対称性報酬）")
-    print(f"{'='*70}")
+    print(f"{'=' * 70}")
     print(f"観測空間: {obs_cfg['num_obs']}次元")
     print(f"行動空間: {env_cfg['num_actions']}次元")
     print(f"報酬項目数: {len(reward_cfg['reward_scales'])}")
-    print(f"{'='*70}\n")
+    print(f"{'=' * 70}\n")
 
     # 報酬スケール表示
     print("報酬スケール:")

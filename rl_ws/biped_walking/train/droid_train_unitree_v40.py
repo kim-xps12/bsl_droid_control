@@ -1,63 +1,54 @@
 #!/usr/bin/env python3
 """
-BSL-Droid Simplified 歩行学習スクリプト（Unitree参考版V11）
+BSL-Droid Simplified 歩行学習スクリプト（Unitree参考版V40）
 
 ============================================================
-【EXP007 V11: 最小有効報酬セットによる静止ポリシー回避】
+【EXP007 V40: hip_pos分解（hip_roll特化ペナルティへの転換）】
 ============================================================
 
-【V10の結果と課題】
-V10は静止ポリシーへの回帰という深刻な問題が発生：
-- X速度: 0.092 m/s → 0.006 m/s（93%減、静止ポリシー）
-- 原因: ペナルティの累積効果（5項目を同時に強化/追加）
-- 報酬最大化（98.12）≠ 歩行品質最大化
+【V39の結果と教訓】
+V39ではhip_posスケールを-1.0→-0.8に緩和:
+- Yawドリフト: -42.71°→-19.17°（+55%改善）
+- Roll std: 6.53°→6.06°（-7.2%）
+- Pitch std: 3.16°→1.34°（-58%、過去最良）
+- base_pos_y std: 0.138→0.090m（-35%改善）
+- スイング持続: 0.30-0.35s→0.41-0.43s（回復）
 
-【重要な教訓（V1-V10から）】
-1. ペナルティの強化は一度に1-2項目まで
-2. 複数のペナルティを同時に強化しない
-3. 「動いていた頃」の設定をベースに最小限の調整を行う
-4. 報酬の絶対値ではなく、実際の動作で評価する
+残存課題:
+- X速度: 0.168→0.122 m/s（-27%低下）
+- hip_pitch相関: -0.801→-0.588（-27%低下）
+- Yaw後半加速: 2-7sで安定だが8s以降にドリフト加速
+- 接地脚内股: hip_roll offset L:-18.80° R:+17.84°→横方向並進揺れ
+- 横方向振動: 脱トレンドstd 49.1mm（V38: 34.1mm、+44%悪化）
 
-【V11の改善方針】
-V10レポートの「提案3: 最小有効報酬セット」に基づき、
-報酬設計を大幅に簡素化する（22項目 → 15項目）。
+教訓:
+- hip_pos(-0.8)はhip_yaw+hip_rollを同時にペナルティする構造的欠陥
+- ang_vel_xyは角速度のみ制約し、hip_rollの静的mean offsetは制約しない
+- 横方向並進揺れの44%はhip_roll mean offsetによる重心横移動に起因
 
-設計原則:
-1. Unitree G1/H1の成功パターンに準拠（13-14項目）
-2. V3-V4の実績に基づく設定（16-17項目で0.15-0.19 m/s達成）
-3. ペナルティ累積効果の回避
+【V40の設計原則】
+hip_posをankle_rollに分解する。hip_posを無効化し、既存の_reward_ankle_roll
+（hip_rollのみをペナルティ）を有効化して、hip_yaw完全自由化とhip_roll制御を両立。
 
-【削除する要素（7項目）】
-| 削除要素              | 理由                     |
-|----------------------|--------------------------|
-| symmetry             | hip_pitch同期誘発         |
-| hip_pitch_antiphase_v2 | 効果なし               |
-| both_legs_active     | 効果不明                  |
-| feet_stumble         | 静止誘発                  |
-| hip_pos              | V3になし                  |
-| action_rate          | ペナルティ累積            |
-| dof_vel              | V3になく不要              |
+変更内容:
+| パラメータ  | V39値 | V40値 | 変更理由 |
+|------------|-------|-------|---------|
+| hip_pos    | -0.8  | 0     | hip_yaw制約を完全除去しYaw修正能力を回復 |
+| ankle_roll | 0     | -1.0  | hip_rollのみを直接ペナルティし内股・横揺れを抑制 |
 
-【ペナルティ緩和】
-| パラメータ         | V10値   | V11値   | 変更理由           |
-|-------------------|---------|---------|-------------------|
-| ang_vel_xy        | -0.1    | -0.05   | V3-V4レベルに戻す  |
-| orientation       | -1.0    | -0.5    | V3-V4レベルに戻す  |
-| feet_swing_height | -10.0   | -5.0    | V3-V4レベルに戻す  |
-| tracking_ang_vel  | 1.0     | 0.5     | Unitree値に戻す    |
-| swing_height_target| 0.05   | 0.03    | V3-V4レベルに戻す  |
+【期待される効果】
+1. hip_yaw完全自由化→Yaw修正能力の回復→Yawドリフトのさらなる改善
+2. ankle_rollがhip_roll offsetを直接ペナルティ→内股縮小→横方向並進揺れ抑制
+3. ang_vel_xy=-0.1がRoll角速度安定性を担保
+4. 報酬項目数は16項目を維持（-1 hip_pos + 1 ankle_roll = ±0）
 
-【速度目標設定】
-- lin_vel_x_range: [0.15, 0.25]（V7レベル、動作実績あり）
-- ang_vel_range: [0, 0]（まずは直進のみ、複雑さ回避）
+【リスク】
+- hip_yaw完全自由化でhip_yawが過度に大きくなる可能性
+- ankle_roll=-1.0がhip_rollを強く制約しすぎる可能性
 
-【成功基準】
-| 指標 | V10値 | V11目標 | 判定基準 |
-|------|-------|---------|---------|
-| X速度 | 0.006 m/s | > 0.15 m/s | V3-V4レベルに回復 |
-| hip_pitch相関 | +0.449 | < 0 | 交互歩行の回復 |
-| 報酬項目数 | 22 | 15 | 簡素化 |
-| エピソード長 | 1001 | > 900 | 安定性維持 |
+【参考文献】
+- exp007_report_v39.md: V39の結果と次バージョンへの提案（推奨案）
+- _reward_ankle_roll: droid_env_unitree.py:953（V8追加、hip_roll²のみをペナルティ）
 ============================================================
 """
 
@@ -178,10 +169,12 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
         "action_scale": 0.25,  # rad（約14°）
         "simulate_action_latency": True,
         "clip_actions": 10.0,
+        # Contact Sensor使用
+        "use_contact_sensor": True,
     }
 
     obs_cfg = {
-        "num_obs": 50,  # Unitree方式の観測空間
+        "num_obs": 50,  # Unitree方式の観測空間（3+3+3+3+10+10+10+1+1+2+2+2=50）
         "obs_scales": {
             "lin_vel": 2.0,
             "ang_vel": 0.25,
@@ -191,68 +184,73 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
     }
 
     # ============================================================
-    # V11: 最小有効報酬セット（15項目）
-    # ============================================================
-    # 設計原則:
-    # 1. Unitree G1/H1の成功パターンに準拠（13-14項目）
-    # 2. V3-V4の実績に基づく設定（16-17項目で0.15-0.19 m/s達成）
-    # 3. ペナルティ累積効果の回避
+    # V40: hip_pos分解（hip_roll特化ペナルティへの転換）
+    # - hip_pos無効化（-0.8→0）+ ankle_roll有効化（0→-1.0）
+    # - 16項目構成を維持（-1 + 1 = ±0）
     # ============================================================
     reward_cfg = {
-        "tracking_sigma": 0.10,  # V6で効果実証（静止回避）
-        "base_height_target": 0.20,  # BSL-Droid向け
-        "swing_height_target": 0.03,  # ★V3-V4値に戻す（V10: 0.05は過剰）
-        "gait_frequency": 1.0,  # V4値
-        "contact_threshold": 0.08,  # V4で修正済み
-        "air_time_offset": 0.25,  # デフォルト
+        "tracking_sigma": 0.25,  # V29と同じ
+        "base_height_target": 0.20,  # 目標胴体高さ（BSL-Droid用に調整）
+        "swing_height_target": 0.05,  # V29と同じ
+        # ============================================================
+        # gait_frequency: V29から維持（0.9Hz）
+        # ============================================================
+        "gait_frequency": 0.9,  # V29と同じ
+        "contact_threshold": 0.05,  # フォールバック用（Contact Sensor使用時は参照されない）
+        # ============================================================
+        # V30変更: air_time_offset引き下げ（0.25→0.10）
+        # V29でswing_duration報酬が機能しなかった（報酬値0.0000）
+        # 原因: 0.25秒の空中時間がBSL-Droidでは達成困難
+        # ============================================================
+        "air_time_offset": 0.10,  # V30から維持
         "reward_scales": {
             # ============================================================
-            # 【主報酬】Unitreeと同等
+            # 【主報酬】速度追従
             # ============================================================
-            "tracking_lin_vel": 1.5,  # V3-V4で実証済み
-            "tracking_ang_vel": 0.5,  # ★Unitreeと同じ（V10の1.0は過剰）
+            "tracking_lin_vel": 1.5,  # 線速度追従
+            "tracking_ang_vel": 0.5,  # 角速度追従
             # ============================================================
-            # 【歩行品質報酬】Unitree方式 + V3-V4実証済み要素
+            # 【歩行品質報酬】V35から維持
             # ============================================================
-            "contact": 0.2,  # Unitree: 0.18、歩行フェーズ整合性
-            "single_foot_contact": 0.8,  # V4で実証済み、交互歩行の核心
-            "feet_air_time": 1.5,  # V3-V4で実証済み
-            "alive": 0.03,  # 控えめに設定（Unitreeの0.15は静止誘発リスク）
+            "feet_air_time": 0,  # V30から維持（無効化）
+            "swing_duration": 2.0,  # V30から維持
+            "swing_contact_penalty": -0.7,  # V35から維持
+            "contact": 0.4,  # V30から維持
+            "single_foot_contact": 0.5,  # V31から維持
+            "step_length": 0.8,  # V29から維持
             # ============================================================
-            # 【安定性ペナルティ】Unitree値を使用
+            # 【安定性ペナルティ】（Unitree方式）
             # ============================================================
-            "lin_vel_z": -2.0,  # Unitreeと同じ
-            "ang_vel_xy": -0.05,  # ★Unitree値に戻す（V10: -0.1は過剰）
-            "orientation": -0.5,  # ★V3-V4レベルに戻す（V10: -1.0は過剰）
-            "base_height": -5.0,  # サーベイ6.2推奨値
+            "lin_vel_z": -2.0,  # Z軸速度ペナルティ
+            "ang_vel_xy": -0.1,  # V38変更: -0.05→-0.1（Roll/Pitch角速度の直接抑制）
+            "orientation": -0.5,  # 姿勢ペナルティ（BSL-Droid向け緩和）
+            "base_height": -5.0,  # 高さ維持（BSL-Droid向け緩和）
             # ============================================================
             # 【歩行品質ペナルティ】
+            # V36削除: ankle_pitch_range(-0.3, 寄与0.6%), dof_vel_limits(-0.3, 寄与0.0%)
             # ============================================================
-            "feet_swing_height": -5.0,  # ★V3-V4レベルに戻す（V10: -10.0は過剰）
-            "contact_no_vel": -0.1,  # Unitreeと同等
-            "velocity_deficit": -2.0,  # V6で効果実証済み
+            "feet_swing_height": -8.0,  # 遊脚高さ目標追従
+            "contact_no_vel": -0.1,  # 接地時足速度
+            "hip_pos": 0,  # V40変更: -0.8→0（無効化、hip_yaw制約を完全除去）
+            "ankle_roll": -1.0,  # V40追加: hip_rollのみを直接ペナルティ（内股・横揺れ抑制）
+            "velocity_deficit": -0.5,  # 速度未達ペナルティ（静止対策）
             # ============================================================
             # 【エネルギー効率ペナルティ】
+            # V36削除: torques(-1e-5, 寄与0.0%), dof_acc(-1e-7, 寄与1.1%)
             # ============================================================
-            "torques": -1e-5,  # Unitreeと同等
-            "dof_acc": -2.5e-7,  # Unitreeと同等
+            "action_rate": -0.005,  # V29から維持
+            # 【V26から継続】遊脚横方向速度ペナルティ
+            "swing_foot_lateral_velocity": -0.5,
+            # 【V34から継続】左右対称性報酬は無効化
+            "symmetry_range": 0,  # V34から維持（無効化）
         },
     }
-    # 報酬項目数: 15（V10の22から7項目削減）
-    # 削除した要素:
-    # - symmetry（hip_pitch同期誘発）
-    # - hip_pitch_antiphase_v2（効果なし）
-    # - both_legs_active（効果不明）
-    # - feet_stumble（静止誘発）
-    # - hip_pos（V3になし）
-    # - action_rate（ペナルティ累積）
-    # - dof_vel（V3になく不要）
 
     command_cfg = {
         "num_commands": 3,
-        "lin_vel_x_range": [0.15, 0.25],  # ★V7値（動作実績あり）
+        "lin_vel_x_range": [0.15, 0.25],  # V28と同じ
         "lin_vel_y_range": [0, 0],  # 横移動なし
-        "ang_vel_range": [0, 0],  # ★まずは直進のみ（複雑さ回避）
+        "ang_vel_range": [0, 0],  # 旋回なし
     }
 
     return env_cfg, obs_cfg, reward_cfg, command_cfg
@@ -260,8 +258,8 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
 
 def main() -> None:
     """メインエントリーポイント"""
-    parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V11)")
-    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v11")
+    parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V40)")
+    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v40")
     parser.add_argument("--num_envs", type=int, default=4096)
     parser.add_argument("--max_iterations", type=int, default=500)
     args = parser.parse_args()
@@ -306,47 +304,44 @@ def main() -> None:
 
     # 訓練開始
     print(f"\n{'=' * 70}")
-    print("EXP007 V11: 最小有効報酬セットによる静止ポリシー回避")
+    print("EXP007 V40: hip_pos分解（hip_roll特化ペナルティへの転換）")
     print(f"{'=' * 70}")
-    print("【V10の失敗原因】")
-    print("  - X速度: 0.006 m/s（静止ポリシーへの回帰）")
-    print("  - 原因: ペナルティの累積効果（5項目を同時に強化/追加）")
-    print("  - 報酬最大化（98.12）≠ 歩行品質最大化")
+    print("【V39の結果と教訓】")
+    print("  成功: Yaw -42.71°→-19.17°(+55%改善)、Roll std 6.06°(-7%)")
+    print("  成功: Pitch std 1.34°(-58%、過去最良)、base_pos_y std -35%")
+    print("  課題: X速度0.122(-27%)、hip_pitch相関-0.588(-27%)")
+    print("  課題: 接地脚内股(hip_roll offset)→横方向並進揺れ")
+    print("  教訓: hip_pos構造的欠陥(hip_yaw+hip_roll同時ペナルティ)")
     print(f"{'=' * 70}")
-    print("【V11の改善方針: 最小有効報酬セット】")
-    print("  1. 報酬項目数: 22 → 15（7項目削減）")
-    print("  2. Unitree G1/H1の成功パターンに準拠")
-    print("  3. V3-V4の実績に基づく設定")
-    print("  4. ペナルティ累積効果の回避")
+    print("【V40の設計原則】")
+    print("  hip_pos分解: hip_pos=-0.8→0(無効化) + ankle_roll=0→-1.0(有効化)")
+    print("  目的: hip_yaw完全自由化 + hip_rollのみ直接ペナルティ")
+    print("  ※ang_vel_xy=-0.1がRoll角速度安定性を担保")
     print(f"{'=' * 70}")
-    print("【削除した要素（7項目）】")
-    print("  - symmetry（hip_pitch同期誘発）")
-    print("  - hip_pitch_antiphase_v2（効果なし）")
-    print("  - both_legs_active（効果不明）")
-    print("  - feet_stumble（静止誘発）")
-    print("  - hip_pos、action_rate、dof_vel")
-    print(f"{'=' * 70}")
-    print("【ペナルティ緩和】")
-    print("  - ang_vel_xy: -0.1 → -0.05")
-    print("  - orientation: -1.0 → -0.5")
-    print("  - feet_swing_height: -10.0 → -5.0")
-    print("  - tracking_ang_vel: 1.0 → 0.5")
+    print("【期待される効果】")
+    print("  - hip_yaw完全自由化→Yawドリフトのさらなる改善")
+    print("  - ankle_rollでhip_roll offset直接抑制→横方向並進揺れ改善")
+    print("  - 報酬項目数: 16項目を維持（推奨範囲内）")
     print(f"{'=' * 70}")
     print(f"観測空間: {obs_cfg['num_obs']}次元")
     print(f"行動空間: {env_cfg['num_actions']}次元")
-    print(f"報酬項目数: {len(reward_cfg['reward_scales'])}")
+    print(f"報酬項目数: {len([k for k, v in reward_cfg['reward_scales'].items() if v != 0])}")
     print(f"{'=' * 70}\n")
 
     # 報酬スケール表示
     print("報酬スケール:")
     for name, scale in reward_cfg["reward_scales"].items():
-        print(f"  {name}: {scale}")
+        if scale != 0:
+            print(f"  {name}: {scale}")
+        else:
+            print(f"  {name}: {scale} (無効)")
     print()
 
     runner.learn(num_learning_iterations=args.max_iterations, init_at_random_ep_len=True)
 
     print(f"\n訓練完了: {args.exp_name}")
     print(f"モデル保存先: {log_dir}")
+    print("次のステップ: biped_eval.py で評価を実行")
 
 
 if __name__ == "__main__":

@@ -33,22 +33,25 @@ BSL-Droid Simplified 歩行学習スクリプト（Unitree参考版V2）
 ============================================================
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os
 import pickle
 import shutil
 from pathlib import Path
+from typing import Any
 
 import genesis as gs
-
-from biped_walking.envs.droid_env_unitree import DroidEnvUnitree
 
 # rsl-rl-lib==2.2.4のインポート
 from rsl_rl.runners.on_policy_runner import OnPolicyRunner
 
+from biped_walking.envs.droid_env_unitree import DroidEnvUnitree
 
-def get_train_cfg(exp_name, max_iterations):
+
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -95,7 +98,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
@@ -163,61 +166,56 @@ def get_cfgs():
     # V2: 重み・目標速度調整による改善
     # ============================================================
     reward_cfg = {
-        "tracking_sigma": 0.25,         # 速度追従のガウシアン幅
-        "base_height_target": 0.20,     # 目標胴体高さ（BSL-Droid用に調整）
-        "swing_height_target": 0.04,    # 遊脚の目標高さ（V1: 0.03m → V2: 0.04m）
-        "gait_frequency": 1.0,          # 歩行周波数（V1: 1.5Hz → V2: 1.0Hz）
-        "contact_threshold": 0.025,     # 接地判定閾値 m
-
+        "tracking_sigma": 0.25,  # 速度追従のガウシアン幅
+        "base_height_target": 0.20,  # 目標胴体高さ（BSL-Droid用に調整）
+        "swing_height_target": 0.04,  # 遊脚の目標高さ（V1: 0.03m → V2: 0.04m）
+        "gait_frequency": 1.0,  # 歩行周波数（V1: 1.5Hz → V2: 1.0Hz）
+        "contact_threshold": 0.025,  # 接地判定閾値 m
         "reward_scales": {
             # ============================================================
             # 【主報酬】速度追従（Unitree方式）
             # ============================================================
-            "tracking_lin_vel": 1.0,    # 線速度追従（exp関数）
-            "tracking_ang_vel": 0.8,    # 角速度追従（V1: 0.5 → V2: 0.8、直進性重視）
-
+            "tracking_lin_vel": 1.0,  # 線速度追従（exp関数）
+            "tracking_ang_vel": 0.8,  # 角速度追従（V1: 0.5 → V2: 0.8、直進性重視）
             # ============================================================
             # 【歩行品質報酬】（V1課題への対策）
             # ============================================================
-            "feet_air_time": 1.0,       # 滞空時間報酬
-            "contact": 0.5,             # 接地フェーズ整合性（V1: 0.2 → V2: 0.5、交互歩行強化）
-            "alive": 0.15,              # 生存報酬（V1: 0.1 → V2: 0.15、安定性維持）
-
+            "feet_air_time": 1.0,  # 滞空時間報酬
+            "contact": 0.5,  # 接地フェーズ整合性（V1: 0.2 → V2: 0.5、交互歩行強化）
+            "alive": 0.15,  # 生存報酬（V1: 0.1 → V2: 0.15、安定性維持）
             # ============================================================
             # 【安定性ペナルティ】（Unitree方式）
             # ============================================================
-            "lin_vel_z": -2.0,          # Z軸速度ペナルティ
-            "ang_vel_xy": -0.05,        # XY角速度ペナルティ
-            "orientation": -0.5,        # 姿勢ペナルティ（BSL-Droid向け緩和）
-            "base_height": -5.0,        # 高さ維持（BSL-Droid向け緩和）
-
+            "lin_vel_z": -2.0,  # Z軸速度ペナルティ
+            "ang_vel_xy": -0.05,  # XY角速度ペナルティ
+            "orientation": -0.5,  # 姿勢ペナルティ（BSL-Droid向け緩和）
+            "base_height": -5.0,  # 高さ維持（BSL-Droid向け緩和）
             # ============================================================
             # 【歩行品質ペナルティ】（V1課題への対策）
             # ============================================================
-            "feet_swing_height": -10.0, # 遊脚高さ（V1: -5.0 → V2: -10.0、足上げ強化）
-            "contact_no_vel": -0.1,     # 接地時足速度（緩和維持）
-            "hip_pos": -0.5,            # 股関節位置（開脚抑制）
-
+            "feet_swing_height": -10.0,  # 遊脚高さ（V1: -5.0 → V2: -10.0、足上げ強化）
+            "contact_no_vel": -0.1,  # 接地時足速度（緩和維持）
+            "hip_pos": -0.5,  # 股関節位置（開脚抑制）
             # ============================================================
             # 【エネルギー効率ペナルティ】
             # ============================================================
-            "torques": -1e-5,           # トルクペナルティ
-            "action_rate": -0.005,      # アクション変化率（V1: -0.01 → V2: -0.005、大動作許容）
-            "dof_acc": -2.5e-7,         # 関節加速度
+            "torques": -1e-5,  # トルクペナルティ
+            "action_rate": -0.005,  # アクション変化率（V1: -0.01 → V2: -0.005、大動作許容）
+            "dof_acc": -2.5e-7,  # 関節加速度
         },
     }
 
     command_cfg = {
         "num_commands": 3,
         "lin_vel_x_range": [0.10, 0.15],  # 目標前進速度（V1: 0.2-0.3 → V2: 0.10-0.15、大股歩行誘導）
-        "lin_vel_y_range": [0, 0],        # 横移動なし
-        "ang_vel_range": [0, 0],          # 旋回なし
+        "lin_vel_y_range": [0, 0],  # 横移動なし
+        "ang_vel_range": [0, 0],  # 旋回なし
     }
 
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     """メインエントリーポイント"""
     parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V2)")
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v2")
@@ -264,9 +262,9 @@ def main():
     runner = OnPolicyRunner(env, train_cfg, log_dir=str(log_dir), device="mps")
 
     # 訓練開始
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("EXP007 V2: 重み・目標速度調整による改善")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print("【V1からの変更点】")
     print("- contact: 0.2 → 0.5（交互歩行の強化）")
     print("- tracking_ang_vel: 0.5 → 0.8（直進性向上）")
@@ -276,11 +274,11 @@ def main():
     print("- alive: 0.1 → 0.15（安定性維持）")
     print("- gait_frequency: 1.5Hz → 1.0Hz（ゆっくり歩行）")
     print("- lin_vel_x: 0.2-0.3 → 0.10-0.15 m/s（大股歩行誘導）")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"観測空間: {obs_cfg['num_obs']}次元")
     print(f"行動空間: {env_cfg['num_actions']}次元")
     print(f"報酬項目数: {len(reward_cfg['reward_scales'])}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # 報酬スケール表示
     print("報酬スケール:")

@@ -1,31 +1,43 @@
 #!/usr/bin/env python3
 """
-BSL-Droid Simplified 歩行学習スクリプト（Unitree参考版V14）
+BSL-Droid Simplified 歩行学習スクリプト（Unitree参考版V21）
 
 ============================================================
-【EXP007 V14: V1ベース + 速度目標のみ低下】
+【EXP007 V21: Z座標閾値ベース接地検出の検証】
 ============================================================
 
-【設計方針】
-V13レポートの教訓「1変更1検証」を厳守し、V1から速度目標のみを変更する。
-V2-V13で複数変更を同時に行い、V1の歩行パターンを壊してしまった反省に基づく。
+【V20からの変更点】
+V20で導入したGenesis Contact Sensorを使用せず、Z座標閾値ベースの接地検出が
+適切な閾値設定で正しく機能するかを検証する。
 
-【V1からの変更点】（1点のみ）
-- lin_vel_x_range: [0.2, 0.3] → [0.15, 0.20]（速度目標を下げる）
+V20レポートの「V21への提案」セクション「実験A」に基づく実装。
 
-【V1と同じ設定（維持）】
-- gait_frequency: 1.5 Hz
-- 報酬項目数: 15項目
-- tracking_sigma: 0.25
-- action_rate: -0.01
-- hip_pos: -0.5
-- その他全てのパラメータ
+| パラメータ             | V20値       | V21値        | 変更理由                         |
+|-----------------------|-------------|-------------|----------------------------------|
+| 接地検出方式           | Contact Sensor | Z座標閾値   | フォールバック手法の検証         |
+| contact_threshold     | 0.05m       | 0.10m       | 足裏オフセット（約0.08m）を考慮  |
+| use_contact_sensor    | True（暗黙） | False       | Contact Sensor無効化             |
 
-【成功基準】
-- X速度: 0.15-0.20 m/s（目標速度に追従）
-- 歩行品質: V1レベルを維持
-- 目視評価: V1と同等
+報酬設計はV20と同一（接地検出方式変更の効果を純粋に検証するため）。
 
+【Z座標閾値修正の根拠】
+V19以前の問題:
+- get_links_pos()が返すのはリンク原点（ankle joint位置）であり、足裏ではない
+- foot_linkのZ座標（約0.095m）は閾値（0.05m）を下回ることが不可能だった
+- 結論: 完全接地時でも「空中」と誤判定されていた
+
+V21の修正:
+- contact_threshold: 0.05m → 0.10m
+- 足裏底面はリンク原点から約0.08m下にあるため、0.10mで接地判定可能に
+
+【期待される効果】
+1. feet_air_time報酬: 0.0 → > 0（接地検出が機能）
+2. single_foot_contact報酬: 0.0 → > 0（接地検出が機能）
+3. 接地パターン: 両足空中誤判定 → 正常な接地パターン
+4. V20との比較: Contact Sensor不使用でも同等の接地検出が可能か検証
+
+【参考文献】
+- exp007_report_v20.md: V21への提案 - 実験A
 ============================================================
 """
 
@@ -100,7 +112,7 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
     rl_ws_dir = script_dir.parent.parent
     urdf_path = rl_ws_dir / "assets" / "bsl_droid_simplified.urdf"
 
-    # V1と同じ初期姿勢
+    # V9以降と同じ初期姿勢
     hip_pitch_rad = 60 * math.pi / 180
     knee_pitch_rad = -100 * math.pi / 180
     ankle_pitch_rad = 45 * math.pi / 180
@@ -146,10 +158,14 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
         "action_scale": 0.25,  # rad（約14°）
         "simulate_action_latency": True,
         "clip_actions": 10.0,
+        # ============================================================
+        # V21追加: Contact Sensorを無効化してZ座標閾値ベースの接地検出を使用
+        # ============================================================
+        "use_contact_sensor": False,
     }
 
     obs_cfg = {
-        "num_obs": 50,  # Unitree方式の観測空間（V1と同じ）
+        "num_obs": 50,  # Unitree方式の観測空間（3+3+3+3+10+10+10+1+1+2+2+2=50）
         "obs_scales": {
             "lin_vel": 2.0,
             "ang_vel": 0.25,
@@ -159,53 +175,73 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
     }
 
     # ============================================================
-    # V1と同じ報酬設計（15項目）
+    # V21: Z座標閾値を0.05→0.10に修正（足裏オフセットを考慮）
+    # 他はV20と同一（接地検出方式変更の効果を純粋に検証）
     # ============================================================
     reward_cfg = {
-        "tracking_sigma": 0.25,  # V1と同じ
-        "base_height_target": 0.20,  # V1と同じ
-        "swing_height_target": 0.03,  # V1と同じ
-        "gait_frequency": 1.5,  # V1と同じ（周期0.67秒）
-        "contact_threshold": 0.025,  # V1と同じ
+        "tracking_sigma": 0.25,  # V20と同じ
+        "base_height_target": 0.20,  # 目標胴体高さ（BSL-Droid用に調整）
+        "swing_height_target": 0.05,  # V20と同じ
+        "gait_frequency": 1.2,  # V20と同じ
+        # ============================================================
+        # V21変更: 接地判定閾値を0.05→0.10に修正
+        # 【変更理由】
+        # get_links_pos()はリンク原点（ankle joint）を返すが、
+        # 足裏底面はそこから約0.08m下にある。
+        # 0.05mでは完全接地時でもZ座標（約0.08m）が閾値を下回らず、
+        # 常に「空中」と誤判定されていた。
+        # ============================================================
+        "contact_threshold": 0.10,  # 0.05 → 0.10
+        "air_time_offset": 0.3,  # V20と同じ
+        # V18から継続: RobStride RS-02実機パラメータ
+        "dof_vel_limits": 44.0,  # ±44 rad/s (RS-02 spec)
+        "soft_dof_vel_limit": 0.9,  # 制限の90%でペナルティ開始
         "reward_scales": {
             # ============================================================
-            # 【主報酬】速度追従（V1と同じ）
+            # 【主報酬】速度追従（V3強化）
             # ============================================================
-            "tracking_lin_vel": 1.0,  # V1と同じ
-            "tracking_ang_vel": 0.5,  # V1と同じ
+            "tracking_lin_vel": 1.5,  # 線速度追従
+            "tracking_ang_vel": 0.5,  # 角速度追従
             # ============================================================
-            # 【歩行品質報酬】（V1と同じ）
+            # 【歩行品質報酬】
             # ============================================================
-            "feet_air_time": 1.0,  # V1と同じ
-            "contact": 0.2,  # V1と同じ
-            "alive": 0.1,  # V1と同じ
+            "feet_air_time": 1.0,  # 滞空時間報酬
+            "contact": 0.2,  # 接地フェーズ整合性
+            "single_foot_contact": 0.3,  # 片足接地報酬（V3追加、静止対策）
+            # 【V19追加】歩幅促進
+            "step_length": 0.5,  # 歩幅報酬
             # ============================================================
-            # 【安定性ペナルティ】（V1と同じ）
+            # 【安定性ペナルティ】（Unitree方式）
             # ============================================================
-            "lin_vel_z": -2.0,  # V1と同じ
-            "ang_vel_xy": -0.05,  # V1と同じ
-            "orientation": -0.5,  # V1と同じ
-            "base_height": -5.0,  # V1と同じ
+            "lin_vel_z": -2.0,  # Z軸速度ペナルティ
+            "ang_vel_xy": -0.05,  # XY角速度ペナルティ
+            "orientation": -0.5,  # 姿勢ペナルティ（BSL-Droid向け緩和）
+            "base_height": -5.0,  # 高さ維持（BSL-Droid向け緩和）
             # ============================================================
-            # 【歩行品質ペナルティ】（V1と同じ）
+            # 【歩行品質ペナルティ】
             # ============================================================
-            "feet_swing_height": -5.0,  # V1と同じ
-            "contact_no_vel": -0.1,  # V1と同じ
-            "hip_pos": -0.5,  # V1と同じ
+            "feet_swing_height": -8.0,  # 遊脚高さ目標追従
+            "contact_no_vel": -0.1,  # 接地時足速度
+            "hip_pos": -0.5,  # 股関節位置（開脚抑制）
+            "velocity_deficit": -0.5,  # 速度未達ペナルティ（V3追加、静止対策）
             # ============================================================
-            # 【エネルギー効率ペナルティ】（V1と同じ）
+            # 【V18継続】関節角速度制限
             # ============================================================
-            "torques": -1e-5,  # V1と同じ
-            "action_rate": -0.01,  # V1と同じ
-            "dof_acc": -2.5e-7,  # V1と同じ
+            "dof_vel_limits": -0.3,  # 実機パラメータ超過ペナルティ
+            # ============================================================
+            # 【エネルギー効率ペナルティ】
+            # ============================================================
+            "torques": -1e-5,  # トルクペナルティ
+            "action_rate": -0.01,  # アクション変化率
+            "dof_acc": -2.5e-7,  # 関節加速度
         },
     }
 
     command_cfg = {
         "num_commands": 3,
-        "lin_vel_x_range": [0.15, 0.20],  # ★唯一の変更点: V1 [0.2, 0.3] → V14 [0.15, 0.20]
-        "lin_vel_y_range": [0, 0],  # V1と同じ
-        "ang_vel_range": [0, 0],  # V1と同じ
+        "lin_vel_x_range": [0.15, 0.25],  # V20と同じ
+        "lin_vel_y_range": [0, 0],  # 横移動なし
+        "ang_vel_range": [0, 0],  # 旋回なし
     }
 
     return env_cfg, obs_cfg, reward_cfg, command_cfg
@@ -213,8 +249,8 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
 
 def main() -> None:
     """メインエントリーポイント"""
-    parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V14)")
-    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v14")
+    parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V21)")
+    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v21")
     parser.add_argument("--num_envs", type=int, default=4096)
     parser.add_argument("--max_iterations", type=int, default=500)
     args = parser.parse_args()
@@ -258,22 +294,29 @@ def main() -> None:
     runner = OnPolicyRunner(env, train_cfg, log_dir=str(log_dir), device="mps")
 
     # 訓練開始
-    print(f"\n{'=' * 60}")
-    print("EXP007 V14: V1ベース + 速度目標のみ低下")
-    print(f"{'=' * 60}")
-    print("【V1からの変更点】（1点のみ）")
-    print("- lin_vel_x_range: [0.2, 0.3] → [0.15, 0.20]")
-    print(f"{'=' * 60}")
-    print("【V1と同じ設定（維持）】")
-    print("- gait_frequency: 1.5 Hz")
-    print(f"- 報酬項目数: {len(reward_cfg['reward_scales'])}項目")
-    print("- tracking_sigma: 0.25")
-    print("- action_rate: -0.01")
-    print("- hip_pos: -0.5")
-    print(f"{'=' * 60}")
+    print(f"\n{'=' * 70}")
+    print("EXP007 V21: Z座標閾値ベース接地検出の検証")
+    print(f"{'=' * 70}")
+    print("【V21の設計原則】")
+    print("  1. Contact Sensorを無効化（use_contact_sensor=False）")
+    print("  2. Z座標閾値を0.05→0.10mに修正（足裏オフセット考慮）")
+    print("  3. 報酬設計はV20と同一（接地検出方式変更の効果を純粋に検証）")
+    print(f"{'=' * 70}")
+    print("【V21での変更点（V20からの差分）】")
+    print("  - 接地検出方式: Contact Sensor → Z座標閾値ベース")
+    print("  - contact_threshold: 0.05m → 0.10m")
+    print("  - use_contact_sensor: True → False")
+    print(f"{'=' * 70}")
+    print("【期待される効果】")
+    print("  - feet_air_time報酬: > 0（接地検出が機能）")
+    print("  - single_foot_contact報酬: > 0（接地検出が機能）")
+    print("  - 接地パターン: 正常な交互接地パターン")
+    print("  - V20との比較: Contact Sensor不使用でも同等の性能を確認")
+    print(f"{'=' * 70}")
     print(f"観測空間: {obs_cfg['num_obs']}次元")
     print(f"行動空間: {env_cfg['num_actions']}次元")
-    print(f"{'=' * 60}\n")
+    print(f"報酬項目数: {len(reward_cfg['reward_scales'])}")
+    print(f"{'=' * 70}\n")
 
     # 報酬スケール表示
     print("報酬スケール:")

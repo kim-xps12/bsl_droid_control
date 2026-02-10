@@ -1,35 +1,47 @@
 #!/usr/bin/env python3
 """
-BSL-Droid Simplified 歩行学習スクリプト（Unitree参考版V4）
+BSL-Droid Simplified 歩行学習スクリプト（Unitree参考版V30）
 
 ============================================================
-【EXP007 V4: 交互歩行・大股歩行への改善】
+【EXP007 V30: air_time_offset引き下げ + swing_contact_penalty導入】
 ============================================================
 
-【V3の成功と課題】
-V3は静止ポリシー問題を解決し、0.246 m/sで前進するようになった。
-しかし以下の問題が残った:
-1. hip_pitch相関 +0.886（両脚同期、理想は-1.0の交互）
-2. 歩幅が小刻み（hip_pitch可動域 約8°）
-3. 接地検出の問題（contact_threshold=0.025mが厳しすぎる）
-   → 足先Z座標の実測値は0.063-0.071m（閾値の2.5倍）
+【V29の結果と教訓】
+V29ではswing_duration報酬を導入したが、以下の結果となった:
+- swing_duration報酬: 0.0000（完全に機能せず）
+- 片足接地率: 87.8% → 75.8%（-12%悪化）
+- hip_pitch相関: -0.971（過去最高、改善）
+- hip_pos: -0.0122（+58%改善、内股軌道改善）
+- step_length: 0.0400（+137%改善）
+- タップダンス: 悪化（「タン、タン、タン」と足踏み）
 
-【V4での対策】
-| パラメータ             | V3値       | V4値        | 変更理由                        |
-|-----------------------|------------|-------------|--------------------------------|
-| contact_threshold     | 0.025 m    | 0.08 m      | 接地検出を修正（実測値に基づく） |
-| single_foot_contact   | 0.3        | 0.8         | 交互歩行誘導を大幅強化           |
-| gait_frequency        | 1.5 Hz     | 1.0 Hz      | 歩幅拡大のため周波数低下         |
-| action_rate           | -0.01      | -0.005      | 大きな関節動作を許容             |
-| feet_air_time         | 1.0        | 1.5         | 滞空時間報酬を強化               |
-| alive                 | 0.0        | 0.03        | 小量復活（安定性補助）           |
-| dof_vel               | -          | -0.001      | 関節速度ペナルティ追加（新規）   |
+成功点:
+- hip_pitch相関の継続的改善（-0.971）
+- hip_pos改善（内股軌道の改善）
+- step_length大幅改善（歩幅増加）
+
+根本原因の特定:
+- air_time_offset=0.25秒がBSL-Droidの自然な歩行パターンでは達成困難
+- swing_duration報酬が完全に機能せず（報酬値0.0000）
+- feet_air_timeを削除した結果、空中時間を促進するインセンティブが完全に消失
+
+【V30の設計原則】
+air_time_offset引き下げ + swing_contact_penalty導入（V29レポート提案A+B）
+
+| パラメータ              | V29値    | V30値    | 変更理由                            |
+|------------------------|----------|----------|-------------------------------------|
+| air_time_offset        | 0.25     | 0.10     | 達成可能な閾値に引き下げ              |
+| swing_duration         | 1.0      | 2.0      | 空中報酬を強化                       |
+| swing_contact_penalty  | -        | -0.5     | 新規追加、スイング中接地を直接抑制    |
 
 【期待される効果】
-1. 接地検出の修正: contact_threshold=0.08mでsingle_foot_contactが機能
-2. 交互歩行の実現: single_foot_contact=0.8で片足接地を強く誘導
-3. 歩幅の拡大: gait_frequency=1.0Hz + action_rate緩和で大きな動作
-4. 動作のスムーズ化: dof_vel追加で高速振動を抑制
+1. air_time_offset引き下げにより、swing_duration報酬が実際に機能する
+2. swing_contact_penaltyでタップダンスを直接抑制
+3. V29で改善した指標（hip_pos、hip_pitch相関、step_length）を維持
+
+【参考文献】
+- exp007_report_v29.md: V29の結果と次バージョンへの提案
+- exp007_unitree_rl_gym_survey.md: Unitree RL Gymの報酬設計
 ============================================================
 """
 
@@ -150,6 +162,8 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
         "action_scale": 0.25,  # rad（約14°）
         "simulate_action_latency": True,
         "clip_actions": 10.0,
+        # Contact Sensor使用
+        "use_contact_sensor": True,
     }
 
     obs_cfg = {
@@ -163,14 +177,31 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
     }
 
     # ============================================================
-    # V4: 交互歩行・大股歩行への改善
+    # V30: air_time_offset引き下げ + swing_contact_penalty導入
+    # - air_time_offset: 0.25→0.10（達成可能な閾値に）
+    # - swing_duration: 1.0→2.0（空中報酬強化）
+    # - swing_contact_penalty: 新規追加-0.5（スイング中接地抑制）
     # ============================================================
     reward_cfg = {
-        "tracking_sigma": 0.25,  # 速度追従のガウシアン幅
+        "tracking_sigma": 0.25,  # V29と同じ
         "base_height_target": 0.20,  # 目標胴体高さ（BSL-Droid用に調整）
-        "swing_height_target": 0.03,  # 遊脚の目標高さ
-        "gait_frequency": 1.0,  # 歩行周波数（V3: 1.5Hz → V4: 1.0Hz、歩幅拡大）
-        "contact_threshold": 0.08,  # 接地判定閾値（V3: 0.025m → V4: 0.08m、実測値に基づく修正）
+        "swing_height_target": 0.05,  # V29と同じ
+        # ============================================================
+        # gait_frequency: V29から維持（0.9Hz）
+        # ============================================================
+        "gait_frequency": 0.9,  # V29と同じ
+        "contact_threshold": 0.05,  # フォールバック用（Contact Sensor使用時は参照されない）
+        # ============================================================
+        # V30変更: air_time_offset引き下げ（0.25→0.10）
+        # V29でswing_duration報酬が機能しなかった（報酬値0.0000）
+        # 原因: 0.25秒の空中時間がBSL-Droidでは達成困難
+        # ============================================================
+        "air_time_offset": 0.10,  # V29: 0.25 → V30: 0.10
+        # V18から継続: RobStride RS-02実機パラメータ
+        "dof_vel_limits": 44.0,  # ±44 rad/s (RS-02 spec)
+        "soft_dof_vel_limit": 0.9,  # 制限の90%でペナルティ開始
+        # V22から継続: A案（ankle_pitch_rangeペナルティ）のパラメータ
+        "ankle_pitch_limit": 0.3,  # ankle_pitchの許容範囲（rad）
         "reward_scales": {
             # ============================================================
             # 【主報酬】速度追従
@@ -178,13 +209,20 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
             "tracking_lin_vel": 1.5,  # 線速度追従
             "tracking_ang_vel": 0.5,  # 角速度追従
             # ============================================================
-            # 【歩行品質報酬】（V4: 交互歩行強化）
+            # 【歩行品質報酬】V30: swing_duration強化、swing_contact_penalty追加
             # ============================================================
-            "feet_air_time": 1.5,  # 滞空時間報酬（V3: 1.0 → V4: 1.5、強化）
-            "contact": 0.2,  # 接地フェーズ整合性
-            "alive": 0.03,  # 生存報酬（V3: 0.0 → V4: 0.03、小量復活）
-            # 【V4強化】片足接地報酬
-            "single_foot_contact": 0.8,  # 交互歩行誘導（V3: 0.3 → V4: 0.8、大幅強化）
+            # feet_air_time: V29から継続して0（削除済み）
+            "feet_air_time": 0,  # V29: 0（削除維持）
+            # V30変更: swing_duration報酬強化（1.0→2.0）
+            # air_time_offset引き下げと合わせて空中報酬を強化
+            "swing_duration": 2.0,  # V29: 1.0 → V30: 2.0
+            # V30追加: swing_contact_penalty
+            # スイング位相中の接地を直接ペナルティ化し、タップダンスを抑制
+            "swing_contact_penalty": -0.5,  # 新規追加
+            "contact": 0.4,  # V29と同じ
+            "single_foot_contact": 0.3,  # 片足接地報酬（維持）
+            # step_length: V29から維持（0.8）
+            "step_length": 0.8,  # V29と同じ
             # ============================================================
             # 【安定性ペナルティ】（Unitree方式）
             # ============================================================
@@ -195,24 +233,29 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
             # ============================================================
             # 【歩行品質ペナルティ】
             # ============================================================
-            "feet_swing_height": -5.0,  # 遊脚高さ
+            "feet_swing_height": -8.0,  # 遊脚高さ目標追従
             "contact_no_vel": -0.1,  # 接地時足速度
-            "hip_pos": -0.5,  # 股関節位置（開脚抑制）
-            # 速度未達ペナルティ
-            "velocity_deficit": -0.5,  # 目標速度を下回るとペナルティ
+            "hip_pos": -0.8,  # V29と同じ
+            "velocity_deficit": -0.5,  # 速度未達ペナルティ（静止対策）
+            # 【V22から継続】A案: 遊脚時足首角度制限
+            "ankle_pitch_range": -0.3,  # 遊脚時のankle_pitch角度制限ペナルティ
+            # 【V18継続】関節角速度制限
+            "dof_vel_limits": -0.3,  # 実機パラメータ超過ペナルティ
             # ============================================================
-            # 【エネルギー効率ペナルティ】（V4: 動作スムーズ化）
+            # 【エネルギー効率ペナルティ】V29値を維持
+            # hip_pitch相関改善の成果を保持
             # ============================================================
-            "torques": -1e-5,  # トルクペナルティ
-            "action_rate": -0.005,  # アクション変化率（V3: -0.01 → V4: -0.005、大動作許容）
-            "dof_acc": -2.5e-7,  # 関節加速度
-            "dof_vel": -0.001,  # 関節速度（V4新規、高速振動抑制）
+            "torques": -1e-5,  # トルクペナルティ（維持）
+            "action_rate": -0.005,  # V29から維持
+            "dof_acc": -1.0e-7,  # V29から維持
+            # 【V26から継続】遊脚横方向速度ペナルティ
+            "swing_foot_lateral_velocity": -0.5,
         },
     }
 
     command_cfg = {
         "num_commands": 3,
-        "lin_vel_x_range": [0.2, 0.3],  # 目標前進速度（V2: 0.10-0.15 → V3: 0.2-0.3、V1に復元）
+        "lin_vel_x_range": [0.15, 0.25],  # V28と同じ
         "lin_vel_y_range": [0, 0],  # 横移動なし
         "ang_vel_range": [0, 0],  # 旋回なし
     }
@@ -222,8 +265,8 @@ def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str
 
 def main() -> None:
     """メインエントリーポイント"""
-    parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V4)")
-    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v4")
+    parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking (Unitree Reference V30)")
+    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-unitree-v30")
     parser.add_argument("--num_envs", type=int, default=4096)
     parser.add_argument("--max_iterations", type=int, default=500)
     args = parser.parse_args()
@@ -268,31 +311,36 @@ def main() -> None:
 
     # 訓練開始
     print(f"\n{'=' * 70}")
-    print("EXP007 V4: 交互歩行・大股歩行への改善")
+    print("EXP007 V30: air_time_offset引き下げ + swing_contact_penalty導入")
     print(f"{'=' * 70}")
-    print("【V3の成功と課題】")
-    print("  成功: 静止ポリシー問題を解決、0.246 m/sで前進")
-    print("  課題: hip_pitch相関 +0.886（両脚同期、理想は-1.0）")
-    print("        歩幅が小刻み、接地検出の問題")
+    print("【V29の結果と教訓】")
+    print("  成功: hip_pitch相関-0.971（過去最高）、hip_pos改善、step_length改善")
+    print("  失敗: swing_duration報酬が完全に機能せず（報酬値0.0000）")
+    print("  失敗: タップダンス悪化（片足接地率87.8%→75.8%）")
+    print("  根本原因: air_time_offset=0.25秒がBSL-Droidでは達成困難")
     print(f"{'=' * 70}")
-    print("【V4での対策】")
-    print("  - contact_threshold: 0.025 → 0.08 m（接地検出修正）")
-    print("  - single_foot_contact: 0.3 → 0.8（交互歩行強化）")
-    print("  - gait_frequency: 1.5 → 1.0 Hz（歩幅拡大）")
-    print("  - action_rate: -0.01 → -0.005（大動作許容）")
-    print("  - feet_air_time: 1.0 → 1.5（滞空時間強化）")
-    print("  - alive: 0.0 → 0.03（小量復活）")
-    print("  - dof_vel: 新規追加 -0.001（高速振動抑制）")
+    print("【V30の設計原則】")
+    print("  1. air_time_offset: 0.25 → 0.10（達成可能な閾値に引き下げ）")
+    print("  2. swing_duration: 1.0 → 2.0（空中報酬強化）")
+    print("  3. swing_contact_penalty: 新規追加-0.5（スイング中接地を直接抑制）")
+    print(f"{'=' * 70}")
+    print("【期待される効果】")
+    print("  - swing_duration報酬が実際に機能するようになる")
+    print("  - swing_contact_penaltyでタップダンスを直接抑制")
+    print("  - V29で改善した指標（hip_pos、hip_pitch相関、step_length）を維持")
     print(f"{'=' * 70}")
     print(f"観測空間: {obs_cfg['num_obs']}次元")
     print(f"行動空間: {env_cfg['num_actions']}次元")
-    print(f"報酬項目数: {len(reward_cfg['reward_scales'])}")
+    print(f"報酬項目数: {len([k for k, v in reward_cfg['reward_scales'].items() if v != 0])}")
     print(f"{'=' * 70}\n")
 
     # 報酬スケール表示
     print("報酬スケール:")
     for name, scale in reward_cfg["reward_scales"].items():
-        print(f"  {name}: {scale}")
+        if scale != 0:
+            print(f"  {name}: {scale}")
+        else:
+            print(f"  {name}: {scale} (無効)")
     print()
 
     runner.learn(num_learning_iterations=args.max_iterations, init_at_random_ep_len=True)
