@@ -10,6 +10,8 @@ Examples:
     uv run python scripts/show_reward_components.py droid-walking-v18 droid-walking-v19
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import sys
@@ -43,9 +45,7 @@ def show_reward_components(exp_name: str, log_base: str = "logs") -> bool:
 
     print(f"\n=== {exp_name} Individual Reward Components (Final Step) ===")
 
-    reward_tags = [
-        tag for tag in sorted(ea.Tags()["scalars"]) if tag.startswith("Episode/rew_")
-    ]
+    reward_tags = [tag for tag in sorted(ea.Tags()["scalars"]) if tag.startswith("Episode/rew_")]
 
     if not reward_tags:
         print("  No reward components found in log.")
@@ -63,7 +63,7 @@ def show_reward_components(exp_name: str, log_base: str = "logs") -> bool:
     return True
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="学習ログから個別報酬項目の最終値を表示する",
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -28,6 +28,8 @@ Usage:
     uv run python scripts/convert_urdf_to_mjcf.py --save-intermediate
 """
 
+from __future__ import annotations
+
 import argparse
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -75,10 +77,18 @@ ACTUATOR_CTRL_RANGE = {
 
 # 関節順序（FL, FR, RL, RR）- MuJoCoの標準順序
 ACTUATED_JOINTS = [
-    "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
-    "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
-    "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
-    "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint",
+    "FL_hip_joint",
+    "FL_thigh_joint",
+    "FL_calf_joint",
+    "FR_hip_joint",
+    "FR_thigh_joint",
+    "FR_calf_joint",
+    "RL_hip_joint",
+    "RL_thigh_joint",
+    "RL_calf_joint",
+    "RR_hip_joint",
+    "RR_thigh_joint",
+    "RR_calf_joint",
 ]
 
 # homeキーフレーム（MuJoCo Menagerieと同値）
@@ -87,7 +97,7 @@ HOME_QPOS = "0 0 0.27 1 0 0 0 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"
 HOME_CTRL = "0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8 0 0.9 -1.8"
 
 
-def add_joint_params_recursive(element: ET.Element, params: dict) -> int:
+def add_joint_params_recursive(element: ET.Element, params: dict[str, str]) -> int:
     """
     再帰的にjoint要素を探し、パラメータを追加
 
@@ -102,10 +112,10 @@ def add_joint_params_recursive(element: ET.Element, params: dict) -> int:
 
     # 直接の子要素を探索
     for child in element:
-        if child.tag == 'joint':
-            joint_name = child.get('name', '')
+        if child.tag == "joint":
+            joint_name = child.get("name", "")
             # freejoint (root) は除外
-            if joint_name and joint_name != 'root' and child.get('type') != 'free':
+            if joint_name and joint_name != "root" and child.get("type") != "free":
                 for key, value in params.items():
                     child.set(key, value)
                 count += 1
@@ -129,24 +139,24 @@ def find_and_update_foot_geoms(element: ET.Element, body_name: str = "") -> int:
     count = 0
 
     for child in element:
-        if child.tag == 'body':
-            child_body_name = child.get('name', '')
+        if child.tag == "body":
+            child_body_name = child.get("name", "")
             count += find_and_update_foot_geoms(child, child_body_name)
-        elif child.tag == 'geom':
+        elif child.tag == "geom":
             # calfボディ内の球形geom（足）を探す
             # 足のgeomを判定: calfボディ内で、サイズが0.022程度の球
-            if 'calf' in body_name.lower():
+            if "calf" in body_name.lower():
                 # 足先の球形geom（pos="-0.002 0 -0.213"付近）
-                geom_pos = child.get('pos', '')
-                if geom_pos and '-0.213' in geom_pos:
+                geom_pos = child.get("pos", "")
+                if geom_pos and "-0.213" in geom_pos:
                     # 足の接触パラメータを設定
-                    leg_prefix = body_name.split('_')[0]  # FL, FR, RL, RR
-                    child.set('name', f'{leg_prefix}')
-                    child.set('size', FOOT_CONTACT_PARAMS['size'])
-                    child.set('friction', FOOT_CONTACT_PARAMS['friction'])
-                    child.set('solimp', FOOT_CONTACT_PARAMS['solimp'])
-                    child.set('condim', FOOT_CONTACT_PARAMS['condim'])
-                    child.set('priority', FOOT_CONTACT_PARAMS['priority'])
+                    leg_prefix = body_name.split("_")[0]  # FL, FR, RL, RR
+                    child.set("name", f"{leg_prefix}")
+                    child.set("size", FOOT_CONTACT_PARAMS["size"])
+                    child.set("friction", FOOT_CONTACT_PARAMS["friction"])
+                    child.set("solimp", FOOT_CONTACT_PARAMS["solimp"])
+                    child.set("condim", FOOT_CONTACT_PARAMS["condim"])
+                    child.set("priority", FOOT_CONTACT_PARAMS["priority"])
                     count += 1
 
     return count
@@ -165,7 +175,7 @@ def convert_urdf_to_mjcf(
         output_path: 出力MJCFファイルのパス
         save_intermediate: 中間ファイルを保存するか
     """
-    print(f"=== URDF to MJCF Conversion ===")
+    print("=== URDF to MJCF Conversion ===")
     print(f"Input:  {urdf_path}")
     print(f"Output: {output_path}")
 
@@ -187,42 +197,42 @@ def convert_urdf_to_mjcf(
     root = tree.getroot()
 
     # モデル名を設定
-    root.set('model', 'go2_genesis')
+    root.set("model", "go2_genesis")
 
     # オプションを追加/更新（MuJoCo Menagerieと同値）
-    option = root.find('option')
+    option = root.find("option")
     if option is None:
-        option = ET.SubElement(root, 'option')
-    option.set('cone', 'elliptic')
-    option.set('impratio', '100')
+        option = ET.SubElement(root, "option")
+    option.set("cone", "elliptic")
+    option.set("impratio", "100")
 
-    worldbody = root.find('worldbody')
+    worldbody = root.find("worldbody")
     if worldbody is None:
         raise ValueError("worldbody not found in converted MJCF")
 
     # worldbody直下の要素を収集
-    direct_geoms = list(worldbody.findall('geom'))
-    direct_bodies = list(worldbody.findall('body'))
+    direct_geoms = list(worldbody.findall("geom"))
+    direct_bodies = list(worldbody.findall("body"))
 
     print(f"  - Direct geoms in worldbody: {len(direct_geoms)}")
     print(f"  - Direct bodies in worldbody: {len(direct_bodies)}")
 
     # 新しいbaseボディを作成
-    base_body = ET.Element('body')
-    base_body.set('name', 'base')
-    base_body.set('pos', f'0 0 {BASE_INIT_HEIGHT}')
+    base_body = ET.Element("body")
+    base_body.set("name", "base")
+    base_body.set("pos", f"0 0 {BASE_INIT_HEIGHT}")
 
     # freejointを追加
-    freejoint = ET.SubElement(base_body, 'freejoint')
-    freejoint.set('name', 'root')
+    freejoint = ET.SubElement(base_body, "freejoint")
+    freejoint.set("name", "root")
     print("  - Added freejoint 'root'")
 
     # 慣性情報を追加（MuJoCo Menagerieと同値）
-    inertial = ET.SubElement(base_body, 'inertial')
-    inertial.set('pos', BASE_INERTIAL["pos"])
-    inertial.set('quat', BASE_INERTIAL["quat"])
-    inertial.set('mass', BASE_INERTIAL["mass"])
-    inertial.set('diaginertia', BASE_INERTIAL["diaginertia"])
+    inertial = ET.SubElement(base_body, "inertial")
+    inertial.set("pos", BASE_INERTIAL["pos"])
+    inertial.set("quat", BASE_INERTIAL["quat"])
+    inertial.set("mass", BASE_INERTIAL["mass"])
+    inertial.set("diaginertia", BASE_INERTIAL["diaginertia"])
     print(f"  - Added base inertial (mass={BASE_INERTIAL['mass']})")
 
     # worldbody直下のgeomをbaseボディに移動
@@ -238,17 +248,17 @@ def convert_urdf_to_mjcf(
     print(f"  - Moved {len(direct_geoms)} geoms and {len(direct_bodies)} bodies to base")
 
     # 地面を追加（MuJoCo Menagerieと同様のスタイル）
-    ground = ET.SubElement(worldbody, 'geom')
-    ground.set('name', 'ground_plane')
-    ground.set('type', 'plane')
-    ground.set('size', '0 0 0.05')
-    ground.set('rgba', '0.2 0.3 0.4 1.0')
+    ground = ET.SubElement(worldbody, "geom")
+    ground.set("name", "ground_plane")
+    ground.set("type", "plane")
+    ground.set("size", "0 0 0.05")
+    ground.set("rgba", "0.2 0.3 0.4 1.0")
 
     # 光源を追加
-    light = ET.SubElement(worldbody, 'light')
-    light.set('pos', '0 0 3')
-    light.set('dir', '0 0 -1')
-    light.set('directional', 'true')
+    light = ET.SubElement(worldbody, "light")
+    light.set("pos", "0 0 3")
+    light.set("dir", "0 0 -1")
+    light.set("directional", "true")
 
     # baseボディをworldbodyに追加
     worldbody.append(base_body)
@@ -257,26 +267,26 @@ def convert_urdf_to_mjcf(
     # Step 4: 関節パラメータを補完
     print("\n[4/5] Adding joint parameters (damping, armature, frictionloss)...")
     joint_count = 0
-    for joint in root.iter('joint'):
-        joint_name = joint.get('name', '')
-        if joint_name and joint_name != 'root':
-            joint.set('damping', JOINT_PARAMS['damping'])
-            joint.set('armature', JOINT_PARAMS['armature'])
-            joint.set('frictionloss', JOINT_PARAMS['frictionloss'])
+    for joint in root.iter("joint"):
+        joint_name = joint.get("name", "")
+        if joint_name and joint_name != "root":
+            joint.set("damping", JOINT_PARAMS["damping"])
+            joint.set("armature", JOINT_PARAMS["armature"])
+            joint.set("frictionloss", JOINT_PARAMS["frictionloss"])
             joint_count += 1
     print(f"  - Updated {joint_count} joints with physics parameters")
 
     # アクチュエータセクションを追加
     print("\n  Adding actuators:")
-    actuator = root.find('actuator')
+    actuator = root.find("actuator")
     if actuator is None:
-        actuator = ET.SubElement(root, 'actuator')
+        actuator = ET.SubElement(root, "actuator")
 
     for joint_name in ACTUATED_JOINTS:
-        motor = ET.SubElement(actuator, 'motor')
-        motor.set('name', joint_name.replace('_joint', ''))
-        motor.set('joint', joint_name)
-        motor.set('gear', '1')
+        motor = ET.SubElement(actuator, "motor")
+        motor.set("name", joint_name.replace("_joint", ""))
+        motor.set("joint", joint_name)
+        motor.set("gear", "1")
 
         # トルク制限の設定
         if "calf" in joint_name:
@@ -285,26 +295,26 @@ def convert_urdf_to_mjcf(
             ctrl_limit = ACTUATOR_CTRL_RANGE["thigh"]
         else:
             ctrl_limit = ACTUATOR_CTRL_RANGE["hip"]
-        motor.set('ctrlrange', f'{-ctrl_limit} {ctrl_limit}')
+        motor.set("ctrlrange", f"{-ctrl_limit} {ctrl_limit}")
         print(f"    - {joint_name} (torque limit: ±{ctrl_limit} Nm)")
 
     # keyframeセクションを追加
     print("\n  Adding home keyframe...")
-    keyframe = root.find('keyframe')
+    keyframe = root.find("keyframe")
     if keyframe is None:
-        keyframe = ET.SubElement(root, 'keyframe')
-    key = ET.SubElement(keyframe, 'key')
-    key.set('name', 'home')
-    key.set('qpos', HOME_QPOS)
-    key.set('ctrl', HOME_CTRL)
+        keyframe = ET.SubElement(root, "keyframe")
+    key = ET.SubElement(keyframe, "key")
+    key.set("name", "home")
+    key.set("qpos", HOME_QPOS)
+    key.set("ctrl", HOME_CTRL)
     print(f"    - home qpos: {HOME_QPOS[:50]}...")
 
     # Step 5: 最終MJCFを保存
-    print(f"\n[5/5] Saving final MJCF...")
+    print("\n[5/5] Saving final MJCF...")
 
     # XMLを整形して保存
     ET.indent(tree, space="  ")
-    tree.write(output_path, encoding='unicode', xml_declaration=True)
+    tree.write(output_path, encoding="unicode", xml_declaration=True)
     print(f"  - Saved to: {output_path}")
 
     # 検証：再読み込みしてコンパイル
@@ -340,15 +350,13 @@ def convert_urdf_to_mjcf(
         print(f"\n  Intermediate file preserved: {intermediate_path}")
     else:
         intermediate_path.unlink()
-        print(f"\n  Intermediate file removed")
+        print("\n  Intermediate file removed")
 
     print("\n=== Conversion Complete ===")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Genesis URDF を MuJoCo MJCF に変換"
-    )
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Genesis URDF を MuJoCo MJCF に変換")
     parser.add_argument(
         "--urdf",
         type=str,

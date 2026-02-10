@@ -21,6 +21,8 @@ Usage:
     uv run python scripts/convert_biped_urdf_to_mjcf.py --save-intermediate
 """
 
+from __future__ import annotations
+
 import argparse
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -86,8 +88,8 @@ DEFAULT_JOINT_ANGLES = {
     "left_hip_yaw_joint": 0.0,
     "left_hip_roll_joint": 0.0,
     "left_hip_pitch_joint": 0.0,
-    "left_knee_pitch_joint": -0.52,   # 約-30° (前方屈曲)
-    "left_ankle_pitch_joint": 0.52,   # 膝と相殺して足裏を水平に
+    "left_knee_pitch_joint": -0.52,  # 約-30° (前方屈曲)
+    "left_ankle_pitch_joint": 0.52,  # 膝と相殺して足裏を水平に
     "right_hip_yaw_joint": 0.0,
     "right_hip_roll_joint": 0.0,
     "right_hip_pitch_joint": 0.0,
@@ -109,7 +111,7 @@ def convert_urdf_to_mjcf(
         output_path: 出力MJCFファイルのパス
         save_intermediate: 中間ファイルを保存するか
     """
-    print(f"=== Biped URDF to MJCF Conversion ===")
+    print("=== Biped URDF to MJCF Conversion ===")
     print(f"Input:  {urdf_path}")
     print(f"Output: {output_path}")
 
@@ -131,56 +133,56 @@ def convert_urdf_to_mjcf(
     root = tree.getroot()
 
     # モデル名を設定
-    root.set('model', 'biped_digitigrade')
+    root.set("model", "biped_digitigrade")
 
     # コンパイラ設定を追加
-    compiler = root.find('compiler')
+    compiler = root.find("compiler")
     if compiler is None:
-        compiler = ET.Element('compiler')
+        compiler = ET.Element("compiler")
         root.insert(0, compiler)
-    compiler.set('angle', 'radian')
-    compiler.set('autolimits', 'true')
+    compiler.set("angle", "radian")
+    compiler.set("autolimits", "true")
 
     # オプションを追加/更新
-    option = root.find('option')
+    option = root.find("option")
     if option is None:
-        option = ET.SubElement(root, 'option')
-    option.set('cone', 'elliptic')
-    option.set('impratio', '100')
+        option = ET.SubElement(root, "option")
+    option.set("cone", "elliptic")
+    option.set("impratio", "100")
 
-    worldbody = root.find('worldbody')
+    worldbody = root.find("worldbody")
     if worldbody is None:
         raise ValueError("worldbody not found in converted MJCF")
 
     # worldbody直下の要素を収集
-    direct_geoms = list(worldbody.findall('geom'))
-    direct_bodies = list(worldbody.findall('body'))
+    direct_geoms = list(worldbody.findall("geom"))
+    direct_bodies = list(worldbody.findall("body"))
 
     print(f"  - Direct geoms in worldbody: {len(direct_geoms)}")
     print(f"  - Direct bodies in worldbody: {len(direct_bodies)}")
 
     # 新しいbaseボディを作成
-    base_body = ET.Element('body')
-    base_body.set('name', 'base')
-    base_body.set('pos', f'0 0 {BASE_INIT_HEIGHT}')
+    base_body = ET.Element("body")
+    base_body.set("name", "base")
+    base_body.set("pos", f"0 0 {BASE_INIT_HEIGHT}")
 
     # freejointを追加
-    freejoint = ET.SubElement(base_body, 'freejoint')
-    freejoint.set('name', 'root')
+    freejoint = ET.SubElement(base_body, "freejoint")
+    freejoint.set("name", "root")
     print("  - Added freejoint 'root'")
 
     # 慣性情報を追加
-    inertial = ET.SubElement(base_body, 'inertial')
-    inertial.set('pos', BASE_INERTIAL["pos"])
-    inertial.set('mass', BASE_INERTIAL["mass"])
-    inertial.set('diaginertia', BASE_INERTIAL["diaginertia"])
+    inertial = ET.SubElement(base_body, "inertial")
+    inertial.set("pos", BASE_INERTIAL["pos"])
+    inertial.set("mass", BASE_INERTIAL["mass"])
+    inertial.set("diaginertia", BASE_INERTIAL["diaginertia"])
     print(f"  - Added base inertial (mass={BASE_INERTIAL['mass']})")
 
     # IMUサイトを追加（胴体上面）
-    imu_site = ET.SubElement(base_body, 'site')
-    imu_site.set('name', 'imu')
-    imu_site.set('pos', '0 0 0.06')
-    imu_site.set('size', '0.01')
+    imu_site = ET.SubElement(base_body, "site")
+    imu_site.set("name", "imu")
+    imu_site.set("pos", "0 0 0.06")
+    imu_site.set("size", "0.01")
     print("  - Added IMU site")
 
     # worldbody直下のgeomをbaseボディに移動
@@ -196,17 +198,17 @@ def convert_urdf_to_mjcf(
     print(f"  - Moved {len(direct_geoms)} geoms and {len(direct_bodies)} bodies to base")
 
     # 地面を追加
-    ground = ET.SubElement(worldbody, 'geom')
-    ground.set('name', 'ground_plane')
-    ground.set('type', 'plane')
-    ground.set('size', '0 0 0.05')
-    ground.set('rgba', '0.2 0.3 0.4 1.0')
+    ground = ET.SubElement(worldbody, "geom")
+    ground.set("name", "ground_plane")
+    ground.set("type", "plane")
+    ground.set("size", "0 0 0.05")
+    ground.set("rgba", "0.2 0.3 0.4 1.0")
 
     # 光源を追加
-    light = ET.SubElement(worldbody, 'light')
-    light.set('pos', '0 0 3')
-    light.set('dir', '0 0 -1')
-    light.set('directional', 'true')
+    light = ET.SubElement(worldbody, "light")
+    light.set("pos", "0 0 3")
+    light.set("dir", "0 0 -1")
+    light.set("directional", "true")
 
     # baseボディをworldbodyに追加
     worldbody.append(base_body)
@@ -215,42 +217,42 @@ def convert_urdf_to_mjcf(
     # Step 4: 関節パラメータを補完
     print("\n[4/6] Adding joint parameters (damping, armature, frictionloss)...")
     joint_count = 0
-    for joint in root.iter('joint'):
-        joint_name = joint.get('name', '')
-        if joint_name and joint_name != 'root':
-            joint.set('damping', JOINT_PARAMS['damping'])
-            joint.set('armature', JOINT_PARAMS['armature'])
-            joint.set('frictionloss', JOINT_PARAMS['frictionloss'])
+    for joint in root.iter("joint"):
+        joint_name = joint.get("name", "")
+        if joint_name and joint_name != "root":
+            joint.set("damping", JOINT_PARAMS["damping"])
+            joint.set("armature", JOINT_PARAMS["armature"])
+            joint.set("frictionloss", JOINT_PARAMS["frictionloss"])
             joint_count += 1
     print(f"  - Updated {joint_count} joints with physics parameters")
 
     # Step 5: 足のgeomに接触パラメータを追加
     print("\n[5/6] Adding foot contact parameters...")
     foot_count = 0
-    for body in root.iter('body'):
-        body_name = body.get('name', '')
-        if 'foot' in body_name.lower():
-            for geom in body.findall('geom'):
+    for body in root.iter("body"):
+        body_name = body.get("name", "")
+        if "foot" in body_name.lower():
+            for geom in body.findall("geom"):
                 # 足先のbox geomに接触パラメータを設定
-                geom.set('name', body_name.replace('_link', ''))
-                geom.set('friction', FOOT_CONTACT_PARAMS['friction'])
-                geom.set('solimp', FOOT_CONTACT_PARAMS['solimp'])
-                geom.set('condim', FOOT_CONTACT_PARAMS['condim'])
-                geom.set('priority', FOOT_CONTACT_PARAMS['priority'])
+                geom.set("name", body_name.replace("_link", ""))
+                geom.set("friction", FOOT_CONTACT_PARAMS["friction"])
+                geom.set("solimp", FOOT_CONTACT_PARAMS["solimp"])
+                geom.set("condim", FOOT_CONTACT_PARAMS["condim"])
+                geom.set("priority", FOOT_CONTACT_PARAMS["priority"])
                 foot_count += 1
     print(f"  - Updated {foot_count} foot geoms with contact parameters")
 
     # アクチュエータセクションを追加
     print("\n  Adding actuators:")
-    actuator = root.find('actuator')
+    actuator = root.find("actuator")
     if actuator is None:
-        actuator = ET.SubElement(root, 'actuator')
+        actuator = ET.SubElement(root, "actuator")
 
     for joint_name in ACTUATED_JOINTS:
-        motor = ET.SubElement(actuator, 'motor')
-        motor.set('name', joint_name.replace('_joint', ''))
-        motor.set('joint', joint_name)
-        motor.set('gear', '1')
+        motor = ET.SubElement(actuator, "motor")
+        motor.set("name", joint_name.replace("_joint", ""))
+        motor.set("joint", joint_name)
+        motor.set("gear", "1")
 
         # トルク制限の設定
         if "ankle" in joint_name:
@@ -263,14 +265,14 @@ def convert_urdf_to_mjcf(
             ctrl_limit = ACTUATOR_CTRL_RANGE["hip_roll"]
         else:
             ctrl_limit = ACTUATOR_CTRL_RANGE["hip_yaw"]
-        motor.set('ctrlrange', f'{-ctrl_limit} {ctrl_limit}')
+        motor.set("ctrlrange", f"{-ctrl_limit} {ctrl_limit}")
         print(f"    - {joint_name} (torque limit: ±{ctrl_limit} Nm)")
 
     # Step 6: keyframeセクションを追加
     print("\n[6/6] Adding home keyframe...")
-    keyframe = root.find('keyframe')
+    keyframe = root.find("keyframe")
     if keyframe is None:
-        keyframe = ET.SubElement(root, 'keyframe')
+        keyframe = ET.SubElement(root, "keyframe")
 
     # qpos: [x, y, z, qw, qx, qy, qz, joint1, joint2, ...]
     qpos_values = [0, 0, BASE_INIT_HEIGHT, 1, 0, 0, 0]  # base position + quaternion
@@ -280,43 +282,43 @@ def convert_urdf_to_mjcf(
         qpos_values.append(angle)
         ctrl_values.append(angle)
 
-    qpos_str = ' '.join(str(v) for v in qpos_values)
-    ctrl_str = ' '.join(str(v) for v in ctrl_values)
+    qpos_str = " ".join(str(v) for v in qpos_values)
+    ctrl_str = " ".join(str(v) for v in ctrl_values)
 
-    key = ET.SubElement(keyframe, 'key')
-    key.set('name', 'home')
-    key.set('qpos', qpos_str)
-    key.set('ctrl', ctrl_str)
+    key = ET.SubElement(keyframe, "key")
+    key.set("name", "home")
+    key.set("qpos", qpos_str)
+    key.set("ctrl", ctrl_str)
     print(f"    - home qpos: {qpos_str[:60]}...")
 
     # センサーセクションを追加（IMU）
     print("\n  Adding sensors (IMU)...")
-    sensor = root.find('sensor')
+    sensor = root.find("sensor")
     if sensor is None:
-        sensor = ET.SubElement(root, 'sensor')
+        sensor = ET.SubElement(root, "sensor")
 
     # ジャイロスコープ
-    gyro = ET.SubElement(sensor, 'gyro')
-    gyro.set('site', 'imu')
-    gyro.set('name', 'gyro')
+    gyro = ET.SubElement(sensor, "gyro")
+    gyro.set("site", "imu")
+    gyro.set("name", "gyro")
 
     # 加速度計
-    accelerometer = ET.SubElement(sensor, 'accelerometer')
-    accelerometer.set('site', 'imu')
-    accelerometer.set('name', 'accelerometer')
+    accelerometer = ET.SubElement(sensor, "accelerometer")
+    accelerometer.set("site", "imu")
+    accelerometer.set("name", "accelerometer")
 
     # 姿勢（クォータニオン）
-    framequat = ET.SubElement(sensor, 'framequat')
-    framequat.set('objtype', 'site')
-    framequat.set('objname', 'imu')
-    framequat.set('name', 'orientation')
+    framequat = ET.SubElement(sensor, "framequat")
+    framequat.set("objtype", "site")
+    framequat.set("objname", "imu")
+    framequat.set("name", "orientation")
 
     print("    - gyro, accelerometer, orientation")
 
     # 最終MJCFを保存
-    print(f"\n  Saving final MJCF...")
+    print("\n  Saving final MJCF...")
     ET.indent(tree, space="  ")
-    tree.write(output_path, encoding='unicode', xml_declaration=True)
+    tree.write(output_path, encoding="unicode", xml_declaration=True)
     print(f"  - Saved to: {output_path}")
 
     # 検証：再読み込みしてコンパイル
@@ -341,15 +343,13 @@ def convert_urdf_to_mjcf(
         print(f"\n  Intermediate file preserved: {intermediate_path}")
     else:
         intermediate_path.unlink()
-        print(f"\n  Intermediate file removed")
+        print("\n  Intermediate file removed")
 
     print("\n=== Conversion Complete ===")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="BSL-Droid二脚ロボット URDF を MuJoCo MJCF に変換"
-    )
+def main() -> None:
+    parser = argparse.ArgumentParser(description="BSL-Droid二脚ロボット URDF を MuJoCo MJCF に変換")
     parser.add_argument(
         "--urdf",
         type=str,
