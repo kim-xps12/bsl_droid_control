@@ -57,6 +57,6 @@ exp008では前進歩行のみを学習対象としていた（lin_vel_x_range: 
 | V2 | [exp009_report_v2.md](exp009_report_v2.md) | velocity_deficit scale縮小（-0.5→-0.1） | velocity_deficit -80.9%達成、ratio 0.080回復、action_rate -31.7%、hip_pitch corr +52.8%（-0.389）、L/R周波数同期化。Yaw drift不変（+40.6°）、R²崩壊（0.122）、収束未完了（std=0.398） |
 | V3 | [exp009_report_v3.md](exp009_report_v3.md) | 訓練イテレーション数増加（500→2000） | reward 59.89（+6.5%）、Last 50 std 0.228（-42.7%）、ratio 0.071。学習飽和（Q3→Q4 +0.6）。base_height +88.9%・Action RMS +216%（重心引き上げ戦略）。FWD/BWD追従78%、LFT 41.5%、RGT 27.0%。R²=0.042崩壊持続。BWD転倒あり |
 | V4 | [exp009_report_v4.md](exp009_report_v4.md) | is_moving判定のバグ修正（X方向のみ→XYノルム） | reward 58.93（-1.6%）、std 0.376（+64.9%）。LFT Yaw +103°→+5.5°劇的改善、BWD転倒解消。一方、**ジタバタ挙動**発生（hip_yaw 3.62Hz振動）、全方向追従率低下（52.0%→V3: 56.2%）、RGT 19.7%最低。is_moving修正は正しいが報酬ランドスケープの構造的変更に2000iterationsでは適応不足 |
-| V5 | [exp009_report_v5.md](exp009_report_v5.md) | 訓練イテレーション数増加（2000→4000） | （訓練中） |
+| V5 | [exp009_report_v5.md](exp009_report_v5.md) | 訓練イテレーション数増加（2000→4000） | **収束不足仮説を定量的に棄却**。報酬ピーク後下降（59.09→57.12）、Last 50 std +9.5%悪化。hip_yaw >2Hz成分L 85.6%に増大、hip_roll action RMS累積6.7x。4方向追従率45.8%（V4: 52.0%）。RGT改善（+15.3pp）だがBWD -25.0pp悪化。根本原因はaction_rate scale -0.005の過小 |
 | V6 | [exp009_report_v6.md](exp009_report_v6.md) | action_rate scale増加（-0.005→-0.01、ジタバタ挙動抑制） | （訓練前） |
 | V7 | [exp009_report_v7.md](exp009_report_v7.md) | 関節グループ別Kp/Kd導入（Unitree G1比率参考: 膝Kp=50/Kd=3、足首Kp=20/Kd=5） | （訓練前） |
