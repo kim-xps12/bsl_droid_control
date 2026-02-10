@@ -281,7 +281,6 @@ rl_ws/
 │   ├── biped_train.py              # V1トレーニング
 │   ├── biped_train_v2.py〜v11.py   # 各バージョンのトレーニング
 │   ├── biped_eval.py               # 統一評価スクリプト（-eオプションで全バージョン対応）
-│   ├── biped_eval_headless.py      # ヘッドレス評価
 │   ├── biped_eval_mujoco.py        # MuJoCo sim2sim評価
 │   ├── convert_biped_urdf_to_mjcf.py  # 二脚URDF→MJCF変換
 │   ├── convert_urdf_to_mjcf.py     # 汎用URDF→MJCF変換
