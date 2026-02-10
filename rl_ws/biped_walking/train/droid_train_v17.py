@@ -68,6 +68,8 @@ Usage:
     uv run python biped_walking/train/droid_train_v17.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os
@@ -75,6 +77,8 @@ import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -82,14 +86,14 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
-import sys
 
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
@@ -97,7 +101,7 @@ sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.droid_env import DroidEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -144,16 +148,16 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
     urdf_path = rl_ws_dir / "assets" / "bsl_droid_simplified.urdf"
 
     # V9と同じ初期姿勢
-    hip_pitch_rad = 60 * math.pi / 180    # 1.047 rad
+    hip_pitch_rad = 60 * math.pi / 180  # 1.047 rad
     knee_pitch_rad = -100 * math.pi / 180  # -1.745 rad
-    ankle_pitch_rad = 45 * math.pi / 180   # 0.785 rad
+    ankle_pitch_rad = 45 * math.pi / 180  # 0.785 rad
 
     env_cfg = {
         "num_actions": 10,
@@ -221,42 +225,36 @@ def get_cfgs():
         "gait_frequency": 1.5,
         # V11以降の接地判定改善は維持
         "contact_threshold": 0.04,
-
         "reward_scales": {
             # ========== 主タスク報酬（4項目） ==========
             "tracking_lin_vel": 1.5,
             "tracking_ang_vel": 0.5,
             "alive": 0.1,
             "forward_progress": 0.3,
-
             # ========== 交互歩行報酬（V9から完全継承） ==========
-            "hip_pitch_alternation": 4.0,      # V9成功要因
-            "hip_pitch_sync_penalty": -3.0,    # V9成功要因
+            "hip_pitch_alternation": 4.0,  # V9成功要因
+            "hip_pitch_sync_penalty": -3.0,  # V9成功要因
             "contact_alternation": 1.5,
             "feet_air_time": 2.0,
             "single_stance": 0.5,
             "no_fly": -2.0,
-            "hip_pitch_velocity": 0.8,         # V9で使用
-            "foot_clearance": 2.0,             # V9で使用
-            "alternating_gait": 1.5,           # V9で使用
-            "foot_swing": 0.8,                 # V9で使用
-
+            "hip_pitch_velocity": 0.8,  # V9で使用
+            "foot_clearance": 2.0,  # V9で使用
+            "alternating_gait": 1.5,  # V9で使用
+            "foot_swing": 0.8,  # V9で使用
             # ★ V16のhip_pitch_sign_changeは削除（論理的欠陥）
-
             # ========== 姿勢・安定性ペナルティ ==========
             "orientation": -2.5,
             "base_height": -10.0,
-            "yaw_rate": -1.0,                  # V9と同じ
+            "yaw_rate": -1.0,  # V9と同じ
             "backward_velocity": -2.0,
-            "roll_penalty": -5.0,              # V15で有効（V17で維持）
-            "pitch_penalty": -3.0,             # V9で使用
-            "symmetry": -0.5,                  # V9と同じ
-
+            "roll_penalty": -5.0,  # V15で有効（V17で維持）
+            "pitch_penalty": -3.0,  # V9で使用
+            "symmetry": -0.5,  # V9と同じ
             # ========== 膝角度制約 ==========
             "dof_pos_limits": -5.0,
             "knee_negative": -3.0,
             "knee_max_angle": -3.0,
-
             # ========== 振動抑制 ==========
             "action_rate": -0.03,
             "dof_vel": -1e-3,
@@ -273,7 +271,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v17")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -288,10 +286,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

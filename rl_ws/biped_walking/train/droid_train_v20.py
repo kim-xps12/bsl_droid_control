@@ -31,22 +31,25 @@ V19の教訓を踏まえ、V18をベースに最小限の変更のみ行う：
 ============================================================
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os
 import pickle
 import shutil
 from pathlib import Path
+from typing import Any
 
 import genesis as gs
-
-from biped_walking.envs.droid_env import DroidEnv
 
 # rsl-rl-lib==2.2.4のインポート
 from rsl_rl.runners.on_policy_runner import OnPolicyRunner
 
+from biped_walking.envs.droid_env import DroidEnv
 
-def get_train_cfg(exp_name, max_iterations):
+
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -93,16 +96,16 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
     urdf_path = rl_ws_dir / "assets" / "bsl_droid_simplified.urdf"
 
     # V9と同じ初期姿勢（実績あり）
-    hip_pitch_rad = 60 * math.pi / 180    # 1.047 rad
+    hip_pitch_rad = 60 * math.pi / 180  # 1.047 rad
     knee_pitch_rad = -100 * math.pi / 180  # -1.745 rad
-    ankle_pitch_rad = 45 * math.pi / 180   # 0.785 rad
+    ankle_pitch_rad = 45 * math.pi / 180  # 0.785 rad
 
     env_cfg = {
         "num_actions": 10,
@@ -138,10 +141,10 @@ def get_cfgs():
         # 【V20】終了条件 - V18と同じ（V19の厳格化は行わない）
         # ============================================================
         # V19では20°/0.15mに厳格化して失敗 → V18レベルに維持
-        "termination_if_roll_greater_than": 25,    # V18と同じ
-        "termination_if_pitch_greater_than": 25,   # V18と同じ（V19の20°は厳しすぎ）
+        "termination_if_roll_greater_than": 25,  # V18と同じ
+        "termination_if_pitch_greater_than": 25,  # V18と同じ（V19の20°は厳しすぎ）
         "termination_if_height_lower_than": 0.12,  # V18と同じ（V19の0.15mは厳しすぎ）
-        "termination_if_knee_positive": True,      # V18と同じ
+        "termination_if_knee_positive": True,  # V18と同じ
         "base_init_pos": [0.0, 0.0, 0.35],
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "episode_length_s": 20.0,
@@ -184,37 +187,32 @@ def get_cfgs():
         "feet_air_time_target": 0.10,  # V19の0.20s → 0.10s（達成容易に）
         "gait_frequency": 1.5,
         "contact_threshold": 0.04,
-
         "reward_scales": {
             # ============================================================
             # 【タスク報酬】（3項目）: V18と同じ
             # ============================================================
-            "tracking_lin_vel": 2.0,     # 前進速度追従（最重要）
-            "tracking_ang_vel": 0.5,     # 旋回速度追従
-            "alive": 1.0,                # 生存報酬（倒れない動機）
-
+            "tracking_lin_vel": 2.0,  # 前進速度追従（最重要）
+            "tracking_ang_vel": 0.5,  # 旋回速度追従
+            "alive": 1.0,  # 生存報酬（倒れない動機）
             # ============================================================
             # 【エネルギー効率】（2項目）: V18と同じ
             # ============================================================
-            "torques": -1e-4,            # トルク最小化 → 省エネ
-            "dof_acc": -1e-6,            # 加速度最小化 → 滑らか
-
+            "torques": -1e-4,  # トルク最小化 → 省エネ
+            "dof_acc": -1e-6,  # 加速度最小化 → 滑らか
             # ============================================================
             # 【安定性】（1項目）: V18と同じ
             # ============================================================
-            "orientation": -1.0,         # 傾きペナルティ（緩め）
-
+            "orientation": -1.0,  # 傾きペナルティ（緩め）
             # ============================================================
             # 【振動抑制】（1項目）: V18と同じ
             # ============================================================
-            "action_rate": -0.02,        # アクション変化率ペナルティ
-
+            "action_rate": -0.02,  # アクション変化率ペナルティ
             # ============================================================
             # 【V20追加】交互歩行誘導（1項目）
             # ============================================================
             # Legged Gym方式: 足の滞空時間に基づく報酬
             # V19では1.0で負の報酬が発生 → 0.3に抑制
-            "feet_air_time": 0.3,        # 控えめに追加
+            "feet_air_time": 0.3,  # 控えめに追加
         },
     }
 
@@ -228,7 +226,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v20")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -243,10 +241,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

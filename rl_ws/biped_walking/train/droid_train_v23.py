@@ -24,19 +24,22 @@ V22からの主な改善点:
     uv run python biped_walking/train/droid_train_v23.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os
 import pickle
 
 import genesis as gs
-from biped_walking.envs.droid_env_taskspace import DroidEnvTaskSpace
 
 # rsl-rl imports
 from rsl_rl.runners import OnPolicyRunner
 
+from biped_walking.envs.droid_env_taskspace import DroidEnvTaskSpace
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v23")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -53,9 +56,9 @@ def main():
     # 環境設定
     # ============================================================
     # 初期姿勢（V21と同じ）
-    hip_pitch_rad = 60 * math.pi / 180    # 1.047 rad
+    hip_pitch_rad = 60 * math.pi / 180  # 1.047 rad
     knee_pitch_rad = -100 * math.pi / 180  # -1.745 rad
-    ankle_pitch_rad = 45 * math.pi / 180   # 0.785 rad
+    ankle_pitch_rad = 45 * math.pi / 180  # 0.785 rad
 
     env_cfg = {
         # 基本設定
@@ -63,7 +66,6 @@ def main():
         "num_actions": 4,  # 足先残差 (left_x, left_z, right_x, right_z)
         "episode_length_s": 20.0,
         "resampling_time_s": 4.0,
-
         # 関節名（V21と同じ）
         "joint_names": [
             "left_hip_yaw_joint",
@@ -77,7 +79,6 @@ def main():
             "right_knee_pitch_joint",
             "right_ankle_pitch_joint",
         ],
-
         # デフォルト関節角度（V21と同じ）
         "default_joint_angles": {
             "left_hip_yaw_joint": 0.0,
@@ -91,40 +92,32 @@ def main():
             "right_knee_pitch_joint": knee_pitch_rad,
             "right_ankle_pitch_joint": ankle_pitch_rad,
         },
-
         # 初期位置・姿勢（V21と同じ高さ）
         "base_init_pos": [0.0, 0.0, 0.35],
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
-
         # PD制御パラメータ（V21と同じ）
         "kp": 35.0,
         "kd": 2.0,
         "torque_limit": 20.0,
-
         # 行動スケール（V22: 0.02 → V23: 0.03m に拡大）
         "action_scale": 0.03,
         "clip_actions": 3.0,
         "clip_observations": 100.0,
-
         # 終了条件（V21と同じ）
         "termination_if_pitch_greater_than": 25.0,  # deg
-        "termination_if_roll_greater_than": 25.0,   # deg
-        "termination_if_height_lower_than": 0.12,   # m
-
+        "termination_if_roll_greater_than": 25.0,  # deg
+        "termination_if_height_lower_than": 0.12,  # m
         # 足先リンク名
         "feet_names": ["left_foot_link", "right_foot_link"],
-
         # 運動学パラメータ（URDFから）
         "thigh_length": 0.11,
         "shank_length": 0.12,
         "foot_height": 0.035,
         "ankle_offset_x": 0.02,
-
         # 歩容パラメータ（V22より歩幅拡大）
-        "gait_frequency": 2.0,       # Hz
-        "swing_height": 0.035,       # m（V22: 0.03 → 0.035）
-        "stride_length": 0.08,       # m（V22: 0.06 → 0.08）
-
+        "gait_frequency": 2.0,  # Hz
+        "swing_height": 0.035,  # m（V22: 0.03 → 0.035）
+        "stride_length": 0.08,  # m（V22: 0.06 → 0.08）
         # デフォルト足先位置（股関節フレーム）
         "default_foot_x": 0.0381,
         "default_foot_z": -0.1820,
@@ -157,43 +150,37 @@ def main():
         "tracking_sigma": 0.25,
         "base_height_target": 0.26,  # 目標高さ（V21: 0.25 → 0.26）
         "target_air_time": 0.25,
-        "contact_threshold": 0.04,   # V21と同じ
-
+        "contact_threshold": 0.04,  # V21と同じ
         "reward_scales": {
             # ============================================================
             # 【タスク報酬】
             # ============================================================
-            "tracking_lin_vel": 2.0,     # 前進速度追従（最重要）
-            "tracking_ang_vel": 0.5,     # 旋回速度追従
-            "alive": 1.0,                # 生存報酬
-
+            "tracking_lin_vel": 2.0,  # 前進速度追従（最重要）
+            "tracking_ang_vel": 0.5,  # 旋回速度追従
+            "alive": 1.0,  # 生存報酬
             # ============================================================
             # 【姿勢維持】
             # ============================================================
-            "orientation": -1.5,         # 姿勢ペナルティ（V22: -1.0 → -1.5）
-            "base_height": 3.0,          # 高さ維持報酬（V22: 2.0 → 3.0）
-
+            "orientation": -1.5,  # 姿勢ペナルティ（V22: -1.0 → -1.5）
+            "base_height": 3.0,  # 高さ維持報酬（V22: 2.0 → 3.0）
             # ============================================================
             # 【交互歩行促進】（V21から導入）
             # ============================================================
             "hip_pitch_alternation": 2.0,  # 交互歩行報酬（NEW）
-
             # ============================================================
             # 【エネルギー効率】
             # ============================================================
-            "lin_vel_z": -0.3,           # 上下動抑制（V22: -0.5 → -0.3）
-            "ang_vel_xy": -0.05,         # 回転抑制
-            "torques": -1e-5,            # トルク最小化
-            "dof_vel": -1e-4,            # 関節速度最小化
-            "dof_acc": -1e-7,            # 加速度最小化
-            "action_rate": -0.005,       # アクション変化率（V22: -0.01 → -0.005）
-
+            "lin_vel_z": -0.3,  # 上下動抑制（V22: -0.5 → -0.3）
+            "ang_vel_xy": -0.05,  # 回転抑制
+            "torques": -1e-5,  # トルク最小化
+            "dof_vel": -1e-4,  # 関節速度最小化
+            "dof_acc": -1e-7,  # 加速度最小化
+            "action_rate": -0.005,  # アクション変化率（V22: -0.01 → -0.005）
             # ============================================================
             # 【足先空間制御】
             # ============================================================
-            "foot_tracking": 1.5,        # 足先追従（V22: 1.0 → 1.5）
-            "residual_penalty": -0.05,   # 残差ペナルティ（V22: -0.1 → -0.05、緩和）
-
+            "foot_tracking": 1.5,  # 足先追従（V22: 1.0 → 1.5）
+            "residual_penalty": -0.05,  # 残差ペナルティ（V22: -0.1 → -0.05、緩和）
             # ============================================================
             # 【終了】
             # ============================================================
@@ -203,8 +190,8 @@ def main():
 
     command_cfg = {
         "num_commands": 3,
-        "lin_vel_x": [0.2, 0.5],    # 前進コマンド
-        "lin_vel_y": [0.0, 0.0],    # 横方向は0
+        "lin_vel_x": [0.2, 0.5],  # 前進コマンド
+        "lin_vel_y": [0.0, 0.0],  # 横方向は0
         "ang_vel_yaw": [0.0, 0.0],  # 回転は0
     }
 
@@ -256,8 +243,13 @@ def main():
     # 設定を保存
     with open(os.path.join(log_dir, "cfgs.pkl"), "wb") as f:
         pickle.dump(
-            {"env_cfg": env_cfg, "obs_cfg": obs_cfg, "reward_cfg": reward_cfg,
-             "command_cfg": command_cfg, "train_cfg": train_cfg},
+            {
+                "env_cfg": env_cfg,
+                "obs_cfg": obs_cfg,
+                "reward_cfg": reward_cfg,
+                "command_cfg": command_cfg,
+                "train_cfg": train_cfg,
+            },
             f,
         )
 

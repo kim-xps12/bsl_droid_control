@@ -35,22 +35,25 @@ V21がダメなら足先位置空間での探索へシフト（IK実装）
 ============================================================
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os
 import pickle
 import shutil
 from pathlib import Path
+from typing import Any
 
 import genesis as gs
-
-from biped_walking.envs.droid_env import DroidEnv
 
 # rsl-rl-lib==2.2.4のインポート
 from rsl_rl.runners.on_policy_runner import OnPolicyRunner
 
+from biped_walking.envs.droid_env import DroidEnv
 
-def get_train_cfg(exp_name, max_iterations):
+
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -97,16 +100,16 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
     urdf_path = rl_ws_dir / "assets" / "bsl_droid_simplified.urdf"
 
     # V9と同じ初期姿勢（実績あり）
-    hip_pitch_rad = 60 * math.pi / 180    # 1.047 rad
+    hip_pitch_rad = 60 * math.pi / 180  # 1.047 rad
     knee_pitch_rad = -100 * math.pi / 180  # -1.745 rad
-    ankle_pitch_rad = 45 * math.pi / 180   # 0.785 rad
+    ankle_pitch_rad = 45 * math.pi / 180  # 0.785 rad
 
     env_cfg = {
         "num_actions": 10,
@@ -142,10 +145,10 @@ def get_cfgs():
         # 【V20】終了条件 - V18と同じ（V19の厳格化は行わない）
         # ============================================================
         # V19では20°/0.15mに厳格化して失敗 → V18レベルに維持
-        "termination_if_roll_greater_than": 25,    # V18と同じ
-        "termination_if_pitch_greater_than": 25,   # V18と同じ（V19の20°は厳しすぎ）
+        "termination_if_roll_greater_than": 25,  # V18と同じ
+        "termination_if_pitch_greater_than": 25,  # V18と同じ（V19の20°は厳しすぎ）
         "termination_if_height_lower_than": 0.12,  # V18と同じ（V19の0.15mは厳しすぎ）
-        "termination_if_knee_positive": True,      # V18と同じ
+        "termination_if_knee_positive": True,  # V18と同じ
         "base_init_pos": [0.0, 0.0, 0.35],
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "episode_length_s": 20.0,
@@ -180,34 +183,29 @@ def get_cfgs():
 
     reward_cfg = {
         "tracking_sigma": 0.25,
-        "base_height_target": 0.25,      # V20の0.22 → 0.25（目標を明示）
+        "base_height_target": 0.25,  # V20の0.22 → 0.25（目標を明示）
         "gait_frequency": 1.5,
-
         "reward_scales": {
             # ============================================================
             # 【タスク報酬】（3項目）: V20と同じ
             # ============================================================
-            "tracking_lin_vel": 2.0,     # 前進速度追従（最重要）
-            "tracking_ang_vel": 0.5,     # 旋回速度追従
-            "alive": 1.0,                # 生存報酬（倒れない動機）
-
+            "tracking_lin_vel": 2.0,  # 前進速度追従（最重要）
+            "tracking_ang_vel": 0.5,  # 旋回速度追従
+            "alive": 1.0,  # 生存報酬（倒れない動機）
             # ============================================================
             # 【エネルギー効率】（2項目）: V20と同じ
             # ============================================================
-            "torques": -1e-4,            # トルク最小化 → 省エネ
-            "dof_acc": -1e-6,            # 加速度最小化 → 滑らか
-
+            "torques": -1e-4,  # トルク最小化 → 省エネ
+            "dof_acc": -1e-6,  # 加速度最小化 → 滑らか
             # ============================================================
             # 【安定性】（2項目）: V20 + base_height追加
             # ============================================================
-            "orientation": -1.0,         # 傾きペナルティ（緩め）
-            "base_height": -2.0,         # 【V21追加】沈み込み防止
-
+            "orientation": -1.0,  # 傾きペナルティ（緩め）
+            "base_height": -2.0,  # 【V21追加】沈み込み防止
             # ============================================================
             # 【振動抑制】（1項目）: V20と同じ
             # ============================================================
-            "action_rate": -0.02,        # アクション変化率ペナルティ
-
+            "action_rate": -0.02,  # アクション変化率ペナルティ
             # feet_air_time: 削除（接地検出が機能していないため）
         },
     }
@@ -222,7 +220,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v21")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -237,10 +235,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

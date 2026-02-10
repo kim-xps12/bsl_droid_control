@@ -18,21 +18,22 @@
     uv run python biped_walking/train/droid_train_v22.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os
 import pickle
 
-import torch
-
 import genesis as gs
-from biped_walking.envs.droid_env_taskspace import DroidEnvTaskSpace
 
 # rsl-rl imports
 from rsl_rl.runners import OnPolicyRunner
 
+from biped_walking.envs.droid_env_taskspace import DroidEnvTaskSpace
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v22")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -49,9 +50,9 @@ def main():
     # 環境設定
     # ============================================================
     # 初期姿勢（V21と同じ）
-    hip_pitch_rad = 60 * math.pi / 180    # 1.047 rad
+    hip_pitch_rad = 60 * math.pi / 180  # 1.047 rad
     knee_pitch_rad = -100 * math.pi / 180  # -1.745 rad
-    ankle_pitch_rad = 45 * math.pi / 180   # 0.785 rad
+    ankle_pitch_rad = 45 * math.pi / 180  # 0.785 rad
 
     env_cfg = {
         # 基本設定
@@ -59,7 +60,6 @@ def main():
         "num_actions": 4,  # 足先残差 (left_x, left_z, right_x, right_z)
         "episode_length_s": 20.0,
         "resampling_time_s": 4.0,
-
         # 関節名（V21と同じ）
         "joint_names": [
             "left_hip_yaw_joint",
@@ -73,7 +73,6 @@ def main():
             "right_knee_pitch_joint",
             "right_ankle_pitch_joint",
         ],
-
         # デフォルト関節角度（V21と同じ）
         "default_joint_angles": {
             "left_hip_yaw_joint": 0.0,
@@ -87,40 +86,32 @@ def main():
             "right_knee_pitch_joint": knee_pitch_rad,
             "right_ankle_pitch_joint": ankle_pitch_rad,
         },
-
         # 初期位置・姿勢（V21と同じ高さ）
         "base_init_pos": [0.0, 0.0, 0.35],
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
-
         # PD制御パラメータ（V21と同じ）
         "kp": 35.0,
         "kd": 2.0,
         "torque_limit": 20.0,
-
         # 行動スケール（足先残差のスケール: 2cm）
         "action_scale": 0.02,
         "clip_actions": 3.0,
         "clip_observations": 100.0,
-
         # 終了条件（V21と同じ）
         "termination_if_pitch_greater_than": 25.0,  # deg
-        "termination_if_roll_greater_than": 25.0,   # deg
-        "termination_if_height_lower_than": 0.12,   # m
-
+        "termination_if_roll_greater_than": 25.0,  # deg
+        "termination_if_height_lower_than": 0.12,  # m
         # 足先リンク名
         "feet_names": ["left_foot_link", "right_foot_link"],
-
         # 運動学パラメータ（URDFから）
         "thigh_length": 0.11,
         "shank_length": 0.12,
         "foot_height": 0.035,
         "ankle_offset_x": 0.02,
-
         # 歩容パラメータ
-        "gait_frequency": 2.0,     # Hz
-        "swing_height": 0.03,      # m（足の持ち上げ高さ）
-        "stride_length": 0.06,     # m（ストライド長）
-
+        "gait_frequency": 2.0,  # Hz
+        "swing_height": 0.03,  # m（足の持ち上げ高さ）
+        "stride_length": 0.06,  # m（ストライド長）
         # デフォルト足先位置（股関節フレーム）
         "default_foot_x": 0.0381,
         "default_foot_z": -0.1820,
@@ -145,11 +136,9 @@ def main():
             # 追従報酬
             "tracking_lin_vel": 2.0,
             "tracking_ang_vel": 0.5,
-
             # 姿勢維持
             "orientation": -1.0,
             "base_height": 2.0,  # 高さ維持を重視
-
             # ペナルティ
             "lin_vel_z": -0.5,
             "ang_vel_xy": -0.05,
@@ -157,13 +146,10 @@ def main():
             "dof_vel": -1e-4,
             "dof_acc": -1e-7,
             "action_rate": -0.01,
-
             # 足先追従
             "foot_tracking": 1.0,
-
             # 残差ペナルティ（ベース軌道からの逸脱を抑制）
             "residual_penalty": -0.1,
-
             # 生存・終了
             "alive": 0.5,
             "termination": -100.0,
@@ -172,8 +158,8 @@ def main():
 
     command_cfg = {
         "num_commands": 3,
-        "lin_vel_x": [0.2, 0.5],    # 前進コマンド
-        "lin_vel_y": [0.0, 0.0],    # 横方向は0
+        "lin_vel_x": [0.2, 0.5],  # 前進コマンド
+        "lin_vel_y": [0.0, 0.0],  # 横方向は0
         "ang_vel_yaw": [0.0, 0.0],  # 回転は0
     }
 
@@ -225,8 +211,13 @@ def main():
     # 設定を保存
     with open(os.path.join(log_dir, "cfgs.pkl"), "wb") as f:
         pickle.dump(
-            {"env_cfg": env_cfg, "obs_cfg": obs_cfg, "reward_cfg": reward_cfg,
-             "command_cfg": command_cfg, "train_cfg": train_cfg},
+            {
+                "env_cfg": env_cfg,
+                "obs_cfg": obs_cfg,
+                "reward_cfg": reward_cfg,
+                "command_cfg": command_cfg,
+                "train_cfg": train_cfg,
+            },
             f,
         )
 

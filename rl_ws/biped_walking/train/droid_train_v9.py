@@ -39,12 +39,16 @@ Usage:
     uv run python biped_walking/train/droid_train_v9.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -52,15 +56,14 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
-import sys
-from pathlib import Path
 
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
@@ -68,7 +71,7 @@ sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.droid_env import DroidEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -115,7 +118,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
@@ -125,9 +128,10 @@ def get_cfgs():
     # V9: V8と同じ初期姿勢を継続
     # ============================================================
     import math
-    hip_pitch_rad = 60 * math.pi / 180    # 1.047 rad
+
+    hip_pitch_rad = 60 * math.pi / 180  # 1.047 rad
     knee_pitch_rad = -100 * math.pi / 180  # -1.745 rad
-    ankle_pitch_rad = 45 * math.pi / 180   # 0.785 rad
+    ankle_pitch_rad = 45 * math.pi / 180  # 0.785 rad
 
     env_cfg = {
         "num_actions": 10,
@@ -148,9 +152,9 @@ def get_cfgs():
         "default_joint_angles": {
             "left_hip_yaw_joint": 0.0,
             "left_hip_roll_joint": 0.0,
-            "left_hip_pitch_joint": hip_pitch_rad,    # 60° = 1.047 rad
+            "left_hip_pitch_joint": hip_pitch_rad,  # 60° = 1.047 rad
             "left_knee_pitch_joint": knee_pitch_rad,  # -100° = -1.745 rad
-            "left_ankle_pitch_joint": ankle_pitch_rad, # 45° = 0.785 rad
+            "left_ankle_pitch_joint": ankle_pitch_rad,  # 45° = 0.785 rad
             "right_hip_yaw_joint": 0.0,
             "right_hip_roll_joint": 0.0,
             "right_hip_pitch_joint": hip_pitch_rad,
@@ -199,35 +203,28 @@ def get_cfgs():
         "base_height_target": 0.22,  # V8: 0.26 → V9: 0.22
         "feet_air_time_target": 0.25,
         "gait_frequency": 1.5,  # Hz
-
         "reward_scales": {
             # ========== 主タスク報酬 ==========
             "tracking_lin_vel": 1.5,
             "tracking_ang_vel": 0.5,
             "alive": 0.1,
             "forward_progress": 0.3,
-
             # ========== 交互歩行報酬（V9強化） ==========
             "alternating_gait": 1.5,
             "foot_swing": 0.8,
-            "feet_air_time": 2.0,      # V8: 1.0 → V9: 2.0
+            "feet_air_time": 2.0,  # V8: 1.0 → V9: 2.0
             "single_stance": 0.5,
             "no_fly": -1.0,
-
             # ========== 動的歩行報酬（V9強化） ==========
             "hip_pitch_alternation": 4.0,  # V8: 2.0 → V9: 4.0（交互動作を強化）
             "hip_pitch_velocity": 0.5,
-            "contact_alternation": 1.5,    # V8: 0.8 → V9: 1.5
-
+            "contact_alternation": 1.5,  # V8: 0.8 → V9: 1.5
             # ========== V9追加: 同期ペナルティ ==========
             "hip_pitch_sync_penalty": -3.0,  # 左右が同時に同方向に動くとペナルティ
-
             # ========== V9追加: 足の持ち上げ ==========
             "foot_clearance": 2.0,  # 足のクリアランス報酬
-
             # ========== V9追加: ストライド改善 ==========
             "hip_pitch_range": 1.0,  # hip_pitchの動作範囲を報酬化
-
             # ========== 姿勢・安定性ペナルティ ==========
             "orientation": -2.5,
             "base_height": -10.0,
@@ -237,19 +234,15 @@ def get_cfgs():
             "ang_vel_xy": -0.05,
             "pitch_penalty": -3.0,
             "roll_penalty": -3.0,
-
             # ========== V9追加: Yawドリフト対策 ==========
-            "yaw_rate": -1.0,    # Yaw角速度ペナルティ
-            "symmetry": -0.5,    # 左右対称性ペナルティ
-
+            "yaw_rate": -1.0,  # Yaw角速度ペナルティ
+            "symmetry": -0.5,  # 左右対称性ペナルティ
             # ========== 膝角度制約 ==========
             "dof_pos_limits": -5.0,
             "knee_negative": -3.0,
             "knee_max_angle": -3.0,
-
             # ========== 後退ペナルティ ==========
             "backward_velocity": -2.0,
-
             # ========== 振動抑制ペナルティ ==========
             "action_rate": -0.03,
             "dof_vel": -1e-3,
@@ -269,7 +262,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v9")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -284,10 +277,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

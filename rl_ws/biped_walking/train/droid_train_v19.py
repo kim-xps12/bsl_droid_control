@@ -42,22 +42,25 @@ V18: 6項目 → V19: 11項目
 ============================================================
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os
 import pickle
 import shutil
 from pathlib import Path
+from typing import Any
 
 import genesis as gs
-
-from biped_walking.envs.droid_env import DroidEnv
 
 # rsl-rl-lib==2.2.4のインポート
 from rsl_rl.runners.on_policy_runner import OnPolicyRunner
 
+from biped_walking.envs.droid_env import DroidEnv
 
-def get_train_cfg(exp_name, max_iterations):
+
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -104,7 +107,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
@@ -149,8 +152,8 @@ def get_cfgs():
         # 【V19】終了条件をさらに厳しく - 前傾防止
         # ============================================================
         "termination_if_roll_greater_than": 25,
-        "termination_if_pitch_greater_than": 20,    # V18: 25° → V19: 20°（前傾に厳しく）
-        "termination_if_height_lower_than": 0.15,   # V18: 0.12m → V19: 0.15m（沈み込み防止）
+        "termination_if_pitch_greater_than": 20,  # V18: 25° → V19: 20°（前傾に厳しく）
+        "termination_if_height_lower_than": 0.15,  # V18: 0.12m → V19: 0.15m（沈み込み防止）
         "termination_if_knee_positive": True,
         "base_init_pos": [0.0, 0.0, 0.35],
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
@@ -189,53 +192,49 @@ def get_cfgs():
 
     reward_cfg = {
         "tracking_sigma": 0.25,
-        "base_height_target": 0.25,      # V18: 0.22 → V19: 0.25（高めを目標）
-        "feet_air_time_target": 0.20,    # 目標滞空時間（秒）
+        "base_height_target": 0.25,  # V18: 0.22 → V19: 0.25（高めを目標）
+        "feet_air_time_target": 0.20,  # 目標滞空時間（秒）
         "gait_frequency": 1.5,
-        "contact_threshold": 0.06,       # 接地判定閾値（V18: 0.04 → V19: 0.06、接地検出改善）
-
+        "contact_threshold": 0.06,  # 接地判定閾値（V18: 0.04 → V19: 0.06、接地検出改善）
         "reward_scales": {
             # ============================================================
             # 【タスク報酬】（3項目）
             # ============================================================
-            "tracking_lin_vel": 2.0,     # 前進速度追従
-            "tracking_ang_vel": 0.5,     # 旋回速度追従
-            "alive": 1.0,                # 生存報酬
-
+            "tracking_lin_vel": 2.0,  # 前進速度追従
+            "tracking_ang_vel": 0.5,  # 旋回速度追従
+            "alive": 1.0,  # 生存報酬
             # ============================================================
             # 【姿勢制御】（4項目）← V19で強化
             # ============================================================
-            "orientation": -3.0,         # V18: -1.0 → V19: -3.0（姿勢維持をさらに強化）
-            "base_height": -3.0,         # 沈み込みペナルティ（強化）
-            "pitch_penalty": -2.0,       # 【NEW】前傾ペナルティ（V18の13.7°前傾対策）
-
+            "orientation": -3.0,  # V18: -1.0 → V19: -3.0（姿勢維持をさらに強化）
+            "base_height": -3.0,  # 沈み込みペナルティ（強化）
+            "pitch_penalty": -2.0,  # 【NEW】前傾ペナルティ（V18の13.7°前傾対策）
             # ============================================================
             # 【エネルギー効率】（2項目）
             # ============================================================
-            "torques": -1e-4,            # トルク最小化
-            "dof_acc": -1e-6,            # 加速度最小化
-
+            "torques": -1e-4,  # トルク最小化
+            "dof_acc": -1e-6,  # 加速度最小化
             # ============================================================
             # 【歩行パターン誘導】（3項目）← V19で追加
             # ============================================================
             # Legged Gym / Cassie方式: 関節ではなく接地状態で歩行を誘導
-            "feet_air_time": 1.0,        # 滞空時間報酬（周期的足上げ、強化）
-            "single_stance": 0.3,        # 片足接地報酬（交互歩行誘導）
-            "hip_pitch_velocity": 0.5,   # 【NEW】hip_pitch速度報酬（歩幅拡大促進）
+            "feet_air_time": 1.0,  # 滞空時間報酬（周期的足上げ、強化）
+            "single_stance": 0.3,  # 片足接地報酬（交互歩行誘導）
+            "hip_pitch_velocity": 0.5,  # 【NEW】hip_pitch速度報酬（歩幅拡大促進）
         },
     }
 
     command_cfg = {
         "num_commands": 3,
         "lin_vel_x_range": [0.3, 0.3],  # 目標前進速度 0.3 m/s
-        "lin_vel_y_range": [0, 0],       # 横移動なし
-        "ang_vel_range": [0, 0],         # 旋回なし
+        "lin_vel_y_range": [0, 0],  # 横移動なし
+        "ang_vel_range": [0, 0],  # 旋回なし
     }
 
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     """メインエントリーポイント"""
     parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified Walking V19")
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v19")
@@ -282,9 +281,9 @@ def main():
     runner = OnPolicyRunner(env, train_cfg, log_dir=str(log_dir), device="mps")
 
     # 訓練開始
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("V19: 姿勢制御強化 + 接地ベース歩行報酬 + 歩幅拡大")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print("【V18からの改善】")
     print("- orientation報酬: -1.0 → -3.0 (姿勢維持さらに強化)")
     print("- base_height報酬: -3.0 (沈み込み防止強化)")
@@ -295,9 +294,9 @@ def main():
     print("- contact_threshold: 0.04 → 0.06 (接地検出改善)")
     print("- pitch終了条件: 25° → 20° (前傾防止)")
     print("- height終了条件: 0.12m → 0.15m (沈み込み防止)")
-    print(f"{'='*60}")
-    print(f"報酬項目数: 11 (V18: 6, V17: 25)")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}")
+    print("報酬項目数: 11 (V18: 6, V17: 25)")
+    print(f"{'=' * 60}\n")
 
     # 報酬スケール表示
     print("報酬スケール:")

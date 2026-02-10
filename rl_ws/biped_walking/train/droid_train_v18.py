@@ -1,58 +1,67 @@
-#!/usr/bin/env python3
+"""BSL-Droid Simplified 二脚ロボット Genesis訓練スクリプト v3
+
+============================================================
+V3: V1ベース + V21要素（穏やかな高さペナルティ）+ 膝正角度維持
+============================================================
+
+V1の問題:
+- 膝関節が負方向に動作（逆関節の方向制約がない）
+- 高さペナルティが強すぎた（-45.0 → 動きにくい）
+
+V21（exp002）からの教訓:
+- 穏やかな高さペナルティ（-10.0, -5.0）で交互歩行成功
+- 後退ペナルティ追加
+
+V3の変更点（V1からの最小限変更）:
+1. 高さペナルティをV21レベルに緩和（-30→-10, -15→-5）
+2. 膝正角度維持報酬を追加（knee_positive: -0.5）
+3. 初期姿勢・その他設定はV1のまま
+
+Usage:
+    cd rl_ws
+    uv run python biped_walking/train/droid_train_v3.py --max_iterations 500
 """
-BSL-Droid Simplified 歩行学習スクリプト V18
 
-============================================================
-【パラダイムシフト】ミニマリスト報酬設計
-============================================================
-
-【V17までの問題点】
-- 20〜25個の報酬項目による「dense reward shaping」
-- hip_pitch相関が良くても歩行性能が悪い（V17: corr=-0.637, X=2.68m, Yaw=-29°）
-- 報酬項目間の競合・干渉
-- 報酬ハッキングの発生
-
-【V18の設計方針】
-1. 報酬項目を最小限（6項目）に削減
-2. 関節レベルの制約（hip_pitch_*, knee_*, symmetry等）を全削除
-3. 制約は終了条件（termination）として実装
-4. エネルギー効率報酬を追加（歩行の自然な創発を促進）
-
-【参考】
-- ETH Legged Gym: 8-10報酬項目
-- Walk These Ways (MIT): タスク報酬+エネルギーペナルティ中心
-- CaT (Constraint as Termination): 制約を終了条件として扱う
-
-【報酬設計の哲学】
-「どう歩くか」を報酬で教えない。
-「前に進め」「倒れるな」「省エネで」だけ伝えて、
-歩き方は学習に任せる。
-============================================================
-"""
+from __future__ import annotations
 
 import argparse
-import math
 import os
 import pickle
 import shutil
+from importlib import metadata
 from pathlib import Path
+from typing import Any
+
+
+try:
+    try:
+        if metadata.version("rsl-rl"):
+            raise ImportError
+    except metadata.PackageNotFoundError:
+        if metadata.version("rsl-rl-lib") != "2.2.4":
+            raise ImportError from None
+except (metadata.PackageNotFoundError, ImportError) as e:
+    raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
+
+# envsパッケージへのパスを追加
+rl_ws_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.droid_env import DroidEnv
 
-# rsl-rl-lib==2.2.4のインポート
-from rsl_rl.runners.on_policy_runner import OnPolicyRunner
 
-
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
             "class_name": "PPO",
             "clip_param": 0.2,
             "desired_kl": 0.01,
-            "entropy_coef": 0.01,  # 探索促進のため維持
+            "entropy_coef": 0.01,
             "gamma": 0.99,
             "lam": 0.95,
             "learning_rate": 0.001,
@@ -92,16 +101,11 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
     urdf_path = rl_ws_dir / "assets" / "bsl_droid_simplified.urdf"
-
-    # V9と同じ初期姿勢（実績あり）
-    hip_pitch_rad = 60 * math.pi / 180    # 1.047 rad
-    knee_pitch_rad = -100 * math.pi / 180  # -1.745 rad
-    ankle_pitch_rad = 45 * math.pi / 180   # 0.785 rad
 
     env_cfg = {
         "num_actions": 10,
@@ -118,30 +122,29 @@ def get_cfgs():
             "right_knee_pitch_joint",
             "right_ankle_pitch_joint",
         ],
+        # BSL-Droid Simplified用デフォルト関節角度
+        # 膝関節: 正角度で後方屈曲（0°〜+135°）
         "default_joint_angles": {
             "left_hip_yaw_joint": 0.0,
             "left_hip_roll_joint": 0.0,
-            "left_hip_pitch_joint": hip_pitch_rad,
-            "left_knee_pitch_joint": knee_pitch_rad,
-            "left_ankle_pitch_joint": ankle_pitch_rad,
+            "left_hip_pitch_joint": -0.3,  # 股関節を少し前傾
+            "left_knee_pitch_joint": 0.6,  # 約35°（正で後方屈曲）
+            "left_ankle_pitch_joint": -0.3,  # 膝と相殺
             "right_hip_yaw_joint": 0.0,
             "right_hip_roll_joint": 0.0,
-            "right_hip_pitch_joint": hip_pitch_rad,
-            "right_knee_pitch_joint": knee_pitch_rad,
-            "right_ankle_pitch_joint": ankle_pitch_rad,
+            "right_hip_pitch_joint": -0.3,
+            "right_knee_pitch_joint": 0.6,
+            "right_ankle_pitch_joint": -0.3,
         },
+        # 正しいリンク名
         "feet_names": ["left_foot_link", "right_foot_link"],
+        # PD gains
         "kp": 35.0,
         "kd": 2.0,
-        # ============================================================
-        # 【NEW】終了条件による制約
-        # ============================================================
-        # 報酬ペナルティではなく終了条件として制約を実装
-        "termination_if_roll_greater_than": 25,    # 厳しく：30° → 25°
-        "termination_if_pitch_greater_than": 25,   # 厳しく：30° → 25°
-        "termination_if_height_lower_than": 0.12,  # 【NEW】基本高さの下限
-        "termination_if_knee_positive": True,      # 【NEW】膝が正の角度で終了
-        "base_init_pos": [0.0, 0.0, 0.35],
+        "termination_if_roll_greater_than": 30,
+        "termination_if_pitch_greater_than": 30,
+        # 脚が短いため初期高さを低く設定
+        "base_init_pos": [0.0, 0.0, 0.30],
         "base_init_quat": [1.0, 0.0, 0.0, 0.0],
         "episode_length_s": 20.0,
         "resampling_time_s": 4.0,
@@ -161,53 +164,57 @@ def get_cfgs():
     }
 
     # ============================================================
-    # V18: ミニマリスト報酬設計（6項目のみ）
+    # V3: V1ベース + V21要素 + 膝正角度維持
     # ============================================================
-    # 【哲学】「どう歩くか」は教えない。「前に進め、省エネで」だけ。
     #
-    # 削除した報酬（V17比）:
-    # - hip_pitch_alternation, hip_pitch_sync_penalty  ← 交互歩行の強制を廃止
-    # - contact_alternation, feet_air_time, single_stance  ← 足運びの強制を廃止
-    # - foot_clearance, foot_swing, alternating_gait  ← クリアランスの強制を廃止
-    # - hip_pitch_velocity  ← 速度の強制を廃止
-    # - symmetry  ← 対称性の強制を廃止
-    # - knee_negative, knee_max_angle  ← 終了条件に移行
-    # - roll_penalty, pitch_penalty  ← 終了条件に移行
-    # - base_height  ← 終了条件に移行
-    # - backward_velocity  ← 前進報酬で自然に解決
-    # - no_fly  ← 必要なら物理で自然に解決
+    # 変更点（V1からの差分）:
+    # 1. base_height: -30.0 → -10.0（V21レベル）
+    # 2. base_height_high: -15.0 → -5.0（V21レベル）
+    # 3. knee_positive: -0.5（新規追加）
+    #
     # ============================================================
 
     reward_cfg = {
         "tracking_sigma": 0.25,
-        "base_height_target": 0.22,  # 終了条件の参照用
-        "feet_air_time_target": 0.25,  # 未使用だが互換性のため
-        "gait_frequency": 1.5,  # 未使用だが互換性のため
-        "contact_threshold": 0.04,  # 互換性のため
-
+        # 脚が短いため高さ目標を低く設定
+        "base_height_target": 0.25,
+        "feet_air_time_target": 0.25,
+        "gait_frequency": 1.5,  # Hz
         "reward_scales": {
-            # ============================================================
-            # 【タスク報酬】（3項目）: これだけが「目標」
-            # ============================================================
-            "tracking_lin_vel": 2.0,     # 前進速度追従（最重要）
-            "tracking_ang_vel": 0.5,     # 旋回速度追従
-            "alive": 1.0,                # 生存報酬（倒れない動機）
-
-            # ============================================================
-            # 【エネルギー効率】（2項目）: 自然な歩行の創発を促進
-            # ============================================================
-            "torques": -1e-4,            # トルク最小化 → 省エネ
-            "dof_acc": -1e-6,            # 加速度最小化 → 滑らか
-
-            # ============================================================
-            # 【安定性】（1項目）: 最低限の姿勢制御
-            # ============================================================
-            "orientation": -1.0,         # 傾きペナルティ（緩め）
-
-            # ============================================================
-            # 【振動抑制】（1項目）: アクションの急変防止
-            # ============================================================
-            "action_rate": -0.02,        # アクション変化率ペナルティ
+            # ========== 主タスク報酬 ==========
+            "tracking_lin_vel": 1.5,
+            "tracking_ang_vel": 0.5,
+            "alive": 0.1,
+            "forward_progress": 0.3,
+            # ========== 交互歩行報酬 ==========
+            "alternating_gait": 1.5,
+            "foot_swing": 0.8,
+            "feet_air_time": 1.0,
+            "single_stance": 0.5,
+            "no_fly": -1.0,
+            # ========== 動的歩行報酬（速度ベース）==========
+            "hip_pitch_alternation": 2.0,
+            "hip_pitch_velocity": 0.5,
+            "contact_alternation": 0.8,
+            # ========== 姿勢・安定性ペナルティ ==========
+            "orientation": -2.5,
+            # V3: 高さペナルティをV21レベルに緩和
+            "base_height": -10.0,  # V1: -30.0 → V3: -10.0
+            "base_height_high": -5.0,  # V1: -15.0 → V3: -5.0
+            "lin_vel_z": -2.0,
+            "ang_vel_xy": -0.05,
+            "pitch_penalty": -3.0,
+            "roll_penalty": -3.0,
+            # ========== V3: 膝正角度維持 ==========
+            "knee_positive": -0.5,  # 膝が負角度になったらペナルティ
+            # ========== 後退ペナルティ ==========
+            "backward_velocity": -2.0,
+            # ========== 振動抑制ペナルティ ==========
+            "action_rate": -0.03,
+            "dof_vel": -1e-3,
+            "dof_acc": -5e-7,
+            "torques": -5e-5,
+            "similar_to_default": -0.02,
         },
     }
 
@@ -221,9 +228,9 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v18")
+    parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v3")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
     parser.add_argument("--max_iterations", type=int, default=500)
     args = parser.parse_args()
@@ -236,10 +243,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

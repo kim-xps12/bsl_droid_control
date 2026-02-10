@@ -17,12 +17,16 @@ Usage:
     uv run python biped_walking/train/droid_train_v4.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -30,15 +34,14 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
-import sys
-from pathlib import Path
 
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
@@ -46,7 +49,7 @@ sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.droid_env import DroidEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -93,7 +96,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent
@@ -119,8 +122,8 @@ def get_cfgs():
         "default_joint_angles": {
             "left_hip_yaw_joint": 0.0,
             "left_hip_roll_joint": 0.0,
-            "left_hip_pitch_joint": -0.3,    # 股関節を少し前傾
-            "left_knee_pitch_joint": 0.6,    # 約35°（正で後方屈曲）
+            "left_hip_pitch_joint": -0.3,  # 股関節を少し前傾
+            "left_knee_pitch_joint": 0.6,  # 約35°（正で後方屈曲）
             "left_ankle_pitch_joint": -0.3,  # 膝と相殺
             "right_hip_yaw_joint": 0.0,
             "right_hip_roll_joint": 0.0,
@@ -171,26 +174,22 @@ def get_cfgs():
         "base_height_target": 0.25,
         "feet_air_time_target": 0.25,
         "gait_frequency": 1.5,  # Hz
-
         "reward_scales": {
             # ========== 主タスク報酬 ==========
             "tracking_lin_vel": 1.5,
             "tracking_ang_vel": 0.5,
             "alive": 0.1,
             "forward_progress": 0.3,
-
             # ========== 交互歩行報酬 ==========
             "alternating_gait": 1.5,
             "foot_swing": 0.8,
             "feet_air_time": 1.0,
             "single_stance": 0.5,
             "no_fly": -1.0,
-
             # ========== 動的歩行報酬 (速度ベース) ==========
             "hip_pitch_alternation": 2.0,
             "hip_pitch_velocity": 0.5,
             "contact_alternation": 0.8,
-
             # ========== 姿勢・安定性ペナルティ ==========
             "orientation": -2.5,
             "base_height": -10.0,
@@ -199,14 +198,11 @@ def get_cfgs():
             "ang_vel_xy": -0.05,
             "pitch_penalty": -3.0,
             "roll_penalty": -3.0,
-
             # ========== V4: 膝制約強化 ==========
-            "knee_positive": -2.0,      # V3: -0.5 -> V4: -2.0 (4倍)
-            "knee_min_angle": -1.0,     # 新規: 0.3rad以下でペナルティ
-
+            "knee_positive": -2.0,  # V3: -0.5 -> V4: -2.0 (4倍)
+            "knee_min_angle": -1.0,  # 新規: 0.3rad以下でペナルティ
             # ========== 後退ペナルティ ==========
             "backward_velocity": -2.0,
-
             # ========== 振動抑制ペナルティ ==========
             "action_rate": -0.03,
             "dof_vel": -1e-3,
@@ -226,7 +222,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-v4")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -241,10 +237,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 
