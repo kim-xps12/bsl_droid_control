@@ -32,12 +32,16 @@ Usage:
     uv run python scripts/biped_train_v18.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -45,15 +49,14 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
-import sys
-from pathlib import Path
 
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
@@ -61,7 +64,7 @@ sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.biped_env import BipedEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -108,7 +111,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent
@@ -149,14 +152,14 @@ def get_cfgs():
         "default_joint_angles": {
             "left_hip_yaw_joint": 0.0,
             "left_hip_roll_joint": 0.0,
-            "left_hip_pitch_joint": 0.0,    # V17: -0.35 → V18: 0.0（V13と同じ）
-            "left_knee_pitch_joint": -0.52, # V17: -0.78 → V18: -0.52（V13と同じ）
-            "left_ankle_pitch_joint": 0.52, # V17: 0.43 → V18: 0.52（V13と同じ）
+            "left_hip_pitch_joint": 0.0,  # V17: -0.35 → V18: 0.0（V13と同じ）
+            "left_knee_pitch_joint": -0.52,  # V17: -0.78 → V18: -0.52（V13と同じ）
+            "left_ankle_pitch_joint": 0.52,  # V17: 0.43 → V18: 0.52（V13と同じ）
             "right_hip_yaw_joint": 0.0,
             "right_hip_roll_joint": 0.0,
-            "right_hip_pitch_joint": 0.0,   # 同上
-            "right_knee_pitch_joint": -0.52,# 同上
-            "right_ankle_pitch_joint": 0.52,# 同上
+            "right_hip_pitch_joint": 0.0,  # 同上
+            "right_knee_pitch_joint": -0.52,  # 同上
+            "right_ankle_pitch_joint": 0.52,  # 同上
         },
         "feet_names": ["left_foot_link", "right_foot_link"],
         # PD gains
@@ -206,31 +209,26 @@ def get_cfgs():
         "height_penalty_low": 5.0,
         "feet_air_time_target": 0.25,
         "gait_frequency": 1.5,
-
         "reward_scales": {
             # ========== 主タスク報酬（V18: 強化）==========
-            "tracking_lin_vel": 2.5,     # V17: 1.5 → V18: 2.5（強化）
+            "tracking_lin_vel": 2.5,  # V17: 1.5 → V18: 2.5（強化）
             "tracking_ang_vel": 0.5,
             "alive": 0.1,
-            "forward_progress": 0.5,     # V17: 0.3 → V18: 0.5（強化）
-
+            "forward_progress": 0.5,  # V17: 0.3 → V18: 0.5（強化）
             # ========== V18: 方向制御報酬（新規）==========
-            "backward_penalty": -2.0,    # 新規：後方移動ペナルティ
-            "yaw_penalty": -3.0,         # 新規：Yaw角ペナルティ
+            "backward_penalty": -2.0,  # 新規：後方移動ペナルティ
+            "yaw_penalty": -3.0,  # 新規：Yaw角ペナルティ
             "lateral_velocity_penalty": -1.5,  # 新規：横速度ペナルティ
-
             # ========== 交互歩行報酬（V13継承）==========
             "alternating_gait": 1.5,
             "foot_swing": 0.8,
             "feet_air_time": 1.0,
             "single_stance": 0.5,
             "no_fly": -1.0,
-
             # ========== 動的歩行報酬（V13継承）==========
             "hip_pitch_alternation": 2.0,
             "hip_pitch_velocity": 0.5,
             "contact_alternation": 0.8,
-
             # ========== 姿勢・安定性ペナルティ ==========
             "orientation": -2.5,
             "base_height": -1.0,  # 非対称報酬（関数内で実装）
@@ -238,7 +236,6 @@ def get_cfgs():
             "ang_vel_xy": -0.05,
             "pitch_penalty": -3.0,
             "roll_penalty": -3.0,
-
             # ========== 振動抑制ペナルティ（V13継承）==========
             "action_rate": -0.03,
             "dof_vel": -1e-3,
@@ -258,7 +255,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v18")
     # V18: num_envsを12288に増加（メモリに余裕があるため高速化）
@@ -274,10 +271,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

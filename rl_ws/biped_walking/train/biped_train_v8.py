@@ -14,12 +14,16 @@ Usage:
     uv run python scripts/biped_train_v8.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -27,15 +31,14 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
-import sys
-from pathlib import Path
 
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
@@ -43,7 +46,7 @@ sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.biped_env import BipedEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -90,7 +93,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent
@@ -139,11 +142,11 @@ def get_cfgs():
         "clip_actions": 10.0,
         # ===== V8: 歩容パラメータ（周波数を下げて自然なペースに）=====
         "gait_cfg": {
-            "step_height": 0.04,      # 足の持ち上げ高さ [m]
-            "step_length": 0.08,      # 歩幅 [m]
-            "step_frequency": 0.6,    # 歩行周波数 [Hz]（V7の0.8Hzから下げる）
-            "thigh_length": 0.18,     # 大腿長 [m]（URDFと一致）
-            "shank_length": 0.20,     # 下腿長 [m]（URDFと一致）
+            "step_height": 0.04,  # 足の持ち上げ高さ [m]
+            "step_length": 0.08,  # 歩幅 [m]
+            "step_frequency": 0.6,  # 歩行周波数 [Hz]（V7の0.8Hzから下げる）
+            "thigh_length": 0.18,  # 大腿長 [m]（URDFと一致）
+            "shank_length": 0.20,  # 下腿長 [m]（URDFと一致）
         },
     }
 
@@ -167,35 +170,29 @@ def get_cfgs():
         "reward_scales": {
             # === 追従報酬（V8: 角速度追従を大幅強化）===
             "tracking_lin_vel": 2.0,
-            "tracking_ang_vel": 1.5,       # V7: 0.3 → V8: 1.5 (直進性強化)
-
+            "tracking_ang_vel": 1.5,  # V7: 0.3 → V8: 1.5 (直進性強化)
             # ===== Phase-based Reference報酬（係数を下げてバランス調整）=====
-            "trajectory_tracking": 3.0,    # V7: 5.0 → V8: 3.0
-            "phase_consistency": 1.5,      # V7: 2.0 → V8: 1.5
-
+            "trajectory_tracking": 3.0,  # V7: 5.0 → V8: 3.0
+            "phase_consistency": 1.5,  # V7: 2.0 → V8: 1.5
             # === 交互歩行報酬 ===
             "alternating_gait": 1.0,
             "foot_swing": 0.5,
             "feet_air_time": 0.8,
             "no_fly": -0.8,
             "single_stance": 0.3,
-
             # ===== V8: 新規報酬関数 =====
-            "symmetric_gait": 1.0,         # 左右対称な歩行を促進
-            "smooth_joint_velocity": -1.0, # ジャーク（急激な速度変化）を抑制
-            "heading_alignment": 0.8,      # 進行方向と向きを一致させる
-
+            "symmetric_gait": 1.0,  # 左右対称な歩行を促進
+            "smooth_joint_velocity": -1.0,  # ジャーク（急激な速度変化）を抑制
+            "heading_alignment": 0.8,  # 進行方向と向きを一致させる
             # === 滑らかさペナルティ ===
-            "action_rate": -0.015,         # V7: -0.02 → V8: -0.015 (少し緩和)
+            "action_rate": -0.015,  # V7: -0.02 → V8: -0.015 (少し緩和)
             "dof_vel": -0.0001,
             "dof_acc": -1e-7,
-
             # === 姿勢・高さ維持（V8: ロール安定化強化）===
-            "orientation": -8.0,           # V7: -3.0 → V8: -8.0 (大幅強化)
+            "orientation": -8.0,  # V7: -3.0 → V8: -8.0 (大幅強化)
             "base_height": -30.0,
             "lin_vel_z": -1.5,
-            "ang_vel_xy": -0.2,            # V7: -0.05 → V8: -0.2 (4倍強化)
-
+            "ang_vel_xy": -0.2,  # V7: -0.05 → V8: -0.2 (4倍強化)
             # === その他 ===
             "similar_to_default": -0.02,
             "torques": -0.0001,
@@ -212,7 +209,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v8")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -227,10 +224,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

@@ -33,12 +33,16 @@ Usage:
     uv run python scripts/biped_train_v10.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -46,15 +50,14 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
-import sys
-from pathlib import Path
 
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
@@ -62,7 +65,7 @@ sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.biped_env import BipedEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -109,7 +112,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent
@@ -184,33 +187,29 @@ def get_cfgs():
         "tracking_sigma": 0.25,
         "base_height_target": 0.40,
         "feet_air_time_target": 0.2,  # 0.2秒程度の滞空
-
         "reward_scales": {
             # ========== 主タスク報酬（正の報酬）==========
             # これらが合計で報酬の大部分を占めるべき
-            "tracking_lin_vel": 1.5,      # 研究標準1.0、V4は2.0 → 中間値
-            "tracking_ang_vel": 0.5,      # 研究標準値（V8の1.5は過剰）
-            "alive": 0.1,                 # 生存報酬（小さめ）
-            "forward_progress": 0.3,      # 前進インセンティブ（standing still防止）
-
+            "tracking_lin_vel": 1.5,  # 研究標準1.0、V4は2.0 → 中間値
+            "tracking_ang_vel": 0.5,  # 研究標準値（V8の1.5は過剰）
+            "alive": 0.1,  # 生存報酬（小さめ）
+            "forward_progress": 0.3,  # 前進インセンティブ（standing still防止）
             # ========== 二脚歩行報酬（V4から継承）==========
-            "alternating_gait": 1.0,      # V4は1.5 → やや控えめに
-            "foot_swing": 0.5,            # V4は0.8 → やや控えめに
-            "feet_air_time": 0.5,         # V4は1.0 → やや控えめに
-            "single_stance": 0.3,         # V4は0.5 → やや控えめに
-            "no_fly": -0.5,               # V4は-1.0 → 緩和
-
+            "alternating_gait": 1.0,  # V4は1.5 → やや控えめに
+            "foot_swing": 0.5,  # V4は0.8 → やや控えめに
+            "feet_air_time": 0.5,  # V4は1.0 → やや控えめに
+            "single_stance": 0.3,  # V4は0.5 → やや控えめに
+            "no_fly": -0.5,  # V4は-1.0 → 緩和
             # ========== 姿勢・安定性ペナルティ（研究標準値）==========
-            "orientation": -1.5,          # G1標準-1.0、V4は-3.0 → 中間
-            "base_height": -15.0,         # G1標準-10.0、V4は-30.0 → 中間
-            "lin_vel_z": -1.0,            # 研究標準: -2.0 → やや緩和
-            "ang_vel_xy": -0.05,          # 研究標準値（V8の-0.2は過剰）
-
+            "orientation": -1.5,  # G1標準-1.0、V4は-3.0 → 中間
+            "base_height": -15.0,  # G1標準-10.0、V4は-30.0 → 中間
+            "lin_vel_z": -1.0,  # 研究標準: -2.0 → やや緩和
+            "ang_vel_xy": -0.05,  # 研究標準値（V8の-0.2は過剰）
             # ========== 滑らかさ・効率ペナルティ（研究標準値）==========
-            "action_rate": -0.01,         # 研究標準値（V4の-0.02は過剰傾向）
-            "dof_vel": -5e-4,             # G1標準-1e-3 → やや緩和
-            "dof_acc": -2.5e-7,           # 研究標準値
-            "torques": -5e-5,             # 小さめ（動きを阻害しない）
+            "action_rate": -0.01,  # 研究標準値（V4の-0.02は過剰傾向）
+            "dof_vel": -5e-4,  # G1標準-1e-3 → やや緩和
+            "dof_acc": -2.5e-7,  # 研究標準値
+            "torques": -5e-5,  # 小さめ（動きを阻害しない）
             "similar_to_default": -0.02,  # 小さめ（歩行を阻害しない）
         },
     }
@@ -225,7 +224,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v10")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -240,10 +239,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

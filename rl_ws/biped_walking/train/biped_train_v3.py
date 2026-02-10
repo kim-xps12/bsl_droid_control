@@ -3,7 +3,7 @@ BSL-Droid二脚ロボット Genesis訓練スクリプト v3
 
 V2からの修正:
 - action_rateを緩和 (-0.1 → -0.02): 適度な滑らかさ
-- dof_velを大幅緩和 (-0.001 → -0.0001): 動きを過度に抑制しない  
+- dof_velを大幅緩和 (-0.001 → -0.0001): 動きを過度に抑制しない
 - smoothnessを削除: 重複ペナルティ
 - tracking_lin_velを強化 (1.5 → 2.0): 前進を強く促進
 
@@ -12,12 +12,16 @@ Usage:
     uv run python scripts/biped_train_v3.py --max_iterations 1000
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -25,15 +29,14 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
-import sys
-from pathlib import Path
 
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
@@ -41,7 +44,7 @@ sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.biped_env import BipedEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -88,7 +91,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent.parent.parent
@@ -154,25 +157,21 @@ def get_cfgs():
         "feet_air_time_target": 0.15,  # やや短め
         "reward_scales": {
             # 追従報酬 - 前進を強く促進
-            "tracking_lin_vel": 2.0,      # 強化: 前進を最重要視
+            "tracking_lin_vel": 2.0,  # 強化: 前進を最重要視
             "tracking_ang_vel": 0.3,
-            
             # 滑らかさペナルティ - 控えめに
-            "action_rate": -0.02,         # V1の4倍程度に抑える（V2: -0.1は過剰）
-            "dof_vel": -0.0001,           # 大幅緩和（V2: -0.001は過剰）
-            "dof_acc": -1e-7,             # 緩和
+            "action_rate": -0.02,  # V1の4倍程度に抑える（V2: -0.1は過剰）
+            "dof_vel": -0.0001,  # 大幅緩和（V2: -0.001は過剰）
+            "dof_acc": -1e-7,  # 緩和
             # smoothness削除 - dof_accと重複
-            
             # 姿勢・高さ維持
-            "orientation": -3.0,          # やや緩和
+            "orientation": -3.0,  # やや緩和
             "base_height": -30.0,
             "lin_vel_z": -1.5,
             "ang_vel_xy": -0.05,
-            
             # 歩容 - 控えめに
-            "feet_air_time": 0.5,         # 緩和
-            "no_fly": -0.25,              # 緩和
-            
+            "feet_air_time": 0.5,  # 緩和
+            "no_fly": -0.25,  # 緩和
             # その他
             "similar_to_default": -0.05,
             "torques": -0.0001,
@@ -189,7 +188,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v3")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -204,10 +203,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

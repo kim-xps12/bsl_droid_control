@@ -37,12 +37,16 @@ Usage:
     uv run python scripts/biped_train_v11.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -50,15 +54,14 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
-import sys
-from pathlib import Path
 
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
@@ -66,7 +69,7 @@ sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.biped_env import BipedEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -113,7 +116,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent
@@ -188,36 +191,31 @@ def get_cfgs():
         "tracking_sigma": 0.25,
         "base_height_target": 0.40,
         "feet_air_time_target": 0.25,  # V4レベル（0.2→0.25）
-
         "reward_scales": {
             # ========== 主タスク報酬 ==========
-            "tracking_lin_vel": 1.5,      # V10維持
-            "tracking_ang_vel": 0.5,      # V10維持
-            "alive": 0.1,                 # V10維持
-            "forward_progress": 0.3,      # V10維持
-
+            "tracking_lin_vel": 1.5,  # V10維持
+            "tracking_ang_vel": 0.5,  # V10維持
+            "alive": 0.1,  # V10維持
+            "forward_progress": 0.3,  # V10維持
             # ========== 交互歩行報酬（V4レベルに復元）==========
-            "alternating_gait": 1.5,      # V10: 1.0 → V4: 1.5
-            "foot_swing": 0.8,            # V10: 0.5 → V4: 0.8
-            "feet_air_time": 1.0,         # V10: 0.5 → V4: 1.0
-            "single_stance": 0.5,         # V10: 0.3 → V4: 0.5
-            "no_fly": -1.0,               # V10: -0.5 → V4: -1.0
-
+            "alternating_gait": 1.5,  # V10: 1.0 → V4: 1.5
+            "foot_swing": 0.8,  # V10: 0.5 → V4: 0.8
+            "feet_air_time": 1.0,  # V10: 0.5 → V4: 1.0
+            "single_stance": 0.5,  # V10: 0.3 → V4: 0.5
+            "no_fly": -1.0,  # V10: -0.5 → V4: -1.0
             # ========== V11新規：交互歩行強化 ==========
-            "hip_pitch_alternation": 1.0, # 新規：左右hip_pitchの逆相運動
-
+            "hip_pitch_alternation": 1.0,  # 新規：左右hip_pitchの逆相運動
             # ========== 姿勢・安定性ペナルティ（強化）==========
-            "orientation": -2.5,          # V10: -1.5 → 強化
-            "base_height": -15.0,         # V10維持
-            "lin_vel_z": -2.0,            # V10: -1.0 → 強化
-            "ang_vel_xy": -0.05,          # V10維持
-            "pitch_penalty": -3.0,        # V11新規：Pitch前傾を直接ペナルティ
-
+            "orientation": -2.5,  # V10: -1.5 → 強化
+            "base_height": -15.0,  # V10維持
+            "lin_vel_z": -2.0,  # V10: -1.0 → 強化
+            "ang_vel_xy": -0.05,  # V10維持
+            "pitch_penalty": -3.0,  # V11新規：Pitch前傾を直接ペナルティ
             # ========== 振動抑制ペナルティ（先行研究に基づき強化）==========
-            "action_rate": -0.03,         # V10: -0.01 → 3倍強化
-            "dof_vel": -1e-3,             # V10: -5e-4 → 2倍強化
-            "dof_acc": -5e-7,             # V10: -2.5e-7 → 2倍強化
-            "torques": -5e-5,             # V10維持
+            "action_rate": -0.03,  # V10: -0.01 → 3倍強化
+            "dof_vel": -1e-3,  # V10: -5e-4 → 2倍強化
+            "dof_acc": -5e-7,  # V10: -2.5e-7 → 2倍強化
+            "torques": -5e-5,  # V10維持
             "similar_to_default": -0.02,  # V10維持
         },
     }
@@ -232,7 +230,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v11")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -247,10 +245,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

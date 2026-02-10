@@ -12,12 +12,16 @@ Usage:
     uv run python scripts/biped_train_v6.py --max_iterations 500
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -25,15 +29,14 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
+import sys
 
 import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
 
-import sys
-from pathlib import Path
 
 # envsパッケージへのパスを追加
 rl_ws_dir = Path(__file__).parent.parent
@@ -41,7 +44,7 @@ sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.biped_env import BipedEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -88,7 +91,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     script_dir = Path(__file__).parent
     rl_ws_dir = script_dir.parent
@@ -155,29 +158,24 @@ def get_cfgs():
             # === 追従報酬 ===
             "tracking_lin_vel": 2.0,
             "tracking_ang_vel": 0.3,
-            
             # === 大きな歩幅報酬（V5新規）===
-            "foot_clearance": 1.0,       # 足を高く上げる（10cm以上）
-            "stride_length": 0.8,        # 歩幅を長く（20cm以上）
-            
+            "foot_clearance": 1.0,  # 足を高く上げる（10cm以上）
+            "stride_length": 0.8,  # 歩幅を長く（20cm以上）
             # === 交互歩行報酬（V4から継続）===
-            "alternating_gait": 1.5,     # 左右の足が交互に接地することを報酬
-            "foot_swing": 0.8,           # 歩行中に足を持ち上げることを報酬
-            "feet_air_time": 1.0,        # 長いストライドを促進
-            "no_fly": -1.0,              # 両足同時離地を強くペナルティ
-            "single_stance": 0.5,        # 片足立ちを報酬（交互歩行の前提）
-            
+            "alternating_gait": 1.5,  # 左右の足が交互に接地することを報酬
+            "foot_swing": 0.8,  # 歩行中に足を持ち上げることを報酬
+            "feet_air_time": 1.0,  # 長いストライドを促進
+            "no_fly": -1.0,  # 両足同時離地を強くペナルティ
+            "single_stance": 0.5,  # 片足立ちを報酬（交互歩行の前提）
             # === 滑らかさペナルティ ===
             "action_rate": -0.02,
             "dof_vel": -0.0001,
             "dof_acc": -1e-7,
-            
             # === 姿勢・高さ維持 ===
             "orientation": -3.0,
             "base_height": -30.0,
             "lin_vel_z": -1.5,
             "ang_vel_xy": -0.05,
-            
             # === その他 ===
             "similar_to_default": -0.03,
             "torques": -0.0001,
@@ -194,7 +192,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v6")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -209,10 +207,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 

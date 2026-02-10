@@ -21,12 +21,16 @@ Usage:
     uv run python scripts/biped_train_v2.py --max_iterations 1000
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import pickle
 import shutil
 from importlib import metadata
 from pathlib import Path
+from typing import Any
+
 
 try:
     try:
@@ -34,22 +38,22 @@ try:
             raise ImportError
     except metadata.PackageNotFoundError:
         if metadata.version("rsl-rl-lib") != "2.2.4":
-            raise ImportError
+            raise ImportError from None
 except (metadata.PackageNotFoundError, ImportError) as e:
     raise ImportError("Please uninstall 'rsl_rl' and install 'rsl-rl-lib==2.2.4'.") from e
-from rsl_rl.runners import OnPolicyRunner
-
-import genesis as gs
-
 # envsパッケージへのパスを追加
 import sys
-from pathlib import Path
+
+import genesis as gs
+from rsl_rl.runners import OnPolicyRunner
+
+
 rl_ws_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(rl_ws_dir))
 from biped_walking.envs.biped_env import BipedEnv
 
 
-def get_train_cfg(exp_name, max_iterations):
+def get_train_cfg(exp_name: str, max_iterations: int) -> dict[str, Any]:
     """訓練設定を取得"""
     train_cfg_dict = {
         "algorithm": {
@@ -96,7 +100,7 @@ def get_train_cfg(exp_name, max_iterations):
     return train_cfg_dict
 
 
-def get_cfgs():
+def get_cfgs() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     """環境設定を取得"""
     # URDFパスを解決（Genesis assetsからの相対パス）
     script_dir = Path(__file__).parent
@@ -124,8 +128,8 @@ def get_cfgs():
             "left_hip_yaw_joint": 0.0,
             "left_hip_roll_joint": 0.0,
             "left_hip_pitch_joint": 0.0,
-            "left_knee_pitch_joint": -0.52,   # 約-30° (前方屈曲)
-            "left_ankle_pitch_joint": 0.52,   # 膝と相殺
+            "left_knee_pitch_joint": -0.52,  # 約-30° (前方屈曲)
+            "left_ankle_pitch_joint": 0.52,  # 膝と相殺
             "right_hip_yaw_joint": 0.0,
             "right_hip_roll_joint": 0.0,
             "right_hip_pitch_joint": 0.0,
@@ -138,7 +142,7 @@ def get_cfgs():
         "kp": 35.0,
         "kd": 2.0,  # ダンピング増加で振動抑制
         # 終了条件
-        "termination_if_roll_greater_than": 30,   # 度
+        "termination_if_roll_greater_than": 30,  # 度
         "termination_if_pitch_greater_than": 30,  # 度
         # 初期姿勢
         "base_init_pos": [0.0, 0.0, 0.45],
@@ -169,28 +173,24 @@ def get_cfgs():
         "feet_air_time_target": 0.2,  # 目標滞空時間（秒）
         "reward_scales": {
             # 追従報酬
-            "tracking_lin_vel": 1.5,   # 速度追従をより重視
+            "tracking_lin_vel": 1.5,  # 速度追従をより重視
             "tracking_ang_vel": 0.5,
-            
             # ★ 滑らかさペナルティ（大幅強化）
-            "action_rate": -0.1,       # 10倍強化: アクション変化を強くペナルティ
-            "dof_vel": -0.001,         # 新規: 関節速度ペナルティ（振動抑制）
-            "dof_acc": -2.5e-7,        # 新規: 関節加速度ペナルティ
-            "smoothness": -0.01,       # 新規: 動作の滑らかさ
-            
+            "action_rate": -0.1,  # 10倍強化: アクション変化を強くペナルティ
+            "dof_vel": -0.001,  # 新規: 関節速度ペナルティ（振動抑制）
+            "dof_acc": -2.5e-7,  # 新規: 関節加速度ペナルティ
+            "smoothness": -0.01,  # 新規: 動作の滑らかさ
             # 姿勢・高さ維持
-            "orientation": -5.0,       # 直立維持
-            "base_height": -30.0,      # 高さ維持（やや緩和）
-            "lin_vel_z": -2.0,         # 上下動抑制
-            "ang_vel_xy": -0.05,       # ボディ回転抑制
-            
+            "orientation": -5.0,  # 直立維持
+            "base_height": -30.0,  # 高さ維持（やや緩和）
+            "lin_vel_z": -2.0,  # 上下動抑制
+            "ang_vel_xy": -0.05,  # ボディ回転抑制
             # 歩容改善
-            "feet_air_time": 1.0,      # 新規: 長いストライド促進
-            "no_fly": -0.5,            # 新規: 両足離地ペナルティ
-            
+            "feet_air_time": 1.0,  # 新規: 長いストライド促進
+            "no_fly": -0.5,  # 新規: 両足離地ペナルティ
             # その他
             "similar_to_default": -0.05,  # デフォルト姿勢維持（緩和）
-            "torques": -0.0001,        # エネルギー効率
+            "torques": -0.0001,  # エネルギー効率
         },
     }
 
@@ -204,7 +204,7 @@ def get_cfgs():
     return env_cfg, obs_cfg, reward_cfg, command_cfg
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--exp_name", type=str, default="biped-walking-v2")
     parser.add_argument("-B", "--num_envs", type=int, default=4096)
@@ -219,10 +219,11 @@ def main():
         shutil.rmtree(log_dir)
     os.makedirs(log_dir, exist_ok=True)
 
-    pickle.dump(
-        [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
-        open(f"{log_dir}/cfgs.pkl", "wb"),
-    )
+    with open(f"{log_dir}/cfgs.pkl", "wb") as f:
+        pickle.dump(
+            [env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg],
+            f,
+        )
 
     gs.init(backend=gs.gpu, precision="32", logging_level="warning", seed=train_cfg["seed"], performance_mode=True)
 
