@@ -1,7 +1,28 @@
 {
-  "env": {
-    "PATH": "$HOME/.local/bin:$HOME/.pixi/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  "permissions": {
+    "allow": [
+      "Bash(cp biped_walking/train/droid_train_*)",
+      "Bash(uv run ruff *)",
+      "Bash(uv run mypy *)",
+      "Bash(uv run python biped_walking/biped_eval.py *)",
+      "Bash(uv run python biped_walking/train/droid_train_narrow_v*)",
+      "Bash(uv run python biped_walking/train/droid_train_unitree_v*)",
+      "Bash(uv run python biped_walking/train/droid_train_omni_v*)",
+      "Bash(uv run python scripts/analyze_training_log.py *)",
+      "Bash(uv run python scripts/show_reward_components.py *)",
+      "Bash(uv run python scripts/analyze_eval_csv.py *)",
+      "Bash(tmux *)",
+      "Bash(tmux kill-pane *)",
+      "Bash(cat /private/tmp/claude-*/**/tasks/*.output *)",
+      "Bash(tail *)"
+    ]
   },
+  "env": {
+    "PATH": "$HOME/.local/bin:$HOME/.pixi/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "PYTHONUNBUFFERED": "1"
+  },
+  "plansDirectory": "./.claude/plans",
   "hooks": {
     "PostToolUse": [
       {
