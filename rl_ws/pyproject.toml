@@ -18,6 +18,10 @@ dependencies = [
     "mujoco>=3.4.0",
     "imageio>=2.37.2",
     "imageio-ffmpeg>=0.6.0",
+    "pandas>=2.3.3",
+    "scipy>=1.15.3",
+    "pygame-ce>=2.5.0",
+    "pyusb>=1.2.0",
 ]
 
 [project.optional-dependencies]
@@ -25,6 +29,7 @@ dev = [
     "pytest>=7.0.0",
     "ruff>=0.8.0",
     "mypy>=1.8.0",
+    "pandas-stubs",
 ]
 
 [build-system]
@@ -39,6 +44,7 @@ dev = [
     "pytest>=7.0.0",
     "ruff>=0.8.0",
     "mypy>=1.8.0",
+    "pandas-stubs",
 ]
 
 # =============================================================================
@@ -48,7 +54,7 @@ dev = [
 line-length = 120
 target-version = "py310"
 # チェック対象ディレクトリ
-include = ["biped_walking/**/*.py", "scripts/**/*.py"]
+include = ["biped_walking/**/*.py", "scripts/**/*.py", "assets/**/*.py", "check_training_logs.py"]
 # 除外ディレクトリ
 exclude = [
     ".venv",
@@ -74,6 +80,7 @@ select = [
 ignore = [
     "E501",   # line-too-long (line-lengthで制御)
     "E741",   # ambiguous variable name (l, O, I等 - 数式では許容)
+    "E402",   # module-import-not-at-top (sys.path操作後のインポートを許容)
     "N806",   # non-lowercase-variable-in-function (大文字行列変数を許容)
     "B008",   # function-call-in-default-argument (Pydantic等で必要)
     "RUF001", # ambiguous-unicode-character-string (日本語文字列を許容)
@@ -97,7 +104,7 @@ line-ending = "auto"
 # =============================================================================
 [tool.mypy]
 python_version = "3.10"
-warn_return_any = true
+warn_return_any = false  # torchの型スタブが不完全でTensor演算がAnyを返すため無効化
 warn_unused_configs = true
 disallow_untyped_defs = false  # 段階的に導入するため最初はfalse
 disallow_incomplete_defs = false
@@ -109,7 +116,7 @@ show_error_codes = true
 # サードパーティライブラリの型スタブがない場合のエラーを抑制
 ignore_missing_imports = true
 # 対象ディレクトリ
-files = ["biped_walking"]
+files = ["biped_walking/", "scripts/", "assets/export_urdf.py", "check_training_logs.py"]
 exclude = [
     "genesis_official",
     "mujoco_menagerie",
@@ -125,5 +132,8 @@ module = [
     "gymnasium.*",
     "mujoco.*",
     "tensorboard.*",
+    "imageio.*",
+    "imageio_ffmpeg.*",
+    "xacro.*",
 ]
 ignore_missing_imports = true
