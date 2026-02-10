@@ -263,8 +263,11 @@ uv run python biped_walking/biped_eval.py -e droid-walking-v1 --ckpt 400
 # ヘッドレス評価
 uv run python biped_walking/biped_eval.py -e droid-walking-v1 --no-viewer --duration 10
 
-# MP4録画
-uv run python biped_walking/biped_eval.py -e droid-walking-v1 --record output.mp4 --duration 10
+# ゲームパッド操縦（F710等）
+uv run python biped_walking/biped_eval.py -e droid-walking-v1 --gamepad
+
+# ゲームパッド＋横速度・yaw速度の操縦を有効化
+uv run python biped_walking/biped_eval.py -e droid-walking-v1 --gamepad --gamepad-vel-y 0.2 --gamepad-vel-yaw 1.0
 ```
 
 詳細は [rl_ws/README.md](rl_ws/README.md) を参照してください。
@@ -287,7 +290,7 @@ bsl_droid_control/
 │   ├── biped_walking/        # 二脚ロボット環境・訓練スクリプト
 │   │   ├── envs/             # 環境定義（biped_env.py, droid_env.py）
 │   │   ├── train/            # 訓練スクリプト群
-│   │   ├── biped_eval.py     # 統一評価スクリプト（Genesis）
+│   │   ├── biped_eval.py     # 統一評価スクリプト（Genesis、ゲームパッド対応）
 │   │   └── biped_eval_mujoco.py  # MuJoCoでのsim2simによる評価スクリプト
 │   ├── assets/               # ロボットモデル（URDF/MJCF）
 │   ├── scripts/              # 分析・デバッグスクリプト
