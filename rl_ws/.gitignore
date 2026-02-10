@@ -19,6 +19,7 @@ logs/*/checkpoints/
 logs/*/videos/
 logs/*/wandb/
 logs/*/git/
+logs/*/*.csv
 
 # Generated media
 *.png
