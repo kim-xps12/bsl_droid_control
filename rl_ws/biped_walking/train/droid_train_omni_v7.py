@@ -299,8 +299,8 @@ def main() -> None:
         pickle.dump((env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg), f)
     print(f"設定を保存: {cfgs_path}")
 
-    # ランナー作成
-    runner = OnPolicyRunner(env, train_cfg, log_dir=str(log_dir), device="mps")
+    # ランナー作成（gs.deviceからバックエンド種別を取得: cuda / mps / cpu）
+    runner = OnPolicyRunner(env, train_cfg, log_dir=str(log_dir), device=gs.device.type)
 
     # 訓練開始
     print(f"\n{'=' * 70}")
