@@ -59,3 +59,4 @@ exp008では前進歩行のみを学習対象としていた（lin_vel_x_range: 
 | V4 | [exp009_report_v4.md](exp009_report_v4.md) | is_moving判定のバグ修正（X方向のみ→XYノルム） | reward 58.93（-1.6%）、std 0.376（+64.9%）。LFT Yaw +103°→+5.5°劇的改善、BWD転倒解消。一方、**ジタバタ挙動**発生（hip_yaw 3.62Hz振動）、全方向追従率低下（52.0%→V3: 56.2%）、RGT 19.7%最低。is_moving修正は正しいが報酬ランドスケープの構造的変更に2000iterationsでは適応不足 |
 | V5 | [exp009_report_v5.md](exp009_report_v5.md) | 訓練イテレーション数増加（2000→4000） | （訓練中） |
 | V6 | [exp009_report_v6.md](exp009_report_v6.md) | action_rate scale増加（-0.005→-0.01、ジタバタ挙動抑制） | （訓練前） |
+| V7 | [exp009_report_v7.md](exp009_report_v7.md) | 関節グループ別Kp/Kd導入（Unitree G1比率参考: 膝Kp=50/Kd=3、足首Kp=20/Kd=5） | （訓練前） |

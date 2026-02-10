@@ -229,8 +229,18 @@ class DroidEnvUnitree:
         )
         self.actions_dof_idx = torch.argsort(self.motors_dof_idx)
 
-        # PD制御パラメータ
-        self.robot.set_dofs_kp([self.env_cfg["kp"]] * self.num_actions, self.motors_dof_idx)
+        # PD制御パラメータ（関節個別オーバーライド対応）
+        # kp: デフォルト値で初期化し、kp_overridesで関節個別の値を上書き
+        kp_values = [self.env_cfg["kp"]] * self.num_actions
+        kp_overrides: dict[str, float] = self.env_cfg.get("kp_overrides", {})
+        if kp_overrides:
+            joint_names = self.env_cfg["joint_names"]
+            for joint_name, kp_val in kp_overrides.items():
+                if joint_name in joint_names:
+                    idx = joint_names.index(joint_name)
+                    kp_values[idx] = kp_val
+        self.robot.set_dofs_kp(kp_values, self.motors_dof_idx)
+
         # kd: デフォルト値で初期化し、kd_overridesで関節個別の値を上書き（V25追加）
         kd_values = [self.env_cfg["kd"]] * self.num_actions
         kd_overrides: dict[str, float] = self.env_cfg.get("kd_overrides", {})
