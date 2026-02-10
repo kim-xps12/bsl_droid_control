@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cp biped_walking/train/droid_train_*)",
+      "Bash(cp biped_walking/train/*)",
       "Bash(uv run ruff *)",
       "Bash(uv run mypy *)",
       "Bash(uv run python biped_walking/biped_eval.py *)",
