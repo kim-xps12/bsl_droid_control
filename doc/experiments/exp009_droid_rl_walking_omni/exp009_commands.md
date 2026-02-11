@@ -7,7 +7,6 @@
 ## 1. トレーニング実行
 
 ```bash
-cd rl_ws
 uv run python biped_walking/train/droid_train_omni_v{VERSION}.py --max_iterations 500
 ```
 
@@ -21,7 +20,6 @@ uv run python biped_walking/train/droid_train_omni_v{VERSION}.py --max_iteration
 ## 2. ポリシー評価（GUI付き）
 
 ```bash
-cd rl_ws
 uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{VERSION}
 ```
 
@@ -34,163 +32,125 @@ uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{VERSION}
 ## 3. ポリシー評価（ヘッドレス、定量評価用）
 
 ```bash
-cd rl_ws
 uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{VERSION} --no-viewer --duration 10
 ```
 
-このコマンドは以下の定量指標を出力する:
-- X/Y移動距離、平均速度
-- 姿勢（Roll/Pitch/Yaw）
-- hip_pitch相関（交互歩行の指標）
-- DOF range sum（動きの大きさ）
-- 接地パターン
+出力指標: X/Y移動距離、平均速度、姿勢（Roll/Pitch/Yaw）、hip_pitch相関、DOF range sum、接地パターン
 
-オプション（Section 2 と共通）:
-- `--command VX VY VYAW`: 速度コマンドを固定（方向別評価用）
-- `--seed N`: Genesis乱数シード（デフォルト: 1）
-
-このコマンドは実行されて結果がコンソールに現れるまでに読み込み時間がかかるものであるため，あなたが焦って再実行することを禁じる．
+オプションは Section 2 と共通。このコマンドは読み込み時間がかかるため、焦って再実行することを禁じる。
 
 ## 4. TensorBoard監視
 
 ```bash
-cd rl_ws
 uv run python -m tensorboard.main --logdir logs
 # ブラウザで http://localhost:6006 を開く
 ```
 
 ## 5. 分析スクリプト
 
+追加分析でスクリプトを使いたい場合、まず本セクションから用途に合うものを探し、ない場合のみ `scripts/` 直下に汎用引数インターフェースで新規作成すること。
+
+5.2〜5.8 の共通インターフェース:
+- 位置引数: バージョン番号（2つ以上、先頭が新バージョン）
+- `--prefix droid-walking-omni-v`（exp009では必須指定）
+- `--epoch`: 評価エポック番号（デフォルト: 499）
+
 ### 5.1 学習ログ分析 (`analyze_training_log.py`)
 
-```
-rl_ws/scripts/analyze_training_log.py
-```
+**使用場面**: 学習完了後の収束確認
 
 ```bash
-cd rl_ws
-uv run python scripts/analyze_training_log.py droid-walking-omni-v{VERSION}
+uv run python scripts/analyze_training_log.py droid-walking-omni-v{N}
 ```
 
-出力内容:
-1. **利用可能なスカラータグ一覧**: TensorBoardに記録されている全指標
-2. **主要指標の推移**:
-   - `Train/mean_reward`: 平均報酬
-   - `Train/mean_episode_length`: 平均エピソード長
-   - `Loss/value_function`: Value関数の損失
-   - `Loss/surrogate`: PPOのSurrogate Loss
-3. **報酬トレンド分析**:
-   - 4分割ごとの平均報酬
-   - 最大/最小報酬とそのステップ
-   - 収束判定（Last 50 steps のstd）
+出力: スカラータグ一覧、主要指標推移（mean_reward, episode_length, loss）、4分割トレンド、収束判定（Last 50 steps のstd）
 
-### 5.2 報酬コンポーネント分析 (`show_reward_components.py`)
+### 5.2 報酬コンポーネント比較 (`show_reward_components.py`)
 
-```
-rl_ws/scripts/show_reward_components.py
-```
+**使用場面**: 報酬設計変更の効果確認、ペナルティ過剰の検出
 
 ```bash
-cd rl_ws
 uv run python scripts/show_reward_components.py droid-walking-omni-v{N-1} droid-walking-omni-v{N}
 ```
 
-- 複数実験名を引数に並べることで比較表示が可能
-- TensorBoardの`Episode/rew_*`タグから各報酬項目の最終ステップ値を表示
-- 負の値には⚠️マークが付与される
+TensorBoardの`Episode/rew_*`タグから各報酬項目の最終値を比較表示。3つ以上のバージョン比較可能。負値に⚠️マーク付与。
 
 ### 5.3 CSV付き評価（時系列データ生成）
 
-通常の評価コマンドに`--csv`オプションを追加することで、50Hz（0.02s間隔）の時系列CSVを生成する。
+通常の評価コマンドに`--csv`を追加で50Hz（0.02s間隔）の時系列CSVを生成する。
 
 ```bash
-cd rl_ws
 uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 10 --csv
 ```
 
 - **出力先**: `logs/droid-walking-omni-v{N}/eval_{ckpt_num}.csv`
-- **CSV列構成（45列）**:
-  - 時刻: `timestamp`
-  - 胴体位置: `base_pos_x`, `base_pos_y`, `base_pos_z`
-  - 胴体速度: `base_vel_x`, `base_vel_y`, `base_vel_z`
-  - 姿勢角: `roll_deg`, `pitch_deg`, `yaw_deg`
-  - 関節角度（10列）: `dof_pos_{L,R}_{hip_yaw, hip_roll, hip_pitch, knee_pitch, ankle_pitch}`
-  - 関節角速度（10列）: `dof_vel_{L,R}_{同上}`
-  - アクション（10列）: `action_0` 〜 `action_9`
-  - 接地状態: `contact_left`, `contact_right`（1.0=接地, 0.0=空中）
-  - コマンド速度: `cmd_vel_x`, `cmd_vel_y`, `cmd_vel_yaw`
+- **CSV列構成（45列）**: timestamp, base_pos/vel_{x,y,z}, roll/pitch/yaw_deg, dof_pos/vel_{L,R}_{hip_yaw, hip_roll, hip_pitch, knee_pitch, ankle_pitch}, action_{0-9}, contact_{left,right}, cmd_vel_{x,y,yaw}
 
-### 5.4 CSV時系列分析 (`analyze_eval_csv.py`)
+### 5.4 CSV時系列総合分析 (`analyze_eval_csv.py`)
 
-```
-rl_ws/scripts/analyze_eval_csv.py
-```
+**使用場面**: 毎バージョンの標準分析（必須）。最も包括的なスクリプト。
 
 ```bash
-cd rl_ws
 uv run python scripts/analyze_eval_csv.py {N} {N-1} --prefix droid-walking-omni-v
 ```
 
-- 位置引数: 比較するバージョン番号（2つ以上）。先頭が新バージョン
-- `--prefix`: 実験名プレフィックス（**exp009では `droid-walking-omni-v` を指定**、デフォルトは `droid-walking-unitree-v`）
-- `--epoch`: 評価エポック番号（デフォルト: 499）
+出力: 歩行周期FFT、接地パターン（タップダンス検出含む）、左右位相関係（相関・非対称度）、Yawドリフト（コマンド切替検出付き）、速度プロファイル、関節ダイナミクス（角速度RMS・L/R比）。定常状態(t>2s)を使用。
 
-分析内容:
-- **歩行周期FFT分析**: hip_pitch/knee_pitchの主周波数、上位3ピーク
-- **接地パターン分析**: 両足接地/片足/空中の割合、タップダンスイベント検出、スイング区間統計
-- **左右位相関係分析**: L/R hip_pitch相関、ローリング相関、相互相関ラグ、非対称度
-- **Yawドリフト分析**: 1秒ごとの推移、定常状態ドリフト速度、コマンド切替検出・セグメント別ドリフト
-- **速度プロファイル分析**: vx/vy/vz統計、高さ安定性
-- **関節ダイナミクス分析**: 角速度RMS、L/R比、アクションRMS
+### 5.5 横方向揺れ深掘り (`analyze_lateral_sway.py`)
 
-定常状態の分析にはt>2sのデータを使用する。
-
-### 5.5 横方向揺れ詳細分析 (`analyze_lateral_sway.py`)
-
-```
-rl_ws/scripts/analyze_lateral_sway.py
-```
+**使用場面**: 目視で横揺れ・Roll角の大きさが観察された場合
 
 ```bash
-cd rl_ws
 uv run python scripts/analyze_lateral_sway.py {N} {N-1} --prefix droid-walking-omni-v
 ```
 
-- 位置引数・オプションは `analyze_eval_csv.py` と同一（版番号2つ以上、`--prefix`、`--epoch`）
-- `analyze_eval_csv.py` の Section 7 (Roll/Lateral Sway) を補完する**深い分析**に特化
-
-分析内容:
-- **Roll周期性分析**: 自己相関による周期性定量化（歩行周期との同期度）、Roll角速度RMS
-- **横方向並進変位分析**: 線形ドリフト除去後のstd/peak-to-peak（mm単位）、Y速度std
-- **Roll-横方向相関分析**: R²（決定係数）、回帰slope vs 幾何学的予測slope、増幅率、残差分析、位相遅れ
-- **接地相/遊脚相別hip_roll分析**: 接地相/遊脚相のhip_roll平均、「バランスストローク」（接地-遊脚デルタ）、外向き修正の利用状況
-- **比較サマリテーブル**: 全バージョンの主要指標一覧 + 先頭2バージョンの変化率
-
-横方向並進揺れが課題となった際に特に有用。定常状態の分析にはt>2sのデータを使用する。
+5.4のRoll/Lateral Swayセクションを補完する深い分析。出力: Roll周期性（自己相関）、横方向変位(mm)、Roll-横方向相関(R²・増幅率・位相遅れ)、接地相/遊脚相別hip_roll（バランスストローク）、比較サマリテーブル。
 
 ### 5.6 振動・高周波分析 (`analyze_vibration.py`)
 
-```
-rl_ws/scripts/analyze_vibration.py
-```
+**使用場面**: 目視でジッター・震え・高周波振動が観察された場合
 
 ```bash
-cd rl_ws
 uv run python scripts/analyze_vibration.py {N} {N-1} --prefix droid-walking-omni-v
 ```
 
-- 位置引数・オプションは `analyze_eval_csv.py` と同一（版番号2つ以上、`--prefix`、`--epoch`）
-- 追加オプション: `--freq-threshold` で高周波成分の閾値周波数を指定（デフォルト: 2.0 Hz）
-- `analyze_eval_csv.py` の関節ダイナミクス分析を補完する**振動特化の深い分析**
+追加オプション: `--freq-threshold`（デフォルト: 2.0 Hz）。出力: 関節角FFT（高周波成分比率）、アクション変化率RMS、DOF速度ホットスポット、接触切替頻度（マイクロスタンス検出）。1.3x超変化に`**`マーク。
 
-分析内容:
-- **関節角FFT分析**: 各関節の主周波数と高周波成分比率（>閾値Hz のエネルギー比）
-- **アクション変化率分析**: 各アクションの時間微分RMS（制御入力の滑らかさ指標）
-- **DOF速度ホットスポット分析**: 各関節の角速度RMSとピーク値、L/R比
-- **接触切替頻度分析**: 遷移回数・レート、マイクロスタンス/スイング（<0.1s）の検出
-- **2バージョン比較サマリ**: 全指標の V/V比一覧。1.3x超の変化に `**` マーク
+### 5.7 クロスバージョントレンド (`analyze_cross_version_trend.py`)
 
-目視で「ジタバタ」「高周波振動」が指摘された場合に特に有用。`/exp009-analyze` スキルのデータ収集で使用。
+**使用場面**: 3バージョン以上の横断比較、中長期的な改善/悪化トレンドの確認
+
+```bash
+uv run python scripts/analyze_cross_version_trend.py {N-2} {N-1} {N} --prefix droid-walking-omni-v
+```
+
+追加オプション: `--include-rewards`。出力: 標準化指標のMarkdownトレンドテーブル（歩行品質・安定性・報酬の横断比較）。
+
+### 5.8 Hip Yaw非対称・位相分析 (`analyze_hip_yaw_and_phase.py`)
+
+**使用場面**: Yaw非対称の目視観察、hip_yawアクションの左右差が疑われる場合
+**前提**: 固定コマンドCSV（`eval_*_cmd_*.csv`）が必要
+
+```bash
+uv run python scripts/analyze_hip_yaw_and_phase.py {N} {N-1} --prefix droid-walking-omni-v
+```
+
+出力: hip_yaw L/R action・位置の接地相/遊脚相別分析、hip_roll FFT、Roll-接地位相関係、高周波前半/後半比較（カスケードリスク評価）。
+
+### 5.9 バージョン固有スクリプト（参考）
+
+以下はパスがハードコードされており直接再利用不可。新規スクリプト作成時の分析ロジックの参考用。
+
+| スクリプト | 対象 | 分析内容 |
+|-----------|------|---------|
+| `analyze_contact_chattering.py` | exp008 narrow-v1/v2 | 接地チャタリング検出 |
+| `analyze_contact_chattering_v2.py` | exp008 narrow-v1/v2 | 接地中ankle振動の深層分析 |
+| `analyze_knee_asymmetry_detail.py` | omni-v8/v9 | 膝トルク非対称度・体高Yaw相関 |
+| `analyze_yaw_drift_v2.py` | exp008固有 | Yawドリフト分析 |
+| `analyze_yaw_drift_v2_deep.py` | exp008固有 | Yawドリフト深掘り |
+| `analyze_omni_v4_v3.py` | omni-v3/v4 | 全方向モデル比較 |
+| `jitter_analysis_v4_v3.py` | v3/v4 | 関節ジッター比較 |
+| `stance_analysis_v1v2.py` | v1/v2 | スタンス相分析 |
 
 ## 6. 方向別評価（exp009固有）
 
@@ -199,7 +159,6 @@ uv run python scripts/analyze_vibration.py {N} {N-1} --prefix droid-walking-omni
 ### 6.1 単方向評価
 
 ```bash
-cd rl_ws
 uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.3 0.0 0.0
 ```
 
@@ -207,29 +166,21 @@ uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer
 
 ### 6.2 4方向 x 3試行の一括評価
 
+各方向 `--command {VX} {VY} 0.0` × `--seed {1,2,3}` の組み合わせで実行:
+
+| 方向 | VX | VY |
+|------|-----|-----|
+| Forward | 0.3 | 0.0 |
+| Backward | -0.3 | 0.0 |
+| Left | 0.0 | 0.3 |
+| Right | 0.0 | -0.3 |
+
 ```bash
-cd rl_ws
-
-# Forward (3 trials)
+# 例: Forward, seed 1
 uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.3 0.0 0.0 --seed 1
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.3 0.0 0.0 --seed 2
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.3 0.0 0.0 --seed 3
-
-# Backward (3 trials)
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command -0.3 0.0 0.0 --seed 1
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command -0.3 0.0 0.0 --seed 2
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command -0.3 0.0 0.0 --seed 3
-
-# Left (3 trials)
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.0 0.3 0.0 --seed 1
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.0 0.3 0.0 --seed 2
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.0 0.3 0.0 --seed 3
-
-# Right (3 trials)
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.0 -0.3 0.0 --seed 1
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.0 -0.3 0.0 --seed 2
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.0 -0.3 0.0 --seed 3
 ```
+
+全12コマンド（4方向 × 3シード）を順次実行する。
 
 ### 6.3 CSV出力先の命名規則
 
@@ -239,7 +190,4 @@ uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer
 logs/droid-walking-omni-v{N}/eval_{ckpt}_cmd_{vx}_{vy}_{vyaw}_s{seed}.csv
 ```
 
-例:
-- Forward, seed 1: `eval_499_cmd_0.30_0.00_0.00_s1.csv`
-- Backward, seed 2: `eval_499_cmd_-0.30_0.00_0.00_s2.csv`
-- Left, seed 3: `eval_499_cmd_0.00_0.30_0.00_s3.csv`
+例: Forward seed 1 → `eval_499_cmd_0.30_0.00_0.00_s1.csv`, Backward seed 2 → `eval_499_cmd_-0.30_0.00_0.00_s2.csv`
