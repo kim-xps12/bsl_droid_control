@@ -16,8 +16,7 @@
       "Bash(tmux kill-pane *)",
       "Bash(cat /private/tmp/claude-*/**/tasks/*.output *)",
       "Bash(tail *)",
-      "Bash(ln -sf *)",
-      "Glob(~/.claude/**)"
+      "Bash(ln -sf *)"
     ]
   },
   "env": {
