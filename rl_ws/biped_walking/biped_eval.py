@@ -140,6 +140,8 @@ def get_urdf_path(exp_name: str, rl_ws_dir: Path) -> Path:
     """実験名に応じてURDFパスを返す"""
     if exp_name.startswith("droid-walking-narrow"):
         return rl_ws_dir / "assets" / "bsl_droid_simplified_v2.urdf"
+    if exp_name.startswith("droid-walking-omni"):
+        return rl_ws_dir / "assets" / "bsl_droid_simplified_v2.urdf"
     if exp_name.startswith("droid-walking"):
         return rl_ws_dir / "assets" / "bsl_droid_simplified.urdf"
     else:
