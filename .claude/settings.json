@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(cp biped_walking/train/*)",
+      "Bash(cp -* biped_walking/train/*)",
       "Bash(uv run ruff *)",
       "Bash(uv run mypy *)",
       "Bash(uv run python biped_walking/biped_eval.py *)",
@@ -15,7 +16,8 @@
       "Bash(tmux kill-pane *)",
       "Bash(cat /private/tmp/claude-*/**/tasks/*.output *)",
       "Bash(tail *)",
-      "Bash(ln -sf *)"
+      "Bash(ln -sf *)",
+      "Glob(~/.claude/**)"
     ]
   },
   "env": {
