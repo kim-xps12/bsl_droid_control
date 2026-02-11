@@ -233,8 +233,37 @@ def analyze_phase_relationship(header: list[str], data: NDArray[np.floating], la
     print(f"  非対称度: {asym_knee:+.1f}% (正=L>R)")
 
 
+def _detect_command_switches(
+    header: list[str], data: NDArray[np.floating]
+) -> list[int]:
+    """コマンドの切替点（インデックス）を検出する。
+
+    cmd_vel_x/y/yaw のいずれかが 0.01 以上変化した時点を切替と判定する。
+    CSVにコマンド列がなければ空リストを返す。
+    """
+    if "cmd_vel_x" not in header:
+        return []
+    cmd_x = col(header, data, "cmd_vel_x")
+    cmd_y = col(header, data, "cmd_vel_y")
+    cmd_yaw = col(header, data, "cmd_vel_yaw")
+    switches: list[int] = []
+    for i in range(1, len(cmd_x)):
+        if (
+            abs(cmd_x[i] - cmd_x[i - 1]) > 0.01
+            or abs(cmd_y[i] - cmd_y[i - 1]) > 0.01
+            or abs(cmd_yaw[i] - cmd_yaw[i - 1]) > 0.01
+        ):
+            switches.append(i)
+    return switches
+
+
 def analyze_yaw_drift(header: list[str], data: NDArray[np.floating], label: str) -> None:
-    """Yawドリフトの時系列分析"""
+    """Yawドリフトの時系列分析
+
+    コマンド切替を検出し、ランダムコマンド評価の場合は累積ドリフトが
+    隠蔽される旨を警告する。信頼性の高いYaw評価には方向別固定コマンド
+    評価（--command）を使用すること。
+    """
     print(f"\n{'=' * 60}")
     print(f"[{label}] Yawドリフト分析")
     print(f"{'=' * 60}")
@@ -242,22 +271,54 @@ def analyze_yaw_drift(header: list[str], data: NDArray[np.floating], label: str)
     dt = data[1, 0] - data[0, 0]
     timestamps = col(header, data, "timestamp")
     yaw = col(header, data, "yaw_deg")
+    max_t = int(timestamps[-1])
+
+    # コマンド切替の検出
+    cmd_switches = _detect_command_switches(header, data)
+    if cmd_switches:
+        switch_times = ", ".join(f"t={timestamps[s]:.1f}s" for s in cmd_switches[:5])
+        if len(cmd_switches) > 5:
+            switch_times += f" ... 他{len(cmd_switches) - 5}回"
+        print(f"  !! コマンド切替検出: {len(cmd_switches)}回 ({switch_times})")
+        print(f"     【警告】ランダムコマンド評価ではコマンド方向変化がYawドリフトを")
+        print(f"     隠蔽する。Yaw改善率は固定コマンド評価（--command）から算出すべき")
 
     # 1秒ごとのYaw値
-    print("  Yaw推移（1秒ごと）:")
-    for t in range(0, 11):
+    print(f"\n  Yaw推移（1秒ごと）:")
+    for t in range(0, max_t + 1):
         idx = int(t / dt)
         if idx < len(yaw):
             print(f"    t={t:>2d}s: Yaw={yaw[idx]:>+7.2f}°")
 
-    # Yawドリフト速度
+    # 定常状態ドリフト速度（全体）
     start_idx = int(2.0 / dt)
     yaw_ss = yaw[start_idx:]
     t_ss = timestamps[start_idx:]
-    # 線形回帰でドリフト速度
     coeffs = np.polyfit(t_ss, yaw_ss, 1)
-    print(f"  定常状態ドリフト速度: {coeffs[0]:.3f} °/s")
+    qualifier = "（コマンド切替あり・参考値）" if cmd_switches else ""
+    print(f"\n  定常状態ドリフト速度: {coeffs[0]:.3f} °/s{qualifier}")
     print(f"  最終Yaw: {yaw[-1]:+.2f}°")
+
+    # コマンドセグメント別のドリフト分析
+    if cmd_switches:
+        cmd_x = col(header, data, "cmd_vel_x")
+        cmd_y = col(header, data, "cmd_vel_y")
+        cmd_yaw_col = col(header, data, "cmd_vel_yaw")
+        print(f"\n  コマンドセグメント別ドリフト:")
+        seg_bounds = [0] + cmd_switches + [len(data)]
+        for i in range(len(seg_bounds) - 1):
+            s, e = seg_bounds[i], seg_bounds[i + 1]
+            if e - s < 10:
+                continue
+            t_seg = timestamps[s:e]
+            yaw_seg = yaw[s:e]
+            seg_coeffs = np.polyfit(t_seg, yaw_seg, 1)
+            yaw_delta = yaw_seg[-1] - yaw_seg[0]
+            print(
+                f"    [{t_seg[0]:5.1f}s-{t_seg[-1]:5.1f}s] "
+                f"cmd=({cmd_x[s]:+.2f},{cmd_y[s]:+.2f},{cmd_yaw_col[s]:+.2f}) "
+                f"rate={seg_coeffs[0]:+.3f} deg/s  dYaw={yaw_delta:+.2f} deg"
+            )
 
 
 def analyze_velocity_profile(header: list[str], data: NDArray[np.floating], label: str) -> None:

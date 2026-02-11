@@ -363,8 +363,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--epoch",
         type=int,
-        default=499,
-        help="評価エポック番号（デフォルト: 499）",
+        default=3999,
+        help="評価エポック番号（デフォルト: 3999）",
     )
     parser.add_argument(
         "--prefix",
