@@ -427,14 +427,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--epoch",
         type=int,
-        default=499,
-        help="評価エポック番号（デフォルト: 499）",
+        default=3999,
+        help="評価エポック番号（デフォルト: 3999）",
     )
     parser.add_argument(
         "--prefix",
         type=str,
-        default="droid-walking-unitree-v",
-        help="Experiment name prefix (default: droid-walking-unitree-v)",
+        default="droid-walking-omni-v",
+        help="Experiment name prefix (default: droid-walking-omni-v)",
     )
     args = parser.parse_args()
     if len(args.versions) < 2:
