@@ -54,6 +54,7 @@ except (metadata.PackageNotFoundError, ImportError) as e:
 import genesis as gs
 import numpy as np
 import torch
+from genesis.utils.geom import quat_to_xyz, transform_by_quat
 from rsl_rl.modules import ActorCritic
 
 
@@ -270,6 +271,11 @@ def main() -> None:
         help="Max yaw angular velocity [rad/s] (default: 0.0 = disabled)",
     )
     parser.add_argument("--seed", type=int, default=1, help="Genesis random seed (default: 1)")
+    parser.add_argument(
+        "--no-arrows",
+        action="store_true",
+        help="Disable velocity command/actual arrows above robot (shown by default when viewer is active)",
+    )
     args = parser.parse_args()
 
     if args.gamepad and args.command is not None:
@@ -388,6 +394,9 @@ def main() -> None:
         print(f"Running headless evaluation for {args.duration} seconds...")
     else:
         print("Running evaluation... Press Ctrl+C to stop.")
+    show_arrows = not args.no_viewer and not getattr(args, "no_arrows", False)
+    if show_arrows:
+        print("Velocity arrows: GREEN = target command, BLUE = actual velocity")
     print()
 
     obs, _ = env.reset()
@@ -404,6 +413,12 @@ def main() -> None:
         env.commands[0, 2] = vel_yaw
         env._update_observation()
         obs = env.obs_buf
+
+    # 速度指令矢印の描画状態（Isaac Lab風: 緑=目標, 青=実速度）
+    _cmd_arrow_node = None
+    _vel_arrow_node = None
+    _vel_ema = np.zeros(3)  # 実速度の指数移動平均バッファ（ワールド座標）
+    _VEL_EMA_ALPHA = 0.05  # EMA係数（小さいほど滑らか, 0.05で約20ステップ窓相当）
 
     # 統計収集用
     positions = []
@@ -441,8 +456,6 @@ def main() -> None:
             act = actions[0].cpu().numpy()
 
             # オイラー角を取得
-            from genesis.utils.geom import quat_to_xyz
-
             euler = quat_to_xyz(env.base_quat[0:1])[0].cpu().numpy()
             euler_deg = euler * 180 / 3.14159
 
@@ -468,6 +481,49 @@ def main() -> None:
             dof_pos_list.append(dof_pos.copy())
             contact_states.append(contact_state.copy())
             command_list.append(cmd.copy())
+
+            # 速度指令矢印の描画（Isaac Lab風: 緑=目標, 青=実速度）
+            if show_arrows:
+                # 前フレームの矢印を消去
+                if _cmd_arrow_node is not None:
+                    env.scene.clear_debug_object(_cmd_arrow_node)
+                    _cmd_arrow_node = None
+                if _vel_arrow_node is not None:
+                    env.scene.clear_debug_object(_vel_arrow_node)
+                    _vel_arrow_node = None
+
+                # 矢印の起点: ロボット頭上
+                arrow_pos = pos.copy()
+                arrow_pos[2] += 0.4
+
+                # 目標速度コマンド矢印（緑）: ボディフレーム → ワールドフレーム
+                cmd_body = torch.zeros(1, 3, device=gs.device, dtype=gs.tc_float)
+                cmd_body[0, 0] = env.commands[0, 0]
+                cmd_body[0, 1] = env.commands[0, 1]
+                cmd_world = transform_by_quat(cmd_body, env.base_quat[0:1])[0].cpu().numpy()
+                cmd_world[2] = 0.0  # 水平に保つ
+                if np.linalg.norm(cmd_world) > 0.01:
+                    _cmd_arrow_node = env.scene.draw_debug_arrow(
+                        pos=tuple(arrow_pos),
+                        vec=tuple(cmd_world),
+                        radius=0.008,
+                        color=(0.0, 1.0, 0.0, 0.8),
+                    )
+
+                # 実速度矢印（青）: ボディフレーム → ワールドフレーム + EMA平滑化
+                vel_body = torch.zeros(1, 3, device=gs.device, dtype=gs.tc_float)
+                vel_body[0, 0] = env.base_lin_vel[0, 0]
+                vel_body[0, 1] = env.base_lin_vel[0, 1]
+                vel_world_raw = transform_by_quat(vel_body, env.base_quat[0:1])[0].cpu().numpy()
+                vel_world_raw[2] = 0.0  # 水平に保つ
+                _vel_ema = _VEL_EMA_ALPHA * vel_world_raw + (1.0 - _VEL_EMA_ALPHA) * _vel_ema
+                if np.linalg.norm(_vel_ema) > 0.01:
+                    _vel_arrow_node = env.scene.draw_debug_arrow(
+                        pos=tuple(arrow_pos),
+                        vec=tuple(_vel_ema),
+                        radius=0.006,
+                        color=(0.2, 0.5, 1.0, 0.8),
+                    )
 
             # 時間ステップごとの出力（10ステップごと = 0.2秒ごと）
             if step % 10 == 0:
