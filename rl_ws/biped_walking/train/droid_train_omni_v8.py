@@ -263,6 +263,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Train BSL-Droid Simplified V2 Walking (exp009 V8)")
     parser.add_argument("-e", "--exp_name", type=str, default="droid-walking-omni-v8")
     parser.add_argument("--num_envs", type=int, default=4096)
+    parser.add_argument("--num_mini_batches", type=int, default=4)
     parser.add_argument("--max_iterations", type=int, default=4000)
     args = parser.parse_args()
 
@@ -272,6 +273,7 @@ def main() -> None:
     # 設定読み込み
     env_cfg, obs_cfg, reward_cfg, command_cfg = get_cfgs()
     train_cfg = get_train_cfg(args.exp_name, args.max_iterations)
+    train_cfg["algorithm"]["num_mini_batches"] = args.num_mini_batches
 
     # 環境作成
     env = DroidEnvUnitree(
