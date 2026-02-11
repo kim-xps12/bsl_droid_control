@@ -150,7 +150,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="hip_yaw非対称・Roll位相・高周波時間推移分析")
     parser.add_argument("versions", type=int, nargs="+", help="バージョン番号 (先頭が新)")
     parser.add_argument("--prefix", default="droid-walking-omni-v", help="実験名プレフィックス")
-    parser.add_argument("--epoch", type=int, default=3999, help="チェックポイント番号")
+    parser.add_argument("--epoch", type=str, default="3999", help="チェックポイント番号またはファイルサフィックス")
     parser.add_argument(
         "--cmd-suffix",
         default="cmd_0.30_0.00_0.00_s1",

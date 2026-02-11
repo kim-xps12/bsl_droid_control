@@ -86,6 +86,10 @@ uv run python scripts/analyze_vibration.py {N} {N-1} --prefix droid-walking-omni
 
 - **方向別問題が指摘された場合**: 方向別評価CSV（既存なら読み込み）を用いた方向別分析
 - **Yaw問題の深掘り**: Step 1.1b の固定コマンドCSVに対して `analyze_eval_csv.py` で時系列分析。
+  固定コマンドCSVを指定するには `--epoch` にファイル名のepoch部分全体を渡す（`exp009_commands.md` Section 5.4 参照）:
+  ```bash
+  uv run python scripts/analyze_eval_csv.py {N} {N-1} --prefix droid-walking-omni-v --epoch {EPOCH}_cmd_0.30_0.00_0.00_s1
+  ```
   `analyze_yaw_drift_v2.py` 系はexp008固有（パスがハードコード）のため exp009 では使用しない
 - **接触問題**: `uv run python scripts/analyze_contact_chattering_v2.py` 系
 

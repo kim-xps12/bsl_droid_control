@@ -35,12 +35,12 @@ def col(header: list[str], data: NDArray[np.floating], name: str) -> NDArray[np.
     return data[:, idx]
 
 
-def resolve_csv_path(prefix: str, version: int, epoch: int) -> str:
+def resolve_csv_path(prefix: str, version: int, epoch: str) -> str:
     """eval CSVのパスを自動解決する。指定epochを優先し、見つからない場合はフォールバック。"""
-    candidates = [epoch, 3999, 1999, 499]
+    candidates = [epoch, "3999", "1999", "499"]
     # 指定epochを先頭に移動（重複回避）
-    seen: set[int] = set()
-    ordered: list[int] = []
+    seen: set[str] = set()
+    ordered: list[str] = []
     for e in candidates:
         if e not in seen:
             ordered.append(e)
@@ -394,9 +394,9 @@ Examples:
     )
     parser.add_argument(
         "--epoch",
-        type=int,
-        default=3999,
-        help="評価エポック番号（デフォルト: 3999）。見つからない場合は自動フォールバック",
+        type=str,
+        default="3999",
+        help="評価エポック番号またはファイルサフィックス（デフォルト: 3999）。見つからない場合は自動フォールバック",
     )
     parser.add_argument(
         "--prefix",

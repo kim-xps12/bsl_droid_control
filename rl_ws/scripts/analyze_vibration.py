@@ -362,9 +362,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--epoch",
-        type=int,
-        default=3999,
-        help="評価エポック番号（デフォルト: 3999）",
+        type=str,
+        default="3999",
+        help="評価エポック番号またはファイルサフィックス（デフォルト: 3999）",
     )
     parser.add_argument(
         "--prefix",

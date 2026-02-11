@@ -3,8 +3,9 @@ CSV時系列データの詳細分析スクリプト
 歩行周期、接地パターン、L/R位相関係、Roll/横スウェイなどを複数バージョン間で比較分析する。
 
 Usage:
-    uv run python scripts/analyze_eval_csv.py 37 36              # eval_499.csv を比較
+    uv run python scripts/analyze_eval_csv.py 37 36              # eval_3999.csv を比較
     uv run python scripts/analyze_eval_csv.py 37 36 --epoch 300  # eval_300.csv を比較
+    uv run python scripts/analyze_eval_csv.py 37 36 --epoch 3999_cmd_0.30_0.00_0.00_s1  # 固定コマンドCSVを比較
 """
 
 from __future__ import annotations
@@ -487,9 +488,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--epoch",
-        type=int,
-        default=3999,
-        help="評価エポック番号（デフォルト: 3999）",
+        type=str,
+        default="3999",
+        help="評価エポック番号またはファイルサフィックス（デフォルト: 3999）。"
+        "固定コマンドCSVの場合は '3999_cmd_0.30_0.00_0.00_s1' のように指定",
     )
     parser.add_argument(
         "--prefix",
