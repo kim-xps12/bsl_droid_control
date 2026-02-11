@@ -724,7 +724,7 @@ class DroidEnvUnitree:
           [12:22] dof_pos         → L↔Rスワップ + yaw/roll符号反転
           [22:32] dof_vel         → 同上
           [32:42] actions         → 同上
-          [42:44] gait_phase      → 変更なし
+          [42:44] gait_phase      → sin/cos符号反転（V14バグ修正: 位相+0.5→符号反転）
           [44:46] leg_phase       → L↔Rスワップ
           [46:48] feet_pos_z      → L↔Rスワップ
           [48:50] contact_state   → L↔Rスワップ
@@ -750,6 +750,11 @@ class DroidEnvUnitree:
             block = obs[m, start : start + 10].clone()
             obs[m, start : start + 10] = block[:, idx] * sign
 
+        # gait_phase: sin/cos符号反転（V14バグ修正）
+        # gait_phase = sin(L脚位相*2π), cos(L脚位相*2π)
+        # ミラー時はR脚位相 = L脚位相+0.5 → sin((φ+0.5)*2π) = -sin(φ*2π), cos同様
+        obs[m, 42] *= -1
+        obs[m, 43] *= -1
         # leg_phase: L↔Rスワップ
         lp = obs[m, 44:46].clone()
         obs[m, 44] = lp[:, 1]
