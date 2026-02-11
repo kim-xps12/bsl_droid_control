@@ -2,19 +2,29 @@
 name: exp009-new-version
 description: Create a new exp009 training version: script generation, report skeleton, and training start.
 disable-model-invocation: true
-argument-hint: "[version-number]"
+argument-hint: "[version-number] [--no-train]"
 ---
 
 # EXP009 新バージョン作成ワークフロー
 
-バージョン V$ARGUMENTS を作成し、訓練を開始する。
+## 引数の解析
+
+`$ARGUMENTS` を空白で分割し、以下を抽出する:
+- **バージョン番号**: 最初の数値トークン（例: `8`）
+- **`--no-train` フラグ**: 存在する場合、Phase 2（訓練開始）をスキップする
+
+例:
+- `/exp009-new-version 8` → V8 を作成し、訓練を開始する
+- `/exp009-new-version 8 --no-train` → V8 を作成するが、訓練は開始しない
+
+以降、バージョン番号を `{N}` として参照する。
 
 ## フロー概要
 
 ```
 Phase 1: 準備（スクリプト作成・コード品質チェック）
     ↓
-Phase 2: 訓練開始（tmux）
+Phase 2: 訓練開始（tmux）  ← --no-train 指定時はスキップ
     ↓
 Phase 3: レポート準備（訓練実行中に並行作業）
     ↓
@@ -32,6 +42,13 @@ Phase 3: レポート準備（訓練実行中に並行作業）
 4. lint・型チェック（`AGENTS.md` コード品質ルール参照）
 
 ## Phase 2: 訓練開始
+
+> **`--no-train` 指定時**: このフェーズ全体をスキップし、Phase 3 に進む。ユーザに以下を報告する:
+> - 「訓練はスキップしました。手動で開始する場合は以下のコマンドを実行してください:」
+> - ```
+>   cd rl_ws
+>   uv run python biped_walking/train/droid_train_omni_v{N}.py --max_iterations 4000
+>   ```
 
 以下の手順で tmux セッション内で訓練を起動する。SSH セッションが切断されても tmux 内で訓練が継続される。
 
@@ -60,7 +77,7 @@ tmux new-window -t main -n "train-v{N}"
 
 **Step 2**: 訓練コマンドを送信（`$(pwd)` で現在の rl_ws 絶対パスを使用）:
 ```bash
-tmux send-keys -t "main:train-v{N}" "cd $(pwd) && uv run python biped_walking/train/droid_train_omni_v{N}.py --max_iterations 500 2>&1 | tee /tmp/exp009_train_v{N}.log" Enter
+tmux send-keys -t "main:train-v{N}" "cd $(pwd) && uv run python biped_walking/train/droid_train_omni_v{N}.py --max_iterations 4000 2>&1 | tee /tmp/exp009_train_v{N}.log" Enter
 ```
 
 - `tee`: 訓練出力を tmux ウィンドウ内のターミナルとログファイルの両方に出力
