@@ -61,3 +61,5 @@ exp008では前進歩行のみを学習対象としていた（lin_vel_x_range: 
 | V6 | [exp009_report_v6.md](exp009_report_v6.md) | action_rate scale増加（-0.005→-0.01、ジタバタ挙動抑制） | （訓練前） |
 | V7 | [exp009_report_v7.md](exp009_report_v7.md) | 関節グループ別Kp/Kd導入（Unitree G1比率参考: 膝Kp=50/Kd=3、足首Kp=20/Kd=5） | （訓練前） |
 | V8 | [exp009_report_v8.md](exp009_report_v8.md) | V6ベース + gait_frequency 1.2→1.5 Hz（交互歩行回復、V7 Kp/Kd revert） | （訓練前） |
+| V9 | [exp009_report_v9.md](exp009_report_v9.md) | V8ベース + knee Kp=50（単独、関節グループ別Kp/Kd再検討の第一歩） | （訓練前） |
+| V10 | [exp009_report_v10.md](exp009_report_v10.md) | V9ベース + vyコマンド範囲の楕円化（±0.3→±0.15 m/s） | （訓練前） |
