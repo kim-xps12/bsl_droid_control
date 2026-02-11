@@ -27,6 +27,7 @@ Usage:
     左スティック上下: 前後速度 (lin_vel_x)
     左スティック左右: 横速度 (lin_vel_y)
     右スティック左右: yaw角速度 (ang_vel_yaw)
+    L3+R3（左右スティック同時押し込み）: スクリプト停止
 """
 
 from __future__ import annotations
@@ -38,6 +39,11 @@ import re
 import sys
 from importlib import metadata
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    import pygame
 
 
 # rsl-rl-libバージョンチェック（rsl_rlインポート前に実行）
@@ -69,6 +75,10 @@ _MACOS_SDL_HINTS: dict[str, str] = {
     "SDL_JOYSTICK_HIDAPI_XBOX": "1",
     "SDL_JOYSTICK_HIDAPI_XBOX_360": "1",
 }
+
+# F710 DirectInputモード: L3(左スティック押し込み)=button10, R3(右スティック押し込み)=button11
+_GAMEPAD_BUTTON_L3 = 10
+_GAMEPAD_BUTTON_R3 = 11
 
 
 def get_env_class(exp_name: str) -> type:
@@ -149,7 +159,7 @@ def get_urdf_path(exp_name: str, rl_ws_dir: Path) -> Path:
         return rl_ws_dir / "assets" / "biped_digitigrade.urdf"
 
 
-def _init_gamepad(device_index: int = 0) -> "pygame.joystick.JoystickType":
+def _init_gamepad(device_index: int = 0) -> pygame.joystick.JoystickType:
     """pygameジョイスティックを初期化して返す。
 
     Args:
@@ -191,8 +201,24 @@ def _init_gamepad(device_index: int = 0) -> "pygame.joystick.JoystickType":
     return joy
 
 
+def _check_gamepad_quit(joy: pygame.joystick.JoystickType) -> bool:
+    """L3+R3（左右スティック同時押し込み）でスクリプト停止を検出する。
+
+    Args:
+        joy: 初期化済みのJoystickオブジェクト
+
+    Returns:
+        True: L3+R3が同時に押されている（停止要求）
+        False: それ以外
+    """
+    num_buttons = joy.get_numbuttons()
+    if num_buttons <= _GAMEPAD_BUTTON_R3:
+        return False
+    return bool(joy.get_button(_GAMEPAD_BUTTON_L3) and joy.get_button(_GAMEPAD_BUTTON_R3))
+
+
 def _read_gamepad_commands(
-    joy: "pygame.joystick.JoystickType",
+    joy: pygame.joystick.JoystickType,
     max_vel_x: float,
     max_vel_y: float,
     max_vel_yaw: float,
@@ -390,6 +416,7 @@ def main() -> None:
 
     if args.gamepad:
         print("Gamepad control active. Use left stick for movement, right stick for rotation.")
+        print("Press L3+R3 (both stick buttons) simultaneously to stop.")
     if args.no_viewer:
         print(f"Running headless evaluation for {args.duration} seconds...")
     else:
@@ -447,6 +474,11 @@ def main() -> None:
                 env._update_observation()
                 obs = env.obs_buf
 
+                # L3+R3同時押し込みでスクリプト停止
+                if _check_gamepad_quit(gamepad_joy):
+                    print("\nL3+R3 pressed: stopping evaluation.")
+                    break
+
             # データ収集
             pos = env.base_pos[0].cpu().numpy()
             vel = env.base_lin_vel[0].cpu().numpy()
@@ -467,10 +499,7 @@ def main() -> None:
                 contact_state = np.array([True, True])
 
             # コマンド速度を取得
-            if hasattr(env, "commands"):
-                cmd = env.commands[0].cpu().numpy()
-            else:
-                cmd = np.zeros(3)
+            cmd = env.commands[0].cpu().numpy() if hasattr(env, "commands") else np.zeros(3)
 
             positions.append(pos.copy())
             velocities.append(vel.copy())
