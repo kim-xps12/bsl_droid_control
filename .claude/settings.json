@@ -14,13 +14,15 @@
       "Bash(tmux *)",
       "Bash(tmux kill-pane *)",
       "Bash(cat /private/tmp/claude-*/**/tasks/*.output *)",
-      "Bash(tail *)"
+      "Bash(tail *)",
+      "Bash(ln -sf *)"
     ]
   },
   "env": {
     "PATH": "$HOME/.local/bin:$HOME/.pixi/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
-    "PYTHONUNBUFFERED": "1"
+    "PYTHONUNBUFFERED": "1",
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1"
   },
   "plansDirectory": "./.claude/plans",
   "hooks": {
