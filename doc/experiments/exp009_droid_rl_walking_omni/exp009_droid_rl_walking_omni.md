@@ -60,3 +60,4 @@ exp008では前進歩行のみを学習対象としていた（lin_vel_x_range: 
 | V5 | [exp009_report_v5.md](exp009_report_v5.md) | 訓練イテレーション数増加（2000→4000） | **収束不足仮説を定量的に棄却**。報酬ピーク後下降（59.09→57.12）、Last 50 std +9.5%悪化。hip_yaw >2Hz成分L 85.6%に増大、hip_roll action RMS累積6.7x。4方向追従率45.8%（V4: 52.0%）。RGT改善（+15.3pp）だがBWD -25.0pp悪化。根本原因はaction_rate scale -0.005の過小 |
 | V6 | [exp009_report_v6.md](exp009_report_v6.md) | action_rate scale増加（-0.005→-0.01、ジタバタ挙動抑制） | （訓練前） |
 | V7 | [exp009_report_v7.md](exp009_report_v7.md) | 関節グループ別Kp/Kd導入（Unitree G1比率参考: 膝Kp=50/Kd=3、足首Kp=20/Kd=5） | （訓練前） |
+| V8 | [exp009_report_v8.md](exp009_report_v8.md) | V6ベース + gait_frequency 1.2→1.5 Hz（交互歩行回復、V7 Kp/Kd revert） | （訓練前） |
