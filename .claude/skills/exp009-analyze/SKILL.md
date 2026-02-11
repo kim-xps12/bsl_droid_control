@@ -41,6 +41,20 @@ uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer
 uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N-1} --no-viewer --duration 10 --csv
 ```
 
+### 1.1b Yaw信頼性評価（前進方向・固定コマンド、必須）
+
+ランダムコマンド評価（上記1.1）では **4秒ごとのコマンド切替がYawドリフトを隠蔽** するため、
+Yaw評価には固定コマンド評価が必須。`eval_*_cmd_0.30_0.00_0.00_s1.csv` が存在しなければ実行:
+
+```bash
+# V{N} 前進固定コマンド（20秒）
+uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.3 0.0 0.0
+# V{N-1} 前進固定コマンド（20秒）
+uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N-1} --no-viewer --duration 20 --csv --command 0.3 0.0 0.0
+```
+
+**重要**: Yaw改善率はこの固定コマンド評価データのみから算出すること。ランダムコマンド評価からのYaw改善率は、コマンド切替による隠蔽のため信頼できない。
+
 ### 1.2 分析スクリプト実行（全て実行）
 
 ```bash
@@ -62,38 +76,34 @@ uv run python scripts/analyze_vibration.py {N} {N-1} --prefix droid-walking-omni
 人間の所感に基づき、以下から必要な追加分析を選択実行する:
 
 - **方向別問題が指摘された場合**: 方向別評価CSV（既存なら読み込み）を用いた方向別分析
-- **Yaw問題**: `uv run python scripts/analyze_yaw_drift_v2.py` 系
+- **Yaw問題の深掘り**: Step 1.1b の固定コマンドCSVに対して `analyze_eval_csv.py` で時系列分析。
+  `analyze_yaw_drift_v2.py` 系はexp008固有（パスがハードコード）のため exp009 では使用しない
 - **接触問題**: `uv run python scripts/analyze_contact_chattering_v2.py` 系
 
-## Step 2: 二者対話による多角的分析
+## Step 2: 二者対話による多角的分析（Sequential Task 方式）
 
-Agent Teams を作成し、2つの専門エージェントの対話によって多角的な考察を実施する。
+2つの専門視点（DA: データ分析 / Lead: 物理解釈）による対話を、リーダーが仲介する **Sequential Task パターン** で実施する。
+各ラウンドは独立した Task（サブエージェント）呼び出しで実行し、リーダーが結果を次の Task に明示的に受け渡す。
 
-### 2.1 チーム作成
+### 2.1 対話フロー概要
 
-```
-TeamCreate: team_name="exp009-analyze-v{N}"
-```
+| ラウンド | 役割 | 入力 | 出力 |
+|---------|------|------|------|
+| Round 1 | DA | 全分析データ + 所感 | DA_R1: 定量分析レポート |
+| Round 2 | Lead | DA_R1 + 参照ドキュメント + 所感 | LEAD_R1: 物理解釈 + 追加データ要求 |
+| Round 3 | DA | DA_R1 + LEAD_R1 + 元データ | DA_R2: 仮説検証データ |
+| Round 4 | Lead | DA_R1 + LEAD_R1 + DA_R2 | LEAD_FINAL: 統合考察・改善案 |
 
-### 2.2 タスク作成
+### 2.2 Round 1: DA 初期定量分析
 
-| タスクID | タスク内容 | 担当 | 依存 |
-|---------|----------|------|------|
-| 1 | 初期定量分析 | data-analyst | - |
-| 2 | 物理解釈・仮説構築 | lead-physicist | 1 |
-| 3 | 仮説検証データ提示 | data-analyst | 2 |
-| 4 | 統合考察・改善案 | lead-physicist | 3 |
-| 5 | レポート更新 | リーダー | 4 |
-
-### 2.3 data-analyst の起動
+Task ツールで実行（結果を **DA_R1** として保持）:
 
 ```
 subagent_type: general-purpose
-team_name: exp009-analyze-v{N}
-name: data-analyst
+name: da-round1
 ```
 
-**data-analyst へのプロンプト**:
+**プロンプト**:
 
 > あなたは「目の前にあるデータ分析を精密に行う professional assistance agent」です。
 > 名前: **DA**
@@ -101,7 +111,6 @@ name: data-analyst
 > ## あなたの役割
 > - 収集された定量データを精密に読み解き、異常値・変化・相関を特定する
 > - 主観的解釈は避け、数値に基づく客観的な分析に徹する
-> - 対話相手の lead-physicist の質問やコメントに対して、データで裏付けた回答をする
 >
 > ## 入力データ
 > {Step 1 で収集した全分析結果をここに貼り付ける}
@@ -110,72 +119,129 @@ name: data-analyst
 > {所感テキストをここに貼り付ける}
 >
 > ## 指示
-> 1. まず、収集データの中から最も顕著な変化・異常を3-5項目特定し、定量的に報告せよ
-> 2. 人間の所感と定量データの対応関係を分析せよ
-> 3. 分析結果を SendMessage で lead-physicist に送信せよ
-> 4. lead-physicist からの質問・コメントにはデータで回答せよ
-> 5. 対話は2-3往復を目安とする。各発言は150-300字程度に収めよ
+> 以下を実行し、結果をテキストで出力せよ（ファイル書き込み不要）:
+> 1. 収集データの中から V{N-1}→V{N} で最も顕著な変化・異常を **3-5項目** 特定し、具体的数値とともに報告
+> 2. 人間の所感と定量データの対応関係を分析（所感を裏付ける/矛盾するデータを明示）
+> 3. 注目すべき相関・トレードオフがあれば指摘
+> 4. **Yaw指標の信頼性チェック**: ランダムコマンド評価のYaw指標にコマンド切替の影響がないか確認。
+>    Yaw改善率の算出にはランダムコマンド評価データを使用してはならず、固定コマンド評価データのみを使用すること
 >
-> **重要**: 全ての発言を SendMessage でリーダーにもCC（同内容を送信）すること。
-> TaskList を確認し、該当タスクを完了状態に更新すること。
+> **出力形式**: 150-300字程度の簡潔な分析レポート。箇条書き推奨。
 
-### 2.4 lead-physicist の起動
+### 2.3 Round 2: Lead 物理解釈・仮説構築
 
-data-analyst の初期分析完了後に起動する。
+Task ツールで実行（結果を **LEAD_R1** として保持）:
 
 ```
 subagent_type: general-purpose
-team_name: exp009-analyze-v{N}
-name: lead-physicist
+name: lead-round1
 ```
 
-**lead-physicist へのプロンプト**:
+**プロンプト**:
 
 > あなたは「ロボティクス・物理学に精通した全体を俯瞰できる lead agent」です。
 > 名前: **Lead**
 >
 > ## あなたの役割
-> - data-analyst の定量分析結果を物理的・力学的メカニズムで解釈する
-> - 因果関係の特定、仮説の構築、改善提案の設計を主導する
+> - DA の定量分析結果を物理的・力学的メカニズムで解釈する
+> - 因果関係の特定、仮説の構築を主導する
 > - 過去の知見（exp007/exp008 の教訓）との整合性を確認する
 >
 > ## 参照すべきドキュメント
 > 以下を読み込んで過去の知見を把握すること:
-> - `/Users/yutaro.kimura/.claude/projects/-Users-yutaro-kimura-bsl-droid-control/memory/MEMORY.md`
+> - `~/.claude/projects/-Users-yutaro-kimura-bsl-droid-control/memory/MEMORY.md`
 > - `doc/experiments/exp009_droid_rl_walking_omni/exp009_rules.md`
 > - 必要に応じて `doc/experiments/exp007_droid_rl_walking_ref_unitree/exp007_unitree_rl_gym_survey.md`
+>
+> ## DA の定量分析結果
+> {DA_R1 をここに貼り付ける}
 >
 > ## 人間の目視所感
 > {所感テキストをここに貼り付ける}
 >
 > ## 指示
-> 1. data-analyst から受信した定量分析を読み込む
-> 2. 物理的・力学的メカニズムに基づく解釈を提供する
+> 以下を実行し、結果をテキストで出力せよ（ファイル書き込み不要）:
+> 1. DA の報告を物理的・力学的メカニズムに基づき解釈する
 >    - 因果連鎖の特定（A → B → C → 観察された現象）
 >    - exp008 の類似パターンとの照合（特にカスケード悪化パターン）
 >    - penalty/positive ratio が健全域か overkill 域かの判定
-> 3. 解釈を SendMessage で data-analyst に送信し、追加データを要求する
-> 4. 2-3往復の対話後、以下を含む最終統合を SendMessage でリーダーに送信:
->    - 悪化メカニズムの因果関係
->    - 成功点の特定と理由
->    - 改善案（1変更1検証原則を遵守、期待効果・リスク・根拠を明記）
->    - 推奨案の決定
+> 2. 仮説を提示し、その検証に必要な **追加データ・観点** を DA に要求する形で記述
 >
-> **重要**: 全ての発言を SendMessage でリーダーにもCC（同内容を送信）すること。
-> TaskList を確認し、該当タスクを完了状態に更新すること。
+> **出力形式**: 150-300字程度。仮説 → 根拠 → 追加データ要求の構造で記述。
 
-### 2.5 対話の仲介
+### 2.4 Round 3: DA 仮説検証データ提示
 
-リーダーは対話を監視し、必要に応じて:
-- 追加の分析スクリプト実行を指示
-- 論点の整理・方向修正
-- 対話が発散した場合の収束指示
+Task ツールで実行（結果を **DA_R2** として保持）:
 
-### 2.6 チーム解散
+```
+subagent_type: general-purpose
+name: da-round2
+```
 
-全タスク完了後:
-1. data-analyst と lead-physicist にシャットダウンリクエストを送信
-2. `TeamDelete` でチームを解散
+**プロンプト**:
+
+> あなたは DA（データ分析エージェント）です。
+>
+> ## これまでの対話
+> ### DA 初期分析（Round 1）
+> {DA_R1 をここに貼り付ける}
+>
+> ### Lead 物理解釈（Round 2）
+> {LEAD_R1 をここに貼り付ける}
+>
+> ## 元データ
+> {Step 1 で収集した全分析結果をここに貼り付ける}
+>
+> ## 指示
+> Lead が要求した追加データ・観点について、元データから該当部分を抽出・再分析し回答せよ。
+> Lead の仮説を **裏付ける/反証する** 具体的数値を提示すること。
+>
+> **出力形式**: 150-300字程度。要求された項目ごとにデータで回答。
+
+### 2.5 Round 4: Lead 統合考察・改善案
+
+Task ツールで実行（結果を **LEAD_FINAL** として保持）:
+
+```
+subagent_type: general-purpose
+name: lead-final
+```
+
+**プロンプト**:
+
+> あなたは Lead（ロボティクス・物理学俯瞰エージェント）です。
+>
+> ## これまでの対話
+> ### DA 初期分析（Round 1）
+> {DA_R1 をここに貼り付ける}
+>
+> ### Lead 物理解釈（Round 2）
+> {LEAD_R1 をここに貼り付ける}
+>
+> ### DA 仮説検証データ（Round 3）
+> {DA_R2 をここに貼り付ける}
+>
+> ## 参照すべきドキュメント
+> 以下を読み込んで過去の知見を把握すること:
+> - `~/.claude/projects/-Users-yutaro-kimura-bsl-droid-control/memory/MEMORY.md`
+> - `doc/experiments/exp009_droid_rl_walking_omni/exp009_rules.md`
+>
+> ## 人間の目視所感
+> {所感テキストをここに貼り付ける}
+>
+> ## 指示
+> 全ラウンドの対話を踏まえ、以下を含む **最終統合考察** を出力せよ（ファイル書き込み不要）:
+> 1. **悪化メカニズムの因果関係**: 根本原因 → 中間過程 → 観察された現象
+> 2. **成功点の特定と理由**: 改善が見られた項目とそのメカニズム
+> 3. **改善案**（1変更1検証原則を遵守）: 各案に期待効果・リスク・根拠を明記
+> 4. **推奨案の決定**: 最も優先すべき1案を選定し理由を述べる
+>
+> **出力形式**: 構造化テキスト。各セクションを見出しで区切る。
+
+### 2.6 リーダーによる確認
+
+全 Round 完了後、リーダーは DA_R1, LEAD_R1, DA_R2, LEAD_FINAL の内容を確認し、
+必要に応じて追加の分析スクリプト実行や補足 Round の Task を実行する。
 
 ## Step 3: レポート更新
 
@@ -194,7 +260,7 @@ name: lead-physicist
 ```
 
 #### 3.2 「対話による多角的分析」サブセクション
-DA と Lead の対話を以下の形式で記載する:
+DA と Lead の各 Round 結果（DA_R1, LEAD_R1, DA_R2, LEAD_FINAL）を以下の形式で記載する:
 
 ```markdown
 ### 対話による多角的分析
@@ -203,13 +269,13 @@ DA と Lead の対話を以下の形式で記載する:
 
 ---
 
-**DA**: {DAの発言。定量データに基づく分析}
+**DA（Round 1: 初期定量分析）**: {DA_R1 の内容}
 
-**Lead**: {Leadの発言。物理的解釈と仮説}
+**Lead（Round 2: 物理解釈・仮説構築）**: {LEAD_R1 の内容}
 
-**DA**: {追加データの提示}
+**DA（Round 3: 仮説検証データ）**: {DA_R2 の内容}
 
-**Lead**: {統合考察と改善案}
+**Lead（Round 4: 統合考察・改善案）**: {LEAD_FINAL の内容}
 
 ---
 ```
