@@ -53,16 +53,45 @@ uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N-1} --no-view
 ### 1.1b Yaw信頼性評価（前進方向・固定コマンド、必須）
 
 ランダムコマンド評価（上記1.1）では **4秒ごとのコマンド切替がYawドリフトを隠蔽** するため、
-Yaw評価には固定コマンド評価が必須。`eval_*_cmd_0.30_0.00_0.00_s1.csv` が存在しなければ実行:
+Yaw評価には固定コマンド評価が必須。
+
+V{N} の FWD 固定コマンドは Step 1.1c で収集するため、ここでは **V{N-1} のみ** を対象とする。
+V{N-1} のトレーニングスクリプトから `lin_vel_x_range` の上限値（**vx_max_prev**）を取得し、FWD 固定コマンド CSV が存在しなければ実行:
 
 ```bash
-# V{N} 前進固定コマンド（20秒）
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command 0.3 0.0 0.0
 # V{N-1} 前進固定コマンド（20秒）
-uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N-1} --no-viewer --duration 20 --csv --command 0.3 0.0 0.0
+uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N-1} --no-viewer --duration 20 --csv --command {vx_max_prev} 0.0 0.0
 ```
 
 **重要**: Yaw改善率はこの固定コマンド評価データのみから算出すること。ランダムコマンド評価からのYaw改善率は、コマンド切替による隠蔽のため信頼できない。
+
+### 1.1c 方向別評価（4方向 × 3 seed、必須）
+
+`exp009_rules.md` Section 5 の方向別評価プロトコルに基づき、4方向 × 3 seed = 12 回の固定コマンド評価を実行する。
+対応する CSV が既に存在する場合はスキップ。
+
+#### コマンド速度の決定
+
+トレーニングスクリプト `biped_walking/train/droid_train_omni_v{N}.py` を読み、以下を取得する:
+
+- `lin_vel_x_range` → 上限値を **vx_max** とする（例: `[−0.3, 0.3]` → `vx_max = 0.3`）
+- `lin_vel_y_range` → 上限値を **vy_max** とする（例: `[−0.15, 0.15]` → `vy_max = 0.15`）
+
+#### 方向とコマンド
+
+| 方向 | VX | VY | VYAW |
+|------|-----|-----|------|
+| FWD | +vx_max | 0.0 | 0.0 |
+| BWD | -vx_max | 0.0 | 0.0 |
+| LFT | 0.0 | +vy_max | 0.0 |
+| RGT | 0.0 | -vy_max | 0.0 |
+
+```bash
+# 例: FWD seed 1（他の方向・seedも同様に実行）
+uv run python biped_walking/biped_eval.py -e droid-walking-omni-v{N} --no-viewer --duration 20 --csv --command {vx_max} 0.0 0.0 --seed 1
+```
+
+12コマンドを順次実行する。Step 1.1b の FWD seed 1 が既に収集済みの場合、残り11回を実行する。
 
 ### 1.2 分析スクリプト実行（全て実行）
 
@@ -98,7 +127,8 @@ uv run python scripts/analyze_vibration.py {N} {N-1} --prefix droid-walking-omni
 以下が揃っていることを確認して終了:
 
 - [ ] `logs/droid-walking-omni-v{N}/eval_*.csv`（ランダムコマンド）
-- [ ] `logs/droid-walking-omni-v{N}/eval_*_cmd_0.30_0.00_0.00_s1.csv`（固定コマンド）
+- [ ] `logs/droid-walking-omni-v{N}/eval_*_cmd_0.30_0.00_0.00_s1.csv`（FWD固定コマンド）
+- [ ] 4方向 × 3 seed の固定コマンドCSV（計12ファイル）
 - [ ] V{N-1} の同等ファイル
 - [ ] 各分析スクリプトの実行完了
 
