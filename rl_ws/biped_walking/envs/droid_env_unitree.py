@@ -387,6 +387,22 @@ class DroidEnvUnitree:
         # 正の値で指定（左脚の外向き上限、右脚は符号反転で適用）
         self.hip_roll_outward_limit: float | None = self.reward_cfg.get("hip_roll_outward_limit", None)
 
+        # Mirror Augmentation（exp009 V13追加）
+        # 半数の環境を永続的にL↔Rミラーし、ポリシーの左右対称性を構造的に保証する。
+        # 報酬・物理はミラーされない（実状態で計算）。観測のみミラー、アクションはデミラーして適用。
+        self.use_mirror_augmentation: bool = self.env_cfg.get("mirror_augmentation", False)
+        if self.use_mirror_augmentation:
+            self.mirror_mask = torch.zeros(self.num_envs, dtype=torch.bool, device=gs.device)
+            self.mirror_mask[self.num_envs // 2 :] = True
+            # DOFミラー: L↔Rスワップ [L0..L4, R5..R9] → [R5..R9, L0..L4]
+            self.dof_mirror_idx = torch.tensor([5, 6, 7, 8, 9, 0, 1, 2, 3, 4], device=gs.device)
+            # 符号反転: hip_yaw, hip_rollは鏡像で符号反転
+            self.dof_mirror_sign = torch.tensor(
+                [-1.0, -1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0],
+                dtype=gs.tc_float,
+                device=gs.device,
+            )
+
         self.extras: dict[str, Any] = {}
         self.extras["observations"] = {}
 
@@ -453,6 +469,12 @@ class DroidEnvUnitree:
     def step(self, actions: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
         """環境を1ステップ進める"""
         self.actions = torch.clip(actions, -self.env_cfg["clip_actions"], self.env_cfg["clip_actions"])
+
+        # Mirror Augmentation: ミラー環境のアクションをデミラー（実ロボット座標に変換）
+        if self.use_mirror_augmentation:
+            m = self.mirror_mask
+            self.actions[m] = self.actions[m][:, self.dof_mirror_idx] * self.dof_mirror_sign
+
         exec_actions = self.last_actions if self.simulate_action_latency else self.actions
         target_dof_pos = exec_actions * self.env_cfg["action_scale"] + self.default_dof_pos
 
@@ -582,6 +604,10 @@ class DroidEnvUnitree:
         self._reset_idx(self.reset_buf)
         self._update_observation()
 
+        # Mirror Augmentation: 観測をミラー（ポリシーが左右反転世界を見る）
+        if self.use_mirror_augmentation:
+            self._mirror_observations()
+
         self.last_actions.copy_(self.actions)
         self.last_dof_vel.copy_(self.dof_vel)
 
@@ -687,9 +713,61 @@ class DroidEnvUnitree:
             dim=-1,
         )
 
+    def _mirror_observations(self) -> None:
+        """ミラー環境の観測をL↔R反転する（exp009 V13追加）
+
+        観測ベクトル (50次元) の構造:
+          [0:3]   base_lin_vel    → vy (idx 1) 符号反転
+          [3:6]   base_ang_vel    → roll (idx 3), yaw (idx 5) 符号反転
+          [6:9]   projected_gravity → gy (idx 7) 符号反転
+          [9:12]  commands        → cmd_vy (idx 10), cmd_vyaw (idx 11) 符号反転
+          [12:22] dof_pos         → L↔Rスワップ + yaw/roll符号反転
+          [22:32] dof_vel         → 同上
+          [32:42] actions         → 同上
+          [42:44] gait_phase      → 変更なし
+          [44:46] leg_phase       → L↔Rスワップ
+          [46:48] feet_pos_z      → L↔Rスワップ
+          [48:50] contact_state   → L↔Rスワップ
+        """
+        m = self.mirror_mask
+        obs = self.obs_buf
+
+        # base_lin_vel: vy符号反転
+        obs[m, 1] *= -1
+        # base_ang_vel: roll, yaw符号反転
+        obs[m, 3] *= -1
+        obs[m, 5] *= -1
+        # projected_gravity: gy符号反転
+        obs[m, 7] *= -1
+        # commands: cmd_vy, cmd_vyaw符号反転
+        obs[m, 10] *= -1
+        obs[m, 11] *= -1
+
+        # DOF系 (pos, vel, actions): L↔Rスワップ + yaw/roll符号反転
+        sign = self.dof_mirror_sign
+        idx = self.dof_mirror_idx
+        for start in (12, 22, 32):
+            block = obs[m, start : start + 10].clone()
+            obs[m, start : start + 10] = block[:, idx] * sign
+
+        # leg_phase: L↔Rスワップ
+        lp = obs[m, 44:46].clone()
+        obs[m, 44] = lp[:, 1]
+        obs[m, 45] = lp[:, 0]
+        # feet_pos_z: L↔Rスワップ
+        fz = obs[m, 46:48].clone()
+        obs[m, 46] = fz[:, 1]
+        obs[m, 47] = fz[:, 0]
+        # contact_state: L↔Rスワップ
+        cs = obs[m, 48:50].clone()
+        obs[m, 48] = cs[:, 1]
+        obs[m, 49] = cs[:, 0]
+
     def reset(self) -> tuple[torch.Tensor, None]:
         self._reset_idx()
         self._update_observation()
+        if self.use_mirror_augmentation:
+            self._mirror_observations()
         return self.obs_buf, None
 
     # ============================================================
@@ -1015,7 +1093,7 @@ class DroidEnvUnitree:
         epsilon = 1e-6
 
         # EMA更新: vel_sq_ema = (1-α) * vel_sq_ema + α * dof_vel²
-        vel_sq = self.dof_vel ** 2
+        vel_sq = self.dof_vel**2
         self.vel_sq_ema.mul_(1.0 - alpha).add_(vel_sq, alpha=alpha)
 
         # 左右関節ペア: (left_idx, right_idx)
@@ -1034,7 +1112,7 @@ class DroidEnvUnitree:
             # 正規化: (L-R)² / (0.5*(L+R)+ε)² → スケール不変の相対的非対称度
             mean_ema = 0.5 * (ema_l + ema_r) + epsilon
             normalized_diff = (ema_l - ema_r) / mean_ema
-            total_error += normalized_diff ** 2
+            total_error += normalized_diff**2
 
         return torch.exp(-total_error / sigma)
 
