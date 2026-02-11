@@ -84,6 +84,9 @@ hip_pitch可動域促進（V19追加）:
 接地相足先位置制約（V12 exp008追加）:
   - stance_foot_lateral_position: 接地足横方向位置ペナルティ（内股解消タスク空間制約）
 
+速度二乗EMA対称性（V12 exp009追加）:
+  - symmetry_vel_ema: 左右関節の運動エネルギー均等性報酬（位相不問）
+
 【観測空間】(50次元)
 - base_lin_vel (3): ボディローカル線速度
 - base_ang_vel (3): ボディローカル角速度
@@ -353,6 +356,9 @@ class DroidEnvUnitree:
         # 接触状態キャッシュ
         self.contact_state = torch.zeros((self.num_envs, 2), dtype=gs.tc_float, device=gs.device)
 
+        # 速度二乗EMA（symmetry_vel_ema報酬用、exp009 V12追加）
+        self.vel_sq_ema = torch.zeros((self.num_envs, self.num_actions), dtype=gs.tc_float, device=gs.device)
+
         # 高さ目標
         self.base_height_target = self.reward_cfg.get("base_height_target", 0.20)
         # Unitree方式: 遊脚の目標高さ
@@ -612,6 +618,7 @@ class DroidEnvUnitree:
             self.feet_pos.zero_()
             self.feet_vel.zero_()
             self.contact_state.zero_()
+            self.vel_sq_ema.zero_()
             if self.feet_air_time is not None:
                 assert self.last_contacts is not None
                 self.feet_air_time.zero_()
@@ -636,6 +643,7 @@ class DroidEnvUnitree:
             self.feet_pos.masked_fill_(envs_idx[:, None, None], 0.0)
             self.feet_vel.masked_fill_(envs_idx[:, None, None], 0.0)
             self.contact_state.masked_fill_(envs_idx[:, None], 0.0)
+            self.vel_sq_ema.masked_fill_(envs_idx[:, None], 0.0)
             if self.feet_air_time is not None:
                 assert self.last_contacts is not None
                 self.feet_air_time.masked_fill_(envs_idx[:, None], 0.0)
@@ -974,6 +982,61 @@ class DroidEnvUnitree:
         # 指数型報酬（対称時に最大1.0）
         sigma = 0.1  # rad
         return torch.exp(-deviation_diff / sigma)
+
+    # ------------ 速度二乗EMA対称性（V12 exp009追加）----------------
+
+    def _reward_symmetry_vel_ema(self) -> torch.Tensor:
+        """左右関節の運動エネルギー均等性報酬（V12 exp009追加）
+
+        交互歩行では各瞬間に左右の関節角度は異なるため、瞬時の関節位置対称性
+        （_reward_symmetry）は同位相同期（うさぎジャンプ）を誘導するリスクがある。
+
+        本報酬は関節速度の二乗の指数移動平均（EMA）を用いて時間平均運動エネルギーの
+        左右均等性を評価する。対称な交互歩行では1歩行周期の時間平均で
+        ∫dq_L²dt = ∫dq_R²dt が成立するため、位相に依存しない対称性指標となる。
+
+        【設計原理】
+        - 速度二乗 = 運動エネルギーの代理指標（質量は左右同一なので省略可）
+        - EMAの時定数 ≈ 1歩行周期（α=0.03, 50Hz制御, 1.5Hz歩容で約33ステップ）
+        - 正規化により歩行速度に依存しない相対的対称性を評価
+        - hip_pitchを含む全関節ペア（roll, pitch, knee, ankle）を評価対象
+
+        【既存報酬との差異】
+        - _reward_symmetry: 瞬時位置対称性 → 同位相同期リスク
+        - _reward_symmetry_range: hip_pitch振幅のみ → race to bottom
+        - 本報酬: 時間平均運動エネルギー均等性 → 位相不問かつ全関節対応
+
+        【参考文献】
+        - exp009_report_v10.md: 非対称性の二層構造分析
+        - Leveraging Symmetry in RL-based Legged Locomotion Control (IROS 2024)
+        """
+        alpha: float = self.reward_cfg.get("symmetry_ema_alpha", 0.03)
+        sigma: float = self.reward_cfg.get("symmetry_ema_sigma", 2.0)
+        epsilon = 1e-6
+
+        # EMA更新: vel_sq_ema = (1-α) * vel_sq_ema + α * dof_vel²
+        vel_sq = self.dof_vel ** 2
+        self.vel_sq_ema.mul_(1.0 - alpha).add_(vel_sq, alpha=alpha)
+
+        # 左右関節ペア: (left_idx, right_idx)
+        pairs = [
+            (self.left_hip_roll_idx, self.right_hip_roll_idx),
+            (self.left_hip_pitch_idx, self.right_hip_pitch_idx),
+            (self.left_knee_idx, self.right_knee_idx),
+            (self.left_ankle_idx, self.right_ankle_idx),
+        ]
+
+        # 正規化された左右差の二乗和
+        total_error = torch.zeros(self.num_envs, dtype=self.vel_sq_ema.dtype, device=self.vel_sq_ema.device)
+        for left_idx, right_idx in pairs:
+            ema_l = self.vel_sq_ema[:, left_idx]
+            ema_r = self.vel_sq_ema[:, right_idx]
+            # 正規化: (L-R)² / (0.5*(L+R)+ε)² → スケール不変の相対的非対称度
+            mean_ema = 0.5 * (ema_l + ema_r) + epsilon
+            normalized_diff = (ema_l - ema_r) / mean_ema
+            total_error += normalized_diff ** 2
+
+        return torch.exp(-total_error / sigma)
 
     # ------------ 交互歩行・足裏制御（V7追加）----------------
 
