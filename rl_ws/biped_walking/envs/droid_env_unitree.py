@@ -387,13 +387,21 @@ class DroidEnvUnitree:
         # 正の値で指定（左脚の外向き上限、右脚は符号反転で適用）
         self.hip_roll_outward_limit: float | None = self.reward_cfg.get("hip_roll_outward_limit", None)
 
-        # Mirror Augmentation（exp009 V13追加）
-        # 半数の環境を永続的にL↔Rミラーし、ポリシーの左右対称性を構造的に保証する。
+        # Mirror Augmentation（exp009 V13追加, V17拡張: 確率的割当モード）
+        # ポリシーの左右対称性を構造的に保証する。
         # 報酬・物理はミラーされない（実状態で計算）。観測のみミラー、アクションはデミラーして適用。
+        # - persistent（V13-V16）: 後半環境を永続的にミラー
+        # - stochastic（V17）: 各エピソード開始時に50%確率でミラー/非ミラーをランダム割当
         self.use_mirror_augmentation: bool = self.env_cfg.get("mirror_augmentation", False)
+        self.mirror_augmentation_stochastic: bool = self.env_cfg.get("mirror_augmentation_stochastic", False)
         if self.use_mirror_augmentation:
             self.mirror_mask = torch.zeros(self.num_envs, dtype=torch.bool, device=gs.device)
-            self.mirror_mask[self.num_envs // 2 :] = True
+            if not self.mirror_augmentation_stochastic:
+                # persistent mode: 後半環境を永続的にミラー
+                self.mirror_mask[self.num_envs // 2 :] = True
+            else:
+                # stochastic mode: 初期状態は50%ランダム割当
+                self.mirror_mask = torch.rand(self.num_envs, device=gs.device) < 0.5
             # DOFミラー: L↔Rスワップ [L0..L4, R5..R9] → [R5..R9, L0..L4]
             self.dof_mirror_idx = torch.tensor([5, 6, 7, 8, 9, 0, 1, 2, 3, 4], device=gs.device)
             # 符号反転: hip_yaw, hip_rollは鏡像で符号反転
@@ -687,6 +695,14 @@ class DroidEnvUnitree:
                 self.extras["episode"]["rew_" + key] = mean / self.env_cfg["episode_length_s"]
                 value.masked_fill_(envs_idx, 0.0)
             self.extras["episode"]["rew_" + key] = mean / self.env_cfg["episode_length_s"]
+
+        # Mirror Augmentation: 確率的モードではリセット環境のミラー割当を再抽選
+        if self.use_mirror_augmentation and self.mirror_augmentation_stochastic:
+            if envs_idx is None:
+                self.mirror_mask = torch.rand(self.num_envs, device=gs.device) < 0.5
+            else:
+                random_mask = torch.rand(self.num_envs, device=gs.device) < 0.5
+                self.mirror_mask = torch.where(envs_idx, random_mask, self.mirror_mask)
 
         self._resample_commands(envs_idx)
 
