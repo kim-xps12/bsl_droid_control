@@ -184,6 +184,29 @@ uv run python scripts/batch_eval.py \
 
 既存CSVは自動スキップ。全ジョブ完了後にサマリ（成功数・失敗数・実行時間・速度向上倍率）を表示。
 
+### 5.11 方向別評価集計 (`analyze_directional_eval.py`)
+
+**使用場面**: 固定コマンドCSV（4方向 × 3 seed）から方向別の評価指標を集計・比較
+
+```bash
+# 1バージョンの方向別集計
+uv run python scripts/analyze_directional_eval.py {N} --prefix droid-walking-omni-v
+
+# 複数バージョン比較
+uv run python scripts/analyze_directional_eval.py {N} {N-1} --prefix droid-walking-omni-v
+
+# 速度上限をカスタマイズ
+uv run python scripts/analyze_directional_eval.py {N} --prefix droid-walking-omni-v --vx-max 0.30 --vy-max 0.20
+```
+
+オプション:
+- `--epoch`: 評価エポック番号（デフォルト: 3999）
+- `--prefix`: 実験名プレフィックス（デフォルト: `droid-walking-omni-v`）
+- `--vx-max`: FWD/BWD方向のコマンド速度上限（デフォルト: 0.30）
+- `--vy-max`: LFT/RGT方向のコマンド速度上限（デフォルト: 0.30）
+
+出力: 各方向の cmd_vel, ortho_vel, yaw_final, roll_std, hip_pitch_corr, tracking_rate, contact_ratio L/R, hip_pitch_asym の mean ± std、および方向間バランス（追従率の全方向平均・ばらつき・FWD/BWD差・LFT/RGT差）。
+
 ## 6. 方向別評価（exp009固有）
 
 全方向歩行の性能を方向ごとに分離評価する。詳細なプロトコルは `exp009_rules.md` Section 5 を参照。
