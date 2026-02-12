@@ -7,7 +7,8 @@ argument-hint: "[version-number] [optional: observation-text]"
 # EXP009 データ収集ワークフロー
 
 V$ARGUMENTS の物理シミュレータ評価に必要なデータを収集する。
-収集完了後、`/exp009-evaluate` で対話分析・レポート更新を行う。
+収集完了後、ユーザーが別途 `/exp009-evaluate` を実行してレポート更新を行う。
+**禁止事項**: このスキル内で `/exp009-evaluate` を実行してはならない。データ収集と完了チェックまでで必ず終了すること。
 
 ## 必読ドキュメント
 
@@ -117,4 +118,5 @@ uv run python scripts/analyze_vibration.py {N} {N-1} --prefix droid-walking-omni
 - [ ] V{N-1} の同等ファイル
 - [ ] 各分析スクリプトの実行完了
 
-次のステップ: `/exp009-evaluate {N} {所感テキスト}`
+**このスキルはここで終了する。`/exp009-evaluate` を自動実行してはならない。**
+ユーザーへの案内: 次のステップとして `/exp009-evaluate {N} {所感テキスト}` を手動で実行してください。
