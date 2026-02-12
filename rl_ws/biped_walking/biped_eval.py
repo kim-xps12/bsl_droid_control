@@ -334,6 +334,12 @@ def main() -> None:
         command_cfg["lin_vel_y_range"] = [vy, vy]
         command_cfg["ang_vel_range"] = [vyaw, vyaw]
 
+    # Mirror Augmentationは訓練専用機能。評価時は無効化する。
+    # 理由: num_envs=1ではmirror_mask[0:]が全Trueとなり、唯一の環境が常にミラー状態になる。
+    # これは評価の意図に反し、show_viewer=True時にMPS/Metal上で物理挙動の不整合を引き起こしうる。
+    if env_cfg.get("mirror_augmentation", False):
+        env_cfg["mirror_augmentation"] = False
+
     # URDFパスを現在の環境に合わせて上書き（異なるマシンで学習した場合の互換性）
     script_dir = Path(__file__).resolve().parent
     rl_ws_dir = script_dir.parent
