@@ -152,6 +152,38 @@ uv run python scripts/analyze_hip_yaw_and_phase.py {N} {N-1} --prefix droid-walk
 | `jitter_analysis_v4_v3.py` | v3/v4 | 関節ジッター比較 |
 | `stance_analysis_v1v2.py` | v1/v2 | スタンス相分析 |
 
+### 5.10 バッチ評価（並列実行）(`batch_eval.py`)
+
+**使用場面**: ランダム評価 + 方向別評価（4方向 × 3シード）を並列実行して高速化
+
+```bash
+# 全評価（random + directional）を3並列で実行
+uv run python scripts/batch_eval.py \
+    -e droid-walking-omni-v{N} droid-walking-omni-v{N-1} \
+    --vx-max 0.3 --vy-max 0.15 --workers 3
+
+# 方向別評価のみ
+uv run python scripts/batch_eval.py \
+    -e droid-walking-omni-v{N} --vx-max 0.3 --vy-max 0.15 --no-random
+
+# 特定の固定コマンドのみ追加（V{N-1}のYaw評価用FWDなど）
+uv run python scripts/batch_eval.py \
+    -e droid-walking-omni-v{N-1} --no-random --no-directional \
+    --extra-cmd "0.3 0.0 0.0"
+```
+
+オプション:
+- `--workers N`: 最大並列プロセス数（デフォルト: 3、GPU VRAM ~1GB/プロセス）
+- `--vx-max`, `--vy-max`: 方向別評価の速度上限（`--no-directional` 時は不要）
+- `--seeds N [N ...]`: 方向別評価のシード（デフォルト: 1 2 3）
+- `--no-random`: ランダムコマンド評価をスキップ
+- `--no-directional`: 方向別評価をスキップ
+- `--extra-cmd "VX VY VYAW"`: 追加の固定コマンド評価（複数回指定可）
+- `--force`: 既存CSVがあっても再実行
+- `--dry-run`: 実行計画のみ表示
+
+既存CSVは自動スキップ。全ジョブ完了後にサマリ（成功数・失敗数・実行時間・速度向上倍率）を表示。
+
 ## 6. 方向別評価（exp009固有）
 
 全方向歩行の性能を方向ごとに分離評価する。詳細なプロトコルは `exp009_rules.md` Section 5 を参照。
