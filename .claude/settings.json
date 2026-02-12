@@ -1,8 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cp biped_walking/train/*)",
-      "Bash(cp -* biped_walking/train/*)",
+      "Bash(cp biped_walking/train/droid_train_*.py biped_walking/train/droid_train_*.py)",
       "Bash(uv run ruff *)",
       "Bash(uv run mypy *)",
       "Bash(uv run python biped_walking/biped_eval.py *)",
@@ -12,6 +11,7 @@
       "Bash(uv run python scripts/analyze_training_log.py *)",
       "Bash(uv run python scripts/show_reward_components.py *)",
       "Bash(uv run python scripts/analyze_eval_csv.py *)",
+      "Bash(uv run python scripts/analyze_directional_eval.py *)",
       "Bash(tmux *)",
       "Bash(tmux kill-pane *)",
       "Bash(cat /private/tmp/claude-*/**/tasks/*.output *)",
