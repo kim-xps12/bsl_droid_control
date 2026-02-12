@@ -63,3 +63,8 @@ exp008では前進歩行のみを学習対象としていた（lin_vel_x_range: 
 | V8 | [exp009_report_v8.md](exp009_report_v8.md) | V6ベース + gait_frequency 1.2→1.5 Hz（交互歩行回復、V7 Kp/Kd revert） | （訓練前） |
 | V9 | [exp009_report_v9.md](exp009_report_v9.md) | V8ベース + knee Kp=50（単独、関節グループ別Kp/Kd再検討の第一歩） | （訓練前） |
 | V10 | [exp009_report_v10.md](exp009_report_v10.md) | V9ベース + vyコマンド範囲の楕円化（±0.3→±0.15 m/s） | （訓練前） |
+| V11 | [exp009_report_v11.md](exp009_report_v11.md) | V10ベース + vyコマンド範囲の最適化（±0.15→±0.20 m/s） | （訓練前） |
+| V12 | [exp009_report_v12.md](exp009_report_v12.md) | V10ベース + 速度二乗EMA対称性報酬の追加（symmetry_vel_ema 0.3） | reward 66.66（+9.0%）、振動大幅抑制（高周波比率14.7→7.8%）、接地対称化（48.2/50.8%）、FWD追従率90.5%。ただしsymmetry_vel_emaの構造的欠陥により右側活動量を選択的に削減するtrivial solutionを獲得。R hip_pitch歩行パターン崩壊（主周波数0.12Hz）、knee非対称度+18.6%悪化、左膝過伸展。速度RMS対称化はrange非対称を隠蔽。追加分析でbase_height_target引き下げを却下、Mirror Augmentationを推奨 |
+| V13 | [exp009_report_v13.md](exp009_report_v13.md) | V11ベース + Mirror Augmentation（L↔R反転データ拡張） | 対称性改善（hip_pitch非対称度+28.5%→+9.8%）だが、gait_phaseミラー変換バグにより位相制御崩壊（Yawドリフト7.3倍悪化: 12.7°→92.4°/20s）。バグ修正をV14で実施 |
+| V14 | [exp009_report_v14.md](exp009_report_v14.md) | V13ベース + gait_phaseミラー変換バグ修正（obs[42:44]符号反転追加） | 姿勢安定性大幅改善（Roll std -24.3%, Pitch std -40.5%）、マイクロスタンス完全解消、hip_pitch相関-0.502に大幅改善、FWD追従率93.2%。一方hip_pitch非対称度が方向反転(-57.7%)、LFT/RGT追従率低下 |
+| V15 | [exp009_report_v15.md](exp009_report_v15.md) | V14ベース + 横方向コマンド速度範囲拡大（lin_vel_y_range ±0.20→±0.30） | （訓練前） |
