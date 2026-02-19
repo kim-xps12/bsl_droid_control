@@ -1,0 +1,31 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="360px" height="412px" viewBox="-0.5 -0.5 360 412" style="background: transparent;" content="&lt;mxfile host=&quot;65bd71144e&quot;&gt;&lt;diagram name=&quot;Summary Flow&quot; id=&quot;summary-flow-001&quot;&gt;&lt;mxGraphModel dx=&quot;900&quot; dy=&quot;600&quot; grid=&quot;1&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;1&quot; page=&quot;1&quot; pageScale=&quot;1&quot; pageWidth=&quot;827&quot; pageHeight=&quot;1169&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;&lt;root&gt;&lt;mxCell id=&quot;0&quot;/&gt;&lt;mxCell id=&quot;1&quot; parent=&quot;0&quot;/&gt;&lt;mxCell id=&quot;s1&quot; value=&quot;ステップ1: 足先空間アプローチ → 失敗&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fdedec;strokeColor=#e74c3c;fontSize=13;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;0&quot; y=&quot;0&quot; width=&quot;360&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;s2&quot; value=&quot;ステップ2: 関節空間 + Unitree参考 → 報酬設計確立&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;0&quot; y=&quot;110&quot; width=&quot;360&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;s3&quot; value=&quot;ステップ3: 形態最適化 + PDクランプ → 全指標大幅改善&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;0&quot; y=&quot;220&quot; width=&quot;360&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;s4&quot; value=&quot;ステップ4: 全方向歩行へ拡張 → 追従率77.5%達成&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;0&quot; y=&quot;330&quot; width=&quot;360&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;/root&gt;&lt;/mxGraphModel&gt;&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <marker id="arrowdown" markerWidth="10" markerHeight="7" refX="5" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+        </marker>
+    </defs>
+    <g>
+        <!-- ステップ1 -->
+        <rect x="0" y="0" width="360" height="60" rx="10" ry="10" fill="#fdedec" stroke="#e74c3c" stroke-width="2"/>
+        <text x="180" y="25" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#333">ステップ1: 足先空間アプローチ</text>
+        <text x="180" y="46" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" fill="#e74c3c">→ 失敗（IK精度、報酬exploit）</text>
+        <!-- 矢印1 -->
+        <line x1="180" y1="60" x2="180" y2="105" stroke="#555" stroke-width="2" marker-end="url(#arrowdown)"/>
+        <!-- ステップ2 -->
+        <rect x="0" y="110" width="360" height="60" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+        <text x="180" y="135" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#333">ステップ2: 関節空間 + Unitree参考</text>
+        <text x="180" y="156" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" fill="#6c8ebf">→ 40版で報酬設計原則を確立</text>
+        <!-- 矢印2 -->
+        <line x1="180" y1="170" x2="180" y2="215" stroke="#555" stroke-width="2" marker-end="url(#arrowdown)"/>
+        <!-- ステップ3 -->
+        <rect x="0" y="220" width="360" height="60" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+        <text x="180" y="245" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#333">ステップ3: 形態最適化 + PDクランプ</text>
+        <text x="180" y="266" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" fill="#6c8ebf">→ 全指標大幅改善</text>
+        <!-- 矢印3 -->
+        <line x1="180" y1="280" x2="180" y2="325" stroke="#555" stroke-width="2" marker-end="url(#arrowdown)"/>
+        <!-- ステップ4 -->
+        <rect x="0" y="330" width="360" height="60" rx="10" ry="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+        <text x="180" y="355" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#333">ステップ4: 全方向歩行へ拡張</text>
+        <text x="180" y="376" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" fill="#82b366">→ 追従率77.5%達成</text>
+    </g>
+</svg>
