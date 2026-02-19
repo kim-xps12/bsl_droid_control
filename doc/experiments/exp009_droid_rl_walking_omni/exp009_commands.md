@@ -207,6 +207,20 @@ uv run python scripts/analyze_directional_eval.py {N} --prefix droid-walking-omn
 
 出力: 各方向の cmd_vel, ortho_vel, yaw_final, roll_std, hip_pitch_corr, tracking_rate, contact_ratio L/R, hip_pitch_asym の mean ± std、および方向間バランス（追従率の全方向平均・ばらつき・FWD/BWD差・LFT/RGT差）。
 
+### 5.12 ランダム評価サマリ抽出 (`extract_eval_summary.py`)
+
+**使用場面**: ランダムコマンド評価CSVからレポートテーブル用の補足指標を抽出
+
+```bash
+uv run python scripts/extract_eval_summary.py {N} {N-1} --prefix droid-walking-omni-v
+```
+
+オプション:
+- `--epoch`: 評価エポック番号（デフォルト: 3999）
+- `--prefix`: 実験名プレフィックス（デフォルト: `droid-walking-omni-v`）
+
+出力: Pitch std（定常状態 t>2s）、接地時間比 L/R。`analyze_eval_csv.py` が出力しない指標を補完する。
+
 ## 6. 方向別評価（exp009固有）
 
 全方向歩行の性能を方向ごとに分離評価する。詳細なプロトコルは `exp009_rules.md` Section 5 を参照。
