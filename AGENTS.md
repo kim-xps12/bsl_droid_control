@@ -296,86 +296,9 @@ doc/experiments/exp007_droid_rl_walking_ref_unitree/
 
 これらを混在させると、後から特定の情報を探す際に困難になる。
 
-### DrawIO図の作成ルール【厳守】
+### DrawIO図の作成ルール
 
-**ファイル形式**: `.drawio.svg` 拡張子を使用し、中身は **DrawIO XML形式** (`<mxfile>`) で作成すること。
-
-#### DO（必須）
-```xml
-<!-- 正しい形式：DrawIO XML形式 -->
-<mxfile host="65bd71144e">
-    <diagram name="Diagram Name" id="diagram-id">
-        <mxGraphModel dx="800" dy="600" grid="1" gridSize="10" ...>
-            <root>
-                <mxCell id="0"/>
-                <mxCell id="1" parent="0"/>
-                <!-- 図形要素をここに配置 -->
-                <mxCell id="box1" value="Text" style="rounded=1;whiteSpace=wrap;html=1;..." 
-                        parent="1" vertex="1">
-                    <mxGeometry x="100" y="100" width="120" height="60" as="geometry"/>
-                </mxCell>
-            </root>
-        </mxGraphModel>
-    </diagram>
-</mxfile>
-```
-
-#### DON'T（禁止）
-```xml
-<!-- 誤った形式：純粋なSVG形式（DrawIOで開けない） -->
-<svg xmlns="http://www.w3.org/2000/svg" ...>
-    <rect x="100" y="100" width="120" height="60"/>
-</svg>
-```
-
-#### 理由
-- **編集可能性**: DrawIOアプリで開いて後から編集できる
-- **表示可能性**: Markdownプレビューで画像として表示される
-- **一元管理**: ソースファイルと表示ファイルが同一（二重管理なし）
-
-#### 図形の指定方法
-DrawIO標準図形を使用する際は、適切な名前空間を指定すること：
-
-```xml
-<!-- 矩形 -->
-<mxCell id="rect1" value="Label" 
-        style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" 
-        parent="1" vertex="1">
-    <mxGeometry x="100" y="100" width="120" height="60" as="geometry"/>
-</mxCell>
-
-<!-- 矢印（接続） -->
-<mxCell id="arrow1" value="Label" 
-        style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;" 
-        parent="1" source="box1" target="box2" edge="1">
-    <mxGeometry relative="1" as="geometry"/>
-</mxCell>
-```
-
-#### 検証方法
-作成後、以下を確認すること：
-1. DrawIOアプリ（draw.io）で開けるか → 編集可能性の確認
-2. Markdownプレビューで画像表示されるか → 表示可能性の確認
-3. ファイルを`cat`して`<mxfile>`タグから始まるか → 形式の確認
-
-#### テンプレート
-新規DrawIO図を作成する際は、以下のテンプレートを使用すること：
-
-```xml
-<mxfile host="65bd71144e">
-    <diagram name="[図の名前]" id="[ユニークID]">
-        <mxGraphModel dx="800" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
-            <root>
-                <mxCell id="0"/>
-                <mxCell id="1" parent="0"/>
-                <!-- ここに図形要素を追加 -->
-            </root>
-        </mxGraphModel>
-    </diagram>
-</mxfile>
-```
-
-**重要**: この形式以外で`.drawio.svg`ファイルを作成することは厳禁。違反すると「Not a diagram file」エラーが発生し、DrawIOで開けなくなる。
+`.drawio.svg`ファイルの作成・編集時は、drawioスキル（`.claude/skills/drawio/SKILL.md`）のルールに従うこと。形式はDrawIO XML（`<mxfile>`）のみ許可。純粋なSVG形式は禁止。
 - 主要な実行コマンドはプロジェクトルートの`README.md`に記載し，パッケージ直下のドキュメントには二重管理を防ぐため記載しない．コマンドに言及したい場合は「ルートのREADME.mdを参照のこと」で扱うこと
 
 ## 参照すべきドキュメント
