@@ -71,4 +71,6 @@ exp008では前進歩行のみを学習対象としていた（lin_vel_x_range: 
 | V16 | [exp009_report_v16.md](exp009_report_v16.md) | V15ベース + ankle_pitch Kd増加（5.0→8.0、スイング脚振動抑制） | 足首振動大幅抑制（R_ankle DOF速度RMS -72%）、両足空中率改善（4.0%→2.2%）。一方Roll揺れ+64.2%、左右非対称性悪化（接地時間比1.065→1.322）、追従率mean 77.5%→71.4%。ankle-to-hip制御代償転移が主因 |
 | V17 | [exp009_report_v17.md](exp009_report_v17.md) | V16ベース + Mirror Augmentation確率的割当（永続→エピソード毎50%ランダム） | 接地時間比1.031維持、hip_yaw L/R比改善（1.424→1.059）。一方足首振動大幅悪化（ankle vel RMS L+58%/R+38%）、追従率mean 71.4%→64.7%、Yawドリフト悪化（FWD -37.8°）。確率的ミラーがPPOアドバンテージ推定と干渉するメカニズムを特定 |
 | V18 | [exp009_report_v18.md](exp009_report_v18.md) | V17ベース + ankle_pitch Kd中間値（8.0→6.5、V16案D） | Roll安定化-44.2%（2.69°、シリーズ最良）、FWD追従率92.4%。一方Yawドリフト全方向悪化（LFT +64.7°）、FWD/BWD足引き摺り、L_ankle非対称増幅。確率的ミラーとの因果分離不能 |
-| V19 | [exp009_report_v19.md](exp009_report_v19.md) | V16ベース永続ミラー復帰 + Yawコマンド導入（ang_vel_range [-0.3, 0.3]） | （訓練前） |
+| V19 | [exp009_report_v19.md](exp009_report_v19.md) | V16ベース永続ミラー復帰 + Yawコマンド導入（ang_vel_range [-0.3, 0.3]） | Yaw追従能力獲得（FWD -41.0°→-3.5°）、方向別バランス改善。一方R側バランス代償過剰拡大（R_hip_roll下限-26.8°）、横方向増幅率1.78x、追従率65.0% |
+| V20 | [exp009_report_v20.md](exp009_report_v20.md) | V19ベース + hip_roll外向きPDクランプ導入（outward_limit=20°） | PDクランプが勾配情報遮断として機能し歩行戦略が変質。内股固着→バランスストローク消失→歩行パターン崩壊のカスケード悪化。BWD追従率37.5%、RGT Yaw -111.2°。「PDクランプはhip_rollに対して過剰に侵襲的」という知見を獲得 |
+| V21 | [exp009_report_v21.md](exp009_report_v21.md) | V19ベース + tracking_ang_velスケール引き上げ（0.5→1.0） | （訓練前） |
