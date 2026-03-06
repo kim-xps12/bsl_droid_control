@@ -29,7 +29,7 @@
 1. **単一のコマンドトピック**: 全環境で同一トピック名・メッセージ型を使用
 2. **抽象化レイヤー**: 歩容生成ノードは送信先を意識しない
 3. **切り替えはLaunch引数で完結**: `target:=sim|hardware`
-4. **互換性維持**: 既存の`/joint_states`ベースの可視化を維持
+4. **互換性維持**: `/joint_states`ベースの可視化を維持
 
 ### 2.2 統一トピック仕様
 
@@ -310,7 +310,7 @@ STATE_QOS = QoSProfile(
 
 **Phase 1（即座に実装）**:
 - `viz_only`モード: `/joint_commands` → `/joint_states` のリマップ
-- 既存の`gait_pattern_generator`を`/joint_commands`にpublishするよう変更
+- `gait_pattern_generator`を`/joint_commands`にpublishするよう変更
 
 **Phase 2（シミュレータ統合時）**:
 - `mujoco`モード: MuJoCo Python APIブリッジ
