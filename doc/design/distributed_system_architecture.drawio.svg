@@ -1,0 +1,645 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1220px" height="850px" viewBox="90.0 35.0 1220.0 850.0" style="background: transparent;" content="&lt;mxfile host=&quot;app.diagrams.net&quot;&gt;
+  &lt;diagram name=&quot;Distributed System Architecture&quot; id=&quot;distributed-arch&quot;&gt;
+    &lt;mxGraphModel dx=&quot;1422&quot; dy=&quot;1200&quot; grid=&quot;1&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;1&quot; page=&quot;1&quot; pageScale=&quot;1&quot; pageWidth=&quot;1400&quot; pageHeight=&quot;1000&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;
+      &lt;root&gt;
+        &lt;mxCell id=&quot;0&quot; /&gt;
+        &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot; /&gt;
+        
+        &lt;!-- Title --&gt;
+        &lt;mxCell id=&quot;title&quot; value=&quot;二脚ロボット分散制御システム アーキテクチャ&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;400&quot; y=&quot;20&quot; width=&quot;600&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;subtitle&quot; value=&quot;Jetson Orin Nano Super (ロボット搭載) + MacBook (開発・可視化)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontColor=#666666;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;400&quot; y=&quot;55&quot; width=&quot;600&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Network Layer --&gt;
+        &lt;mxCell id=&quot;network-box&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeWidth=2;dashed=1;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;100&quot; y=&quot;430&quot; width=&quot;1200&quot; height=&quot;80&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;network-label&quot; value=&quot;🌐 ROS 2 DDS Network (WiFi / Ethernet)&amp;lt;br&amp;gt;ROS_DOMAIN_ID=42&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;500&quot; y=&quot;455&quot; width=&quot;400&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- ========== JETSON SECTION ========== --&gt;
+        &lt;mxCell id=&quot;jetson-main-box&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=3;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;100&quot; y=&quot;100&quot; width=&quot;580&quot; height=&quot;300&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;jetson-title&quot; value=&quot;🤖 Jetson Orin Nano Super (ロボット搭載)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;110&quot; width=&quot;540&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;jetson-spec&quot; value=&quot;ARM Cortex-A78AE | PREEMPT_RT | 8GB RAM&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;135&quot; width=&quot;540&quot; height=&quot;20&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Jetson RT Control Layer --&gt;
+        &lt;mxCell id=&quot;jetson-rt-box&quot; value=&quot;リアルタイム制御層 (200Hz, SCHED_FIFO)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;160&quot; width=&quot;540&quot; height=&quot;70&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;node-hw&quot; value=&quot;robstride_hardware&amp;lt;br&amp;gt;✅ 実装済み&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=10;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;130&quot; y=&quot;185&quot; width=&quot;120&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;node-state-est&quot; value=&quot;state_estimator&amp;lt;br&amp;gt;🔲 計画&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;260&quot; y=&quot;185&quot; width=&quot;100&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;node-safety&quot; value=&quot;safety_monitor&amp;lt;br&amp;gt;🔲 計画&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;370&quot; y=&quot;185&quot; width=&quot;100&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;node-ctrl-mgr&quot; value=&quot;controller_manager&amp;lt;br&amp;gt;(ros2_control)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;480&quot; y=&quot;185&quot; width=&quot;110&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Jetson Gait Layer --&gt;
+        &lt;mxCell id=&quot;jetson-gait-box&quot; value=&quot;歩容生成層 (50-100Hz)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;240&quot; width=&quot;270&quot; height=&quot;60&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;node-rl&quot; value=&quot;rl_policy&amp;lt;br&amp;gt;🔲 計画&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;130&quot; y=&quot;260&quot; width=&quot;100&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;node-gait&quot; value=&quot;gait_generator&amp;lt;br&amp;gt;🔲 計画&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;240&quot; y=&quot;260&quot; width=&quot;100&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Jetson Sensor/Driver Layer --&gt;
+        &lt;mxCell id=&quot;jetson-driver-box&quot; value=&quot;センサ/ドライバ層&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;400&quot; y=&quot;240&quot; width=&quot;260&quot; height=&quot;60&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;node-imu&quot; value=&quot;imu_driver&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#6c8ebf;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;410&quot; y=&quot;260&quot; width=&quot;70&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;node-rsp&quot; value=&quot;robot_state&amp;lt;br&amp;gt;_publisher&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#6c8ebf;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;490&quot; y=&quot;260&quot; width=&quot;75&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;node-jsb&quot; value=&quot;joint_state&amp;lt;br&amp;gt;_broadcaster&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#6c8ebf;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;575&quot; y=&quot;260&quot; width=&quot;75&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Jetson Hardware --&gt;
+        &lt;mxCell id=&quot;jetson-hw-box&quot; value=&quot;ハードウェア接続&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;310&quot; width=&quot;540&quot; height=&quot;70&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;hw-can&quot; value=&quot;CAN Bus&amp;lt;br&amp;gt;→ RobStride Motors&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;fontSize=9;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;130&quot; y=&quot;330&quot; width=&quot;120&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;hw-imu&quot; value=&quot;USB/I2C&amp;lt;br&amp;gt;→ IMU&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;fontSize=9;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;260&quot; y=&quot;330&quot; width=&quot;80&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;hw-cam&quot; value=&quot;USB&amp;lt;br&amp;gt;→ Camera&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;fontSize=9;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;350&quot; y=&quot;330&quot; width=&quot;80&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;hw-gpio&quot; value=&quot;GPIO&amp;lt;br&amp;gt;→ E-Stop&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;fontSize=9;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;440&quot; y=&quot;330&quot; width=&quot;80&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;hw-eth&quot; value=&quot;Ethernet/WiFi&amp;lt;br&amp;gt;→ Network&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;fontSize=9;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;530&quot; y=&quot;330&quot; width=&quot;100&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- ========== MACBOOK SECTION ========== --&gt;
+        &lt;mxCell id=&quot;mac-main-box&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=3;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;720&quot; y=&quot;100&quot; width=&quot;580&quot; height=&quot;300&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;mac-title&quot; value=&quot;💻 MacBook (開発・可視化ワークステーション)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#dae8fc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;740&quot; y=&quot;110&quot; width=&quot;540&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;mac-spec&quot; value=&quot;Apple Silicon / Intel | macOS | 開発環境&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;740&quot; y=&quot;135&quot; width=&quot;540&quot; height=&quot;20&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- MacBook Visualization --&gt;
+        &lt;mxCell id=&quot;mac-viz-box&quot; value=&quot;可視化ツール&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#6c8ebf;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;740&quot; y=&quot;160&quot; width=&quot;270&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-rviz&quot; value=&quot;RViz2&amp;lt;br&amp;gt;3D可視化&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=10;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;750&quot; y=&quot;185&quot; width=&quot;75&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-plot&quot; value=&quot;Plotjuggler&amp;lt;br&amp;gt;時系列プロット&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;835&quot; y=&quot;185&quot; width=&quot;80&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-rqt&quot; value=&quot;rqt&amp;lt;br&amp;gt;GUI Tools&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;925&quot; y=&quot;185&quot; width=&quot;70&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-foxglove&quot; value=&quot;Foxglove&amp;lt;br&amp;gt;(Optional)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=10;dashed=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;750&quot; y=&quot;230&quot; width=&quot;75&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- MacBook Development --&gt;
+        &lt;mxCell id=&quot;mac-dev-box&quot; value=&quot;開発環境&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1020&quot; y=&quot;160&quot; width=&quot;260&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-vscode&quot; value=&quot;VS Code&amp;lt;br&amp;gt;(Remote SSH)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;fontSize=10;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1030&quot; y=&quot;185&quot; width=&quot;80&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-git&quot; value=&quot;Git&amp;lt;br&amp;gt;Version Control&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1120&quot; y=&quot;185&quot; width=&quot;70&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-terminal&quot; value=&quot;Terminal&amp;lt;br&amp;gt;SSH&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1200&quot; y=&quot;185&quot; width=&quot;60&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-colcon&quot; value=&quot;colcon build (ローカル)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1030&quot; y=&quot;230&quot; width=&quot;110&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- MacBook Data/Sim --&gt;
+        &lt;mxCell id=&quot;mac-data-box&quot; value=&quot;データ/シミュレーション&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;740&quot; y=&quot;270&quot; width=&quot;540&quot; height=&quot;70&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-rosbag&quot; value=&quot;rosbag record&amp;lt;br&amp;gt;MCAP記録&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=10;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;750&quot; y=&quot;295&quot; width=&quot;90&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-mcap&quot; value=&quot;MCAP解析&amp;lt;br&amp;gt;データ解析&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;850&quot; y=&quot;295&quot; width=&quot;80&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-gazebo&quot; value=&quot;Gazebo&amp;lt;br&amp;gt;シミュレータ&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;940&quot; y=&quot;295&quot; width=&quot;80&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-isaac&quot; value=&quot;Isaac Sim&amp;lt;br&amp;gt;RL学習環境&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=10;dashed=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1030&quot; y=&quot;295&quot; width=&quot;80&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-teleop&quot; value=&quot;teleop_twist&amp;lt;br&amp;gt;手動制御&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1120&quot; y=&quot;295&quot; width=&quot;75&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;tool-joy&quot; value=&quot;joy_node&amp;lt;br&amp;gt;ゲームパッド&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1205&quot; y=&quot;295&quot; width=&quot;65&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Network connections --&gt;
+        &lt;mxCell id=&quot;arrow-jetson-net&quot; value=&quot;&quot; style=&quot;endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#d6b656;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;jetson-main-box&quot; target=&quot;network-box&quot;&gt;
+          &lt;mxGeometry width=&quot;50&quot; height=&quot;50&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;500&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;450&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;arrow-mac-net&quot; value=&quot;&quot; style=&quot;endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#6c8ebf;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;mac-main-box&quot; target=&quot;network-box&quot;&gt;
+          &lt;mxGeometry width=&quot;50&quot; height=&quot;50&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;500&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;450&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Topics Flow --&gt;
+        &lt;mxCell id=&quot;topics-box&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;dashed=1;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;100&quot; y=&quot;540&quot; width=&quot;1200&quot; height=&quot;180&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topics-title&quot; value=&quot;📡 主要なROS 2トピック通信&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;100&quot; y=&quot;545&quot; width=&quot;1200&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Jetson Publishes --&gt;
+        &lt;mxCell id=&quot;pub-jetson-box&quot; value=&quot;Jetson → MacBook (Publish)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;580&quot; width=&quot;350&quot; height=&quot;120&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-robot-state&quot; value=&quot;/robot_state (200Hz)&amp;lt;br&amp;gt;RobotState - 状態推定結果&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;130&quot; y=&quot;605&quot; width=&quot;160&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-joint-states&quot; value=&quot;/joint_states (200Hz)&amp;lt;br&amp;gt;JointState - 関節状態&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;300&quot; y=&quot;605&quot; width=&quot;150&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-imu&quot; value=&quot;/imu/data (200Hz)&amp;lt;br&amp;gt;Imu - IMUデータ&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;130&quot; y=&quot;645&quot; width=&quot;140&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-tf&quot; value=&quot;/tf, /tf_static&amp;lt;br&amp;gt;TF - 座標変換&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;280&quot; y=&quot;645&quot; width=&quot;120&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-safety&quot; value=&quot;/safety_status (200Hz)&amp;lt;br&amp;gt;SafetyStatus - 安全状態&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;130&quot; y=&quot;685&quot; width=&quot;160&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-diag&quot; value=&quot;/diagnostics&amp;lt;br&amp;gt;診断情報&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;300&quot; y=&quot;685&quot; width=&quot;100&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- MacBook Publishes --&gt;
+        &lt;mxCell id=&quot;pub-mac-box&quot; value=&quot;MacBook → Jetson (Publish)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;490&quot; y=&quot;580&quot; width=&quot;250&quot; height=&quot;120&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-vel-cmd&quot; value=&quot;/velocity_command&amp;lt;br&amp;gt;Twist - 速度指令&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#e3f2fd;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;500&quot; y=&quot;605&quot; width=&quot;130&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-joy&quot; value=&quot;/joy&amp;lt;br&amp;gt;Joy - ゲームパッド&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#e3f2fd;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;640&quot; y=&quot;605&quot; width=&quot;90&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-gait-cmd&quot; value=&quot;/gait_mode&amp;lt;br&amp;gt;歩容モード切替&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#e3f2fd;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;500&quot; y=&quot;650&quot; width=&quot;110&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Internal topics (Jetson only) --&gt;
+        &lt;mxCell id=&quot;internal-box&quot; value=&quot;Jetson内部のみ (ネットワーク不通過)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;760&quot; y=&quot;580&quot; width=&quot;250&quot; height=&quot;120&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-gait-target&quot; value=&quot;/gait_target (100Hz)&amp;lt;br&amp;gt;目標関節軌道&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#ffcccc;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;770&quot; y=&quot;605&quot; width=&quot;120&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-estop&quot; value=&quot;/emergency_stop&amp;lt;br&amp;gt;緊急停止信号&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#ffcccc;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;900&quot; y=&quot;605&quot; width=&quot;100&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;topic-ctrl-cmd&quot; value=&quot;/controller指令&amp;lt;br&amp;gt;ros2_control内部&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#ffcccc;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;770&quot; y=&quot;650&quot; width=&quot;110&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;internal-note&quot; value=&quot;※リアルタイム性のため&amp;lt;br&amp;gt;ネットワーク経由にしない&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=9;fontColor=#cc0000;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;890&quot; y=&quot;660&quot; width=&quot;110&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Bandwidth note --&gt;
+        &lt;mxCell id=&quot;bw-box&quot; value=&quot;帯域幅目安&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;verticalAlign=top;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1030&quot; y=&quot;580&quot; width=&quot;250&quot; height=&quot;120&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;bw-list&quot; value=&quot;• /robot_state: ~100 KB/s&amp;lt;br&amp;gt;• /joint_states: ~50 KB/s&amp;lt;br&amp;gt;• /imu/data: ~30 KB/s&amp;lt;br&amp;gt;• /tf: ~20 KB/s&amp;lt;br&amp;gt;• /camera/image: ~10 MB/s (圧縮推奨)&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;💡 画像は image_transport で圧縮&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1040&quot; y=&quot;605&quot; width=&quot;230&quot; height=&quot;90&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Legend --&gt;
+        &lt;mxCell id=&quot;legend-box&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;dashed=1;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;100&quot; y=&quot;740&quot; width=&quot;1200&quot; height=&quot;80&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-title&quot; value=&quot;凡例&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;750&quot; width=&quot;60&quot; height=&quot;20&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-impl&quot; value=&quot;✅ 実装済み&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#388e3c;fontSize=10;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;780&quot; width=&quot;80&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-plan&quot; value=&quot;🔲 計画&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#fbc02d;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;210&quot; y=&quot;780&quot; width=&quot;60&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-rt&quot; value=&quot;リアルタイム層 (SCHED_FIFO)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;290&quot; y=&quot;780&quot; width=&quot;150&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-gait&quot; value=&quot;歩容生成層&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;450&quot; y=&quot;780&quot; width=&quot;80&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-sensor&quot; value=&quot;センサ/ドライバ層&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;540&quot; y=&quot;780&quot; width=&quot;100&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-hw&quot; value=&quot;ハードウェア&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;650&quot; y=&quot;780&quot; width=&quot;80&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-viz&quot; value=&quot;可視化ツール&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;750&quot; y=&quot;780&quot; width=&quot;80&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-dev&quot; value=&quot;開発ツール&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;840&quot; y=&quot;780&quot; width=&quot;70&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+        
+        &lt;mxCell id=&quot;legend-opt&quot; value=&quot;オプション&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=10;dashed=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;920&quot; y=&quot;780&quot; width=&quot;70&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Key principle --&gt;
+        &lt;mxCell id=&quot;principle-box&quot; value=&quot;⚠️ 設計原則: リアルタイム制御 (200Hz) は Jetson 内で完結。ネットワーク遅延の影響を受けない。MacBook には可視化・診断データのみ送信。&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffecb3;strokeColor=#ff8f00;fontSize=11;fontStyle=1;align=center;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;100&quot; y=&quot;840&quot; width=&quot;1200&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+      &lt;/root&gt;
+    &lt;/mxGraphModel&gt;
+  &lt;/diagram&gt;
+&lt;/mxfile&gt;">
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+        </marker>
+    </defs>
+    <g>
+<defs>
+  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+  </marker>
+  <marker id="arrowhead-yellow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#d6b656"/>
+  </marker>
+  <marker id="arrowhead-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#6c8ebf"/>
+  </marker>
+</defs>
+
+<!-- Title -->
+<text x="700" y="45" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="22" font-weight="bold" fill="#333">二脚ロボット分散制御システム アーキテクチャ</text>
+<text x="700" y="72" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="13" fill="#666666">Jetson Orin Nano Super (ロボット搭載) + MacBook (開発・可視化)</text>
+
+<!-- ========== NETWORK LAYER ========== -->
+<rect x="100" y="430" width="1200" height="80" rx="10" ry="10" fill="#f5f5f5" stroke="#666666" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="700" y="462" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">ROS 2 DDS Network (WiFi / Ethernet)</text>
+<text x="700" y="482" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" fill="#666666">ROS_DOMAIN_ID=42</text>
+
+<!-- ========== JETSON SECTION ========== -->
+<rect x="100" y="100" width="580" height="300" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="3"/>
+<text x="390" y="130" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="15" font-weight="bold" fill="#333">Jetson Orin Nano Super (ロボット搭載)</text>
+<text x="390" y="148" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#666666">ARM Cortex-A78AE | PREEMPT_RT | 8GB RAM</text>
+
+<!-- Jetson RT Control Layer -->
+<rect x="120" y="160" width="540" height="70" rx="10" ry="10" fill="#f8cecc" stroke="#b85450" stroke-width="2"/>
+<text x="390" y="176" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">リアルタイム制御層 (200Hz, SCHED_FIFO)</text>
+
+<!-- RT nodes -->
+<rect x="130" y="185" width="120" height="40" rx="10" ry="10" fill="#ffcccc" stroke="#b85450" stroke-width="2"/>
+<text x="190" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">robstride_hardware</text>
+<text x="190" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#388e3c">実装済み</text>
+
+<rect x="260" y="185" width="100" height="40" rx="10" ry="10" fill="#ffcccc" stroke="#b85450" stroke-width="2"/>
+<text x="310" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">state_estimator</text>
+<text x="310" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#999">計画</text>
+
+<rect x="370" y="185" width="100" height="40" rx="10" ry="10" fill="#ffcccc" stroke="#b85450" stroke-width="2"/>
+<text x="420" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">safety_monitor</text>
+<text x="420" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#999">計画</text>
+
+<rect x="480" y="185" width="110" height="40" rx="10" ry="10" fill="#ffcccc" stroke="#b85450" stroke-width="2"/>
+<text x="535" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">controller_manager</text>
+<text x="535" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">(ros2_control)</text>
+
+<!-- Jetson Gait Layer -->
+<rect x="120" y="240" width="270" height="60" rx="10" ry="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+<text x="255" y="256" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">歩容生成層 (50-100Hz)</text>
+
+<rect x="130" y="260" width="100" height="35" rx="10" ry="10" fill="#c3e88d" stroke="#82b366" stroke-width="2"/>
+<text x="180" y="275" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">rl_policy</text>
+<text x="180" y="289" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#999">計画</text>
+
+<rect x="240" y="260" width="100" height="35" rx="10" ry="10" fill="#c3e88d" stroke="#82b366" stroke-width="2"/>
+<text x="290" y="275" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">gait_generator</text>
+<text x="290" y="289" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#999">計画</text>
+
+<!-- Jetson Sensor/Driver Layer -->
+<rect x="400" y="240" width="260" height="60" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+<text x="530" y="256" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">センサ/ドライバ層</text>
+
+<rect x="410" y="260" width="70" height="35" rx="10" ry="10" fill="#b1ddf0" stroke="#6c8ebf" stroke-width="2"/>
+<text x="445" y="282" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">imu_driver</text>
+
+<rect x="490" y="260" width="75" height="35" rx="10" ry="10" fill="#b1ddf0" stroke="#6c8ebf" stroke-width="2"/>
+<text x="527" y="275" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">robot_state</text>
+<text x="527" y="289" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">_publisher</text>
+
+<rect x="575" y="260" width="75" height="35" rx="10" ry="10" fill="#b1ddf0" stroke="#6c8ebf" stroke-width="2"/>
+<text x="612" y="275" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">joint_state</text>
+<text x="612" y="289" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">_broadcaster</text>
+
+<!-- Jetson Hardware -->
+<rect x="120" y="310" width="540" height="70" rx="10" ry="10" fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/>
+<text x="390" y="328" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">ハードウェア接続</text>
+
+<rect x="130" y="330" width="120" height="40" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
+<text x="190" y="347" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">CAN Bus</text>
+<text x="190" y="362" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">→ RobStride Motors</text>
+
+<rect x="260" y="330" width="80" height="40" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
+<text x="300" y="347" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">USB/I2C</text>
+<text x="300" y="362" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">→ IMU</text>
+
+<rect x="350" y="330" width="80" height="40" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
+<text x="390" y="347" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">USB</text>
+<text x="390" y="362" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">→ Camera</text>
+
+<rect x="440" y="330" width="80" height="40" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
+<text x="480" y="347" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">GPIO</text>
+<text x="480" y="362" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">→ E-Stop</text>
+
+<rect x="530" y="330" width="100" height="40" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
+<text x="580" y="347" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">Ethernet/WiFi</text>
+<text x="580" y="362" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">→ Network</text>
+
+<!-- ========== MACBOOK SECTION ========== -->
+<rect x="720" y="100" width="580" height="300" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="3"/>
+<text x="1010" y="130" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="15" font-weight="bold" fill="#333">MacBook (開発・可視化ワークステーション)</text>
+<text x="1010" y="148" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#666666">Apple Silicon / Intel | macOS | 開発環境</text>
+
+<!-- MacBook Visualization -->
+<rect x="740" y="160" width="270" height="100" rx="10" ry="10" fill="#b1ddf0" stroke="#6c8ebf" stroke-width="2"/>
+<text x="875" y="178" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">可視化ツール</text>
+
+<rect x="750" y="185" width="75" height="40" rx="10" ry="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+<text x="787" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">RViz2</text>
+<text x="787" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">3D可視化</text>
+
+<rect x="835" y="185" width="80" height="40" rx="10" ry="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+<text x="875" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">Plotjuggler</text>
+<text x="875" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">時系列プロット</text>
+
+<rect x="925" y="185" width="70" height="40" rx="10" ry="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+<text x="960" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">rqt</text>
+<text x="960" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">GUI Tools</text>
+
+<rect x="750" y="230" width="75" height="25" rx="10" ry="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="787" y="247" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">Foxglove (Opt)</text>
+
+<!-- MacBook Development -->
+<rect x="1020" y="160" width="260" height="100" rx="10" ry="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+<text x="1150" y="178" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">開発環境</text>
+
+<rect x="1030" y="185" width="80" height="40" rx="10" ry="10" fill="#c3e88d" stroke="#82b366" stroke-width="2"/>
+<text x="1070" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">VS Code</text>
+<text x="1070" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">(Remote SSH)</text>
+
+<rect x="1120" y="185" width="70" height="40" rx="10" ry="10" fill="#c3e88d" stroke="#82b366" stroke-width="2"/>
+<text x="1155" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">Git</text>
+<text x="1155" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">Version Control</text>
+
+<rect x="1200" y="185" width="60" height="40" rx="10" ry="10" fill="#c3e88d" stroke="#82b366" stroke-width="2"/>
+<text x="1230" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">Terminal</text>
+<text x="1230" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">SSH</text>
+
+<rect x="1030" y="230" width="110" height="25" rx="10" ry="10" fill="#c3e88d" stroke="#82b366" stroke-width="2"/>
+<text x="1085" y="247" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">colcon build (ローカル)</text>
+
+<!-- MacBook Data/Sim -->
+<rect x="740" y="270" width="540" height="70" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+<text x="1010" y="288" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">データ/シミュレーション</text>
+
+<rect x="750" y="295" width="90" height="35" rx="10" ry="10" fill="#fff9c4" stroke="#d6b656" stroke-width="2"/>
+<text x="795" y="309" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">rosbag record</text>
+<text x="795" y="323" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">MCAP記録</text>
+
+<rect x="850" y="295" width="80" height="35" rx="10" ry="10" fill="#fff9c4" stroke="#d6b656" stroke-width="2"/>
+<text x="890" y="309" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">MCAP解析</text>
+<text x="890" y="323" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">データ解析</text>
+
+<rect x="940" y="295" width="80" height="35" rx="10" ry="10" fill="#fff9c4" stroke="#d6b656" stroke-width="2"/>
+<text x="980" y="309" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">Gazebo</text>
+<text x="980" y="323" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">シミュレータ</text>
+
+<rect x="1030" y="295" width="80" height="35" rx="10" ry="10" fill="#fff9c4" stroke="#d6b656" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="1070" y="309" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">Isaac Sim</text>
+<text x="1070" y="323" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">RL学習環境</text>
+
+<rect x="1120" y="295" width="75" height="35" rx="10" ry="10" fill="#fff9c4" stroke="#d6b656" stroke-width="2"/>
+<text x="1157" y="309" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">teleop_twist</text>
+<text x="1157" y="323" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">手動制御</text>
+
+<rect x="1205" y="295" width="65" height="35" rx="10" ry="10" fill="#fff9c4" stroke="#d6b656" stroke-width="2"/>
+<text x="1237" y="309" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">joy_node</text>
+<text x="1237" y="323" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">ゲームパッド</text>
+
+<!-- ========== NETWORK ARROWS ========== -->
+<line x1="390" y1="400" x2="390" y2="430" stroke="#d6b656" stroke-width="3" marker-end="url(#arrowhead-yellow)"/>
+<line x1="390" y1="430" x2="390" y2="400" stroke="#d6b656" stroke-width="3" marker-end="url(#arrowhead-yellow)"/>
+<line x1="1010" y1="400" x2="1010" y2="430" stroke="#6c8ebf" stroke-width="3" marker-end="url(#arrowhead-blue)"/>
+<line x1="1010" y1="430" x2="1010" y2="400" stroke="#6c8ebf" stroke-width="3" marker-end="url(#arrowhead-blue)"/>
+
+<!-- ========== TOPICS FLOW ========== -->
+<rect x="100" y="540" width="1200" height="180" rx="10" ry="10" fill="#ffffff" stroke="#333333" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="700" y="562" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">主要なROS 2トピック通信</text>
+
+<!-- Jetson Publishes -->
+<rect x="120" y="580" width="350" height="120" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+<text x="295" y="598" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">Jetson → MacBook (Publish)</text>
+
+<rect x="130" y="605" width="160" height="35" rx="10" ry="10" fill="#fff9c4" stroke="none"/>
+<text x="138" y="620" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/robot_state (200Hz)</text>
+<text x="138" y="634" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">RobotState - 状態推定結果</text>
+
+<rect x="300" y="605" width="150" height="35" rx="10" ry="10" fill="#fff9c4" stroke="none"/>
+<text x="308" y="620" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/joint_states (200Hz)</text>
+<text x="308" y="634" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">JointState - 関節状態</text>
+
+<rect x="130" y="645" width="140" height="35" rx="10" ry="10" fill="#fff9c4" stroke="none"/>
+<text x="138" y="660" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/imu/data (200Hz)</text>
+<text x="138" y="674" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">Imu - IMUデータ</text>
+
+<rect x="280" y="645" width="120" height="35" rx="10" ry="10" fill="#fff9c4" stroke="none"/>
+<text x="288" y="660" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/tf, /tf_static</text>
+<text x="288" y="674" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">TF - 座標変換</text>
+
+<rect x="130" y="685" width="160" height="25" rx="10" ry="10" fill="#fff9c4" stroke="none"/>
+<text x="138" y="702" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/safety_status (200Hz)</text>
+
+<rect x="300" y="685" width="100" height="25" rx="10" ry="10" fill="#fff9c4" stroke="none"/>
+<text x="308" y="702" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/diagnostics</text>
+
+<!-- MacBook Publishes -->
+<rect x="490" y="580" width="250" height="120" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+<text x="615" y="598" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">MacBook → Jetson (Publish)</text>
+
+<rect x="500" y="605" width="130" height="35" rx="10" ry="10" fill="#e3f2fd" stroke="none"/>
+<text x="508" y="620" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/velocity_command</text>
+<text x="508" y="634" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">Twist - 速度指令</text>
+
+<rect x="640" y="605" width="90" height="35" rx="10" ry="10" fill="#e3f2fd" stroke="none"/>
+<text x="648" y="620" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/joy</text>
+<text x="648" y="634" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">Joy - ゲームパッド</text>
+
+<rect x="500" y="650" width="110" height="35" rx="10" ry="10" fill="#e3f2fd" stroke="none"/>
+<text x="508" y="665" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/gait_mode</text>
+<text x="508" y="679" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">歩容モード切替</text>
+
+<!-- Internal topics (Jetson only) -->
+<rect x="760" y="580" width="250" height="120" rx="10" ry="10" fill="#f8cecc" stroke="#b85450" stroke-width="2"/>
+<text x="885" y="598" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">Jetson内部のみ (ネットワーク不通過)</text>
+
+<rect x="770" y="605" width="120" height="35" rx="10" ry="10" fill="#ffcccc" stroke="none"/>
+<text x="778" y="620" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/gait_target (100Hz)</text>
+<text x="778" y="634" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">目標関節軌道</text>
+
+<rect x="900" y="605" width="100" height="35" rx="10" ry="10" fill="#ffcccc" stroke="none"/>
+<text x="908" y="620" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/emergency_stop</text>
+<text x="908" y="634" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">緊急停止信号</text>
+
+<rect x="770" y="650" width="110" height="35" rx="10" ry="10" fill="#ffcccc" stroke="none"/>
+<text x="778" y="665" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/controller指令</text>
+<text x="778" y="679" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">ros2_control内部</text>
+
+<text x="945" y="672" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#cc0000">※リアルタイム性のため</text>
+<text x="945" y="686" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#cc0000">ネットワーク経由にしない</text>
+
+<!-- Bandwidth note -->
+<rect x="1030" y="580" width="250" height="120" rx="10" ry="10" fill="#f5f5f5" stroke="#666666" stroke-width="2"/>
+<text x="1155" y="598" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">帯域幅目安</text>
+
+<text x="1045" y="618" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">• /robot_state: ~100 KB/s</text>
+<text x="1045" y="633" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">• /joint_states: ~50 KB/s</text>
+<text x="1045" y="648" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">• /imu/data: ~30 KB/s</text>
+<text x="1045" y="663" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">• /tf: ~20 KB/s</text>
+<text x="1045" y="678" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">• /camera/image: ~10 MB/s (圧縮推奨)</text>
+<text x="1045" y="696" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#d6b656">画像は image_transport で圧縮</text>
+
+<!-- ========== LEGEND ========== -->
+<rect x="100" y="740" width="1200" height="80" rx="10" ry="10" fill="#ffffff" stroke="#333333" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="140" y="762" text-anchor="start" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">凡例</text>
+
+<rect x="120" y="780" width="80" height="25" rx="10" ry="10" fill="#c8e6c9" stroke="#388e3c" stroke-width="2"/>
+<text x="160" y="797" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">実装済み</text>
+
+<rect x="210" y="780" width="60" height="25" rx="10" ry="10" fill="#fff9c4" stroke="#fbc02d" stroke-width="2"/>
+<text x="240" y="797" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">計画</text>
+
+<rect x="290" y="780" width="150" height="25" rx="10" ry="10" fill="#f8cecc" stroke="#b85450" stroke-width="2"/>
+<text x="365" y="797" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">リアルタイム層 (SCHED_FIFO)</text>
+
+<rect x="450" y="780" width="80" height="25" rx="10" ry="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+<text x="490" y="797" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">歩容生成層</text>
+
+<rect x="540" y="780" width="100" height="25" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+<text x="590" y="797" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">センサ/ドライバ層</text>
+
+<rect x="650" y="780" width="80" height="25" rx="10" ry="10" fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/>
+<text x="690" y="797" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">ハードウェア</text>
+
+<rect x="750" y="780" width="80" height="25" rx="10" ry="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+<text x="790" y="797" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">可視化ツール</text>
+
+<rect x="840" y="780" width="70" height="25" rx="10" ry="10" fill="#c3e88d" stroke="#82b366" stroke-width="2"/>
+<text x="875" y="797" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">開発ツール</text>
+
+<rect x="920" y="780" width="70" height="25" rx="10" ry="10" fill="#ffffff" stroke="#999999" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="955" y="797" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">オプション</text>
+
+<!-- Key principle -->
+<rect x="100" y="840" width="1200" height="35" rx="10" ry="10" fill="#ffecb3" stroke="#ff8f00" stroke-width="2"/>
+<text x="700" y="862" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">設計原則: リアルタイム制御 (200Hz) は Jetson 内で完結。ネットワーク遅延の影響を受けない。MacBook には可視化・診断データのみ送信。</text>
+    </g>
+</svg>
