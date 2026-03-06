@@ -276,9 +276,3 @@ doc/experiments/exp007_droid_rl_walking_ref_unitree/
 
 `.drawio.svg`ファイルの作成・編集時は、drawioスキル（`.claude/skills/drawio/SKILL.md`）のルールに従うこと。形式はDrawIO XML（`<mxfile>`）のみ許可。純粋なSVG形式は禁止。
 - 主要な実行コマンドはプロジェクトルートの`README.md`に記載し，パッケージ直下のドキュメントには二重管理を防ぐため記載しない．コマンドに言及したい場合は「ルートのREADME.mdを参照のこと」で扱うこと
-
-## 参照すべきドキュメント
-- `README.md`
-- `doc/design/distributed_architecture.md`
-- `doc/next_nodes_design.md`
-- `ros2_ws/src/biped_description/doc/technical_specification.md`
