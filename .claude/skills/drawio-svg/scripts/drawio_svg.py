@@ -140,6 +140,54 @@ DEFAULT_DEFS = """\
     </defs>"""
 
 
+def _extract_and_merge_defs(svg_body: str, custom_defs: str | None) -> tuple:
+    """Extract <defs> from SVG body, merge with custom/default defs.
+
+    Returns (cleaned_svg_body, merged_defs_block).
+    """
+    body_defs_contents = []
+
+    def collect_defs(match):
+        body_defs_contents.append(match.group(1))
+        return ""
+
+    cleaned_body = re.sub(
+        r"<defs\b[^>]*>(.*?)</defs>",
+        collect_defs,
+        svg_body,
+        flags=re.DOTALL,
+    )
+
+    base_defs = custom_defs if custom_defs else DEFAULT_DEFS
+
+    if body_defs_contents:
+        base_inner_match = re.search(
+            r"<defs[^>]*>(.*?)</defs>", base_defs, re.DOTALL
+        )
+        base_inner = base_inner_match.group(1) if base_inner_match else ""
+        existing_ids = set(re.findall(r'id="([^"]*)"', base_inner))
+
+        extra_markers = []
+        for body_def_content in body_defs_contents:
+            for marker_match in re.finditer(
+                r'(<marker\b[^>]*id="([^"]*)"[^>]*>.*?</marker>)',
+                body_def_content,
+                re.DOTALL,
+            ):
+                marker_id = marker_match.group(2)
+                if marker_id not in existing_ids:
+                    existing_ids.add(marker_id)
+                    extra_markers.append(marker_match.group(1))
+
+        if extra_markers:
+            merged_inner = base_inner.rstrip() + "\n" + "\n".join(
+                f"        {m}" for m in extra_markers
+            )
+            base_defs = f"    <defs>{merged_inner}\n    </defs>"
+
+    return cleaned_body.strip(), base_defs
+
+
 def cmd_build(args):
     """Build a .drawio.svg from raw mxfile XML and SVG body elements."""
     mxfile_xml = Path(args.mxfile).read_text(encoding="utf-8").strip()
@@ -152,18 +200,20 @@ def cmd_build(args):
         print(f"ERROR: mxfile XML is not valid: {e}", file=sys.stderr)
         sys.exit(1)
 
+    # Read custom defs if provided
+    custom_defs = None
+    if args.defs:
+        custom_defs = Path(args.defs).read_text(encoding="utf-8").strip()
+
+    # Extract defs from SVG body and merge (prevents duplication)
+    svg_body, defs = _extract_and_merge_defs(svg_body, custom_defs)
+
     encoded = html_encode_for_attr(mxfile_xml)
 
     vb = calculate_viewbox(svg_body)
     viewbox = f"{vb[0]:.1f} {vb[1]:.1f} {vb[2]:.1f} {vb[3]:.1f}"
     width = f"{vb[2]:.0f}px"
     height = f"{vb[3]:.0f}px"
-
-    # Read custom defs or use default
-    if args.defs:
-        defs = Path(args.defs).read_text(encoding="utf-8").strip()
-    else:
-        defs = DEFAULT_DEFS
 
     svg = (
         f'<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg"'
@@ -249,6 +299,20 @@ def cmd_validate(args):
             warnings.append(
                 f"{edge_count} mxCell edges but 0 SVG lines/paths — "
                 f"SVG layer may be missing"
+            )
+
+        # Reverse check: SVG arrows without mxCell edges
+        arrow_count = len(re.findall(r'marker-end\s*=\s*["\']', content))
+        if arrow_count > 0 and edge_count == 0:
+            errors.append(
+                f"{arrow_count} SVG arrows (marker-end) but 0 mxCell edges — "
+                f"arrows will be invisible in DrawIO editor. "
+                f"Add edge=\"1\" mxCell elements for each connection."
+            )
+        elif arrow_count > 0 and edge_count > 0 and arrow_count > edge_count * 2:
+            warnings.append(
+                f"{arrow_count} SVG arrows but only {edge_count} mxCell edges — "
+                f"some arrows may be missing from mxfile XML"
             )
 
     # Report
