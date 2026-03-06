@@ -1,0 +1,70 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="781px" height="531px" viewBox="-0.5 -0.5 781 531" style="background: transparent;" content="&lt;mxfile host=&quot;65bd71144e&quot;&gt;&lt;diagram name=&quot;RL Experiment Workflow&quot; id=&quot;workflow-art003&quot;&gt;&lt;mxGraphModel dx=&quot;800&quot; dy=&quot;600&quot; grid=&quot;1&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;1&quot; page=&quot;1&quot; pageScale=&quot;1&quot; pageWidth=&quot;827&quot; pageHeight=&quot;1169&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;&lt;root&gt;&lt;mxCell id=&quot;0&quot;/&gt;&lt;mxCell id=&quot;1&quot; parent=&quot;0&quot;/&gt;&lt;mxCell id=&quot;title&quot; value=&quot;RL実験サイクル — 人間とAIの役割分担&quot; style=&quot;text;html=1;fontSize=16;fontStyle=1;align=center;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;140&quot; y=&quot;0&quot; width=&quot;500&quot; height=&quot;30&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;phase1&quot; value=&quot;Phase 1: 準備（自動）&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;280&quot; y=&quot;50&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;phase1d&quot; value=&quot;前版レポート読込→スクリプト生成→lint→レポート骨格&quot; style=&quot;text;html=1;fontSize=11;align=center;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;250&quot; y=&quot;100&quot; width=&quot;280&quot; height=&quot;20&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;phase2&quot; value=&quot;Phase 2: 訓練（半自動）&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;280&quot; y=&quot;150&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;phase2d&quot; value=&quot;バックグラウンド実行＋tmux監視&quot; style=&quot;text;html=1;fontSize=11;align=center;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;290&quot; y=&quot;200&quot; width=&quot;200&quot; height=&quot;20&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;human1&quot; value=&quot;人間: 目視評価&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;280&quot; y=&quot;260&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;human1d&quot; value=&quot;物理シミュレータで動作確認＋所感テキスト入力&quot; style=&quot;text;html=1;fontSize=11;align=center;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;250&quot; y=&quot;310&quot; width=&quot;280&quot; height=&quot;20&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;phase3&quot; value=&quot;Phase 3: 分析（自動）&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;280&quot; y=&quot;360&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;phase3d&quot; value=&quot;データ収集→定量分析→独立考察→レポート執筆&quot; style=&quot;text;html=1;fontSize=11;align=center;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;250&quot; y=&quot;410&quot; width=&quot;280&quot; height=&quot;20&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;phase4&quot; value=&quot;Phase 4: 完了報告（自動）&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;280&quot; y=&quot;460&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;arrow1&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;phase1&quot; target=&quot;phase2&quot; edge=&quot;1&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;arrow2&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;phase2&quot; target=&quot;human1&quot; edge=&quot;1&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;arrow3&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;human1&quot; target=&quot;phase3&quot; edge=&quot;1&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;arrow4&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;phase3&quot; target=&quot;phase4&quot; edge=&quot;1&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;loop&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#82b366;dashed=1;&quot; parent=&quot;1&quot; source=&quot;phase4&quot; target=&quot;phase1&quot; edge=&quot;1&quot;&gt;&lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;&lt;Array as=&quot;points&quot;&gt;&lt;mxPoint x=&quot;700&quot; y=&quot;485&quot;/&gt;&lt;mxPoint x=&quot;700&quot; y=&quot;75&quot;/&gt;&lt;/Array&gt;&lt;/mxGeometry&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;human2&quot; value=&quot;人間: /exp008-new-version N&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;600&quot; y=&quot;250&quot; width=&quot;170&quot; height=&quot;40&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;legend-ai&quot; value=&quot;AI自動&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;0&quot; y=&quot;50&quot; width=&quot;100&quot; height=&quot;30&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;legend-human&quot; value=&quot;人間が実行&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;0&quot; y=&quot;90&quot; width=&quot;100&quot; height=&quot;30&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;mxCell id=&quot;legend-done&quot; value=&quot;完了&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;&lt;mxGeometry x=&quot;0&quot; y=&quot;130&quot; width=&quot;100&quot; height=&quot;30&quot; as=&quot;geometry&quot;/&gt;&lt;/mxCell&gt;&lt;/root&gt;&lt;/mxGraphModel&gt;&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+        </marker>
+        <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#82b366"/>
+        </marker>
+    </defs>
+    <g>
+        <!-- Title -->
+        <text x="390" y="20" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="16" font-weight="bold" fill="#333">RL実験サイクル — 人間とAIの役割分担</text>
+
+        <!-- Legend -->
+        <rect x="0" y="50" width="100" height="30" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+        <text x="50" y="70" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">AI自動</text>
+
+        <rect x="0" y="90" width="100" height="30" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+        <text x="50" y="110" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">人間が実行</text>
+
+        <rect x="0" y="130" width="100" height="30" rx="10" ry="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+        <text x="50" y="150" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">完了</text>
+
+        <!-- Phase 1 -->
+        <rect x="280" y="50" width="220" height="50" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+        <text x="390" y="80" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Phase 1: 準備（自動）</text>
+        <text x="390" y="115" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#666">前版レポート読込→スクリプト生成→lint→レポート骨格</text>
+
+        <!-- Arrow 1→2 -->
+        <line x1="390" y1="100" x2="390" y2="148" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+        <!-- Phase 2 -->
+        <rect x="280" y="150" width="220" height="50" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+        <text x="390" y="180" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Phase 2: 訓練（半自動）</text>
+        <text x="390" y="215" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#666">バックグラウンド実行＋tmux監視</text>
+
+        <!-- Arrow 2→human -->
+        <line x1="390" y1="200" x2="390" y2="258" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+        <!-- Human: 目視評価 -->
+        <rect x="280" y="260" width="220" height="50" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+        <text x="390" y="290" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">人間: 目視評価</text>
+        <text x="390" y="325" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#666">物理シミュレータで動作確認＋所感テキスト入力</text>
+
+        <!-- Arrow human→3 -->
+        <line x1="390" y1="310" x2="390" y2="358" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+        <!-- Phase 3 -->
+        <rect x="280" y="360" width="220" height="50" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+        <text x="390" y="390" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Phase 3: 分析（自動）</text>
+        <text x="390" y="425" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#666">データ収集→定量分析→独立考察→レポート執筆</text>
+
+        <!-- Arrow 3→4 -->
+        <line x1="390" y1="410" x2="390" y2="458" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+        <!-- Phase 4 -->
+        <rect x="280" y="460" width="220" height="50" rx="10" ry="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+        <text x="390" y="490" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Phase 4: 完了報告（自動）</text>
+
+        <!-- Loop arrow: Phase 4 → Phase 1 -->
+        <path d="M 500 485 L 700 485 L 700 75 L 502 75" fill="none" stroke="#82b366" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowhead-green)"/>
+
+        <!-- Human: next command -->
+        <rect x="600" y="250" width="170" height="40" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+        <text x="685" y="275" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">人間: /exp008-new-version N</text>
+
+        <!-- Label on loop -->
+        <text x="715" y="280" text-anchor="start" font-family="Helvetica, sans-serif" font-size="11" fill="#82b366">次バージョンへ</text>
+    </g>
+</svg>

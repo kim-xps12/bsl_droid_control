@@ -1,10 +1,10 @@
-# BSL Droid ROS 2
+# BSL-Droid Control
 
-BSL-DroidのROS 2制御システム
+BSL-Droid（二脚ロボット）の制御システム
 
 ## 概要
 
-Jetson Orin Nano SuperとMacBookの分散環境で動作する二脚ロボット制御システムです。
+Jetson Orin Nano SuperとMacBookの分散環境で動作する二脚ロボット制御システムです。ROS 2によるリアルタイム制御と、Genesis物理シミュレータによる強化学習環境を提供します。
 
 ### システム構成
 
@@ -24,15 +24,29 @@ Jetson Orin Nano SuperとMacBookの分散環境で動作する二脚ロボット
 ### 前提条件
 以下のツールが導入済みであること
 
-- [pixi](https://pixi.sh/)
+- [pixi](https://pixi.sh/) — ROS 2ワークスペース（ros2_ws）用
+- [uv](https://docs.astral.sh/uv/) — 強化学習環境（rl_ws）用
 - Git
+
+#### uvのインストール
+
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
 ### セットアップ
 
 ```bash
-# リポジトリをクローン
-git clone <repository-url>
-cd bsl_droid_ros2
+# リポジトリをクローン（submoduleを含む）
+git clone --recursive --shallow-submodules https://github.com/kim-xps12/bsl_droid_control.git
+cd bsl_droid_control
+
+# 既にclone済みの場合はsubmoduleを取得
+git submodule update --init --depth 1
 
 # ros2_wsディレクトリに移動
 cd ros2_ws
@@ -43,6 +57,21 @@ pixi install
 # ワークスペースをビルド
 pixi run colcon build --symlink-install
 ```
+
+### Git Submoduleについて
+
+このリポジトリは以下のsubmoduleを含んでいます：
+
+| Submodule | パス | 用途 |
+|-----------|------|------|
+| [Genesis](https://github.com/Genesis-Embodied-AI/Genesis) | `rl_ws/genesis_official/` | 物理シミュレータ（強化学習環境） |
+| [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie) | `rl_ws/mujoco_menagerie/` | ロボットモデル集（Sim2Sim比較用） |
+
+- **新規clone時**: `--recursive`オプションを付けてcloneしてください
+- **既存リポジトリ**: `git submodule update --init`を実行してください
+- **高速化**: `--shallow-submodules`または`--depth 1`でsubmoduleの履歴を省略できます
+
+> **Note**: 強化学習環境（rl_ws）を使用しない場合、submoduleの取得は不要です。
 
 ### pixi環境について
 
@@ -140,7 +169,6 @@ pixi run ros2 run tf2_tools view_frames
 |-----------|------|------|
 | `biped_description` | URDFモデル・RViz2可視化・関節操作GUI | ✅ 完成 |
 | `biped_gait_control` | 歩容生成のサンプル実装（50Hz関節角度出力） | ✅ 完成 |
-| `biped_teleop` | 手動操作ツール（スライダーGUI等） | ✅ 完成 |
 | `robstride_hardware` | ros2_control用ハードウェアインターフェース | 🔄 開発中 |
 | `pub_sub_cpp` | ROS 2チュートリアル（C++） | 📚 サンプル |
 | `pub_sub_python` | ROS 2チュートリアル（Python） | 📚 サンプル |
@@ -161,7 +189,9 @@ uv sync
 uv run python -c "import genesis as gs; print(f'Genesis {gs.__version__} loaded')"
 ```
 
-### トレーニング（Go2サンプル）
+### トレーニング
+
+#### Go2サンプル（参考用）
 
 ```bash
 cd rl_ws
@@ -183,7 +213,7 @@ uv run python genesis_official/examples/locomotion/go2_train.py -B 64 --max_iter
 
 ```bash
 cd rl_ws
-uv run tensorboard --logdir logs
+uv run python -m tensorboard.main --logdir logs
 
 # ブラウザで http://localhost:6006 を開く
 ```
@@ -200,44 +230,80 @@ uv run python genesis_official/examples/locomotion/go2_eval.py -e go2-walking
 uv run python genesis_official/examples/locomotion/go2_eval.py -e go2-walking --ckpt 0
 ```
 
-### BSL-Droid二脚ロボットへの適用（今後）
+#### BSL-Droid二脚ロボット
 
-1. URDFエクスポート:
-   ```bash
-   cd rl_ws
-   uv run python assets/export_urdf.py
-   ```
+二脚ロボット用の強化学習環境と訓練スクリプトを提供しています。
 
-2. Go2環境を二脚用に改変（10 DOF vs 12 DOF）
+**実験名の規則**:
 
-3. カスタム訓練設定を作成
+| ロボット | 実験名形式 | 例 |
+|----------|-----------|-----|
+| BSL-Droid Simplified | `droid-walking-v{N}` | droid-walking-v19 |
+
+```bash
+cd rl_ws
+
+# トレーニング（droid-walking）のv1の例
+uv run python biped_walking/train/droid_train_v1.py --max_iterations 500
+```
+
+### ポリシー評価
+
+統一評価スクリプト`biped_eval.py`で全バージョンを評価できます。
+
+```bash
+cd rl_ws
+
+# GUI付き評価
+uv run python biped_walking/biped_eval.py -e droid-walking-v1
+
+# 特定チェックポイントを指定
+uv run python biped_walking/biped_eval.py -e droid-walking-v1 --ckpt 400
+
+# ヘッドレス評価
+uv run python biped_walking/biped_eval.py -e droid-walking-v1 --no-viewer --duration 10
+
+# ゲームパッド操縦（F710等）
+uv run python biped_walking/biped_eval.py -e droid-walking-v1 --gamepad
+
+# ゲームパッド＋横速度・yaw速度の操縦を有効化
+uv run python biped_walking/biped_eval.py -e droid-walking-v1 --gamepad --gamepad-vel-y 0.2 --gamepad-vel-yaw 1.0
+```
 
 詳細は [rl_ws/README.md](rl_ws/README.md) を参照してください。
 
 ## ディレクトリ構造
 
 ```
-bsl_droid_ros2/
+bsl_droid_control/
 ├── README.md                 # 本ドキュメント
+├── AGENTS.md                 # AI Coding Agent向け指示
+├── CLAUDE.md                 # Claude Code向け設定
 ├── doc/                      # プロジェクト全体の設計資料
-│   ├── next_nodes_design.md
-│   ├── distributed_architecture.md
-│   └── *.drawio
+│   ├── design/               # システム設計ドキュメント
+│   ├── experiments/          # 実験レポート群
+│   └── next_nodes_design.md
 ├── ref/                      # 参考資料・リファレンス実装
 │   └── RobStride_Control/    # モーター制御ライブラリ
 ├── rl_ws/                    # 強化学習環境（Genesis + uv）
 │   ├── pyproject.toml        # uv環境設定
-│   ├── genesis_official/     # 公式サンプル（クローン済み）
-│   ├── assets/               # ロボットモデル
-│   └── logs/                 # トレーニングログ
-└── ros2_ws/                  # ROS 2ワークスペース
+│   ├── biped_walking/        # 二脚ロボット環境・訓練スクリプト
+│   │   ├── envs/             # 環境定義（biped_env.py, droid_env.py）
+│   │   ├── train/            # 訓練スクリプト群
+│   │   ├── biped_eval.py     # 統一評価スクリプト（Genesis、ゲームパッド対応）
+│   │   └── biped_eval_mujoco.py  # MuJoCoでのsim2simによる評価スクリプト
+│   ├── assets/               # ロボットモデル（URDF/MJCF）
+│   ├── scripts/              # 分析・デバッグスクリプト
+│   ├── genesis_official/     # Genesis公式リポジトリ（submodule）
+│   ├── mujoco_menagerie/     # MuJoCoモデル集（submodule）
+│   └── logs/                 # トレーニングログ・チェックポイント
+└── ros2_ws/                  # ROS 2ワークスペース（pixi管理）
     ├── pixi.toml             # pixi環境設定
     └── src/
-        ├── biped_description/    # ロボットモデル・URDF
+        ├── biped_description/    # URDFモデル・RViz2可視化・GUI
         ├── biped_gait_control/   # 歩容パターン生成
-        ├── biped_teleop/         # 手動操作ツール
-        ├── robstride_hardware/   # ハードウェアIF
-        └── ...
+        ├── robstride_hardware/   # ros2_control用IF（開発中）
+        └── pub_sub_*/            # ROS 2チュートリアル
 ```
 
 ## 既知の問題
@@ -266,11 +332,17 @@ KDLライブラリの制限による警告で、**可視化には影響しませ
 - [biped_description技術仕様](ros2_ws/src/biped_description/doc/technical_specification.md) - ロボットモデル詳細
 - [biped_gait_control README](ros2_ws/src/biped_gait_control/doc/README.md) - 歩容生成パッケージ概要
 - [biped_gait_control技術仕様](ros2_ws/src/biped_gait_control/doc/technical_specification.md) - 運動学・軌道生成詳細
+- [rl_ws README](rl_ws/README.md) - 強化学習環境の詳細
 
 ### 設計資料
 
 - [次期ノード設計](doc/next_nodes_design.md) - state_estimator, safety_monitor等の設計
-- [分散システム設計](doc/distributed_architecture.md) - Jetson/MacBook間の通信設計
+- [分散システム設計](doc/design/distributed_architecture.md) - Jetson/MacBook間の通信設計
+- [統一関節インターフェース設計](doc/design/unified_joint_interface_architecture.md) - 関節制御アーキテクチャ
+
+### 実験レポート
+
+実験レポートは `doc/experiments/` 以下に格納されています。各実験ディレクトリには主レポート（`.md`）と関連する図が含まれます。
 
 ## ライセンス
 
@@ -280,6 +352,9 @@ MIT License
 
 | 日付 | 変更内容 |
 |------|----------|
-| 2026-01-25 | biped_teleopパッケージ追加（スライダーGUI等をrobstride_hardwareから分離） |
+| 2026-02-01 | README全体を実態に即して更新（ディレクトリ構造、ドキュメントリンク、MuJoCo評価追加） |
+| 2026-02-01 | 強化学習環境を整理（biped_walking/配下にenvs, train, 評価スクリプトを集約） |
+| 2026-02-01 | droid-walking系実験追加、統一評価スクリプト（biped_eval.py）導入 |
+| 2026-01-25 | biped_descriptionにスライダーGUIを統合 |
 | 2026-01-23 | biped_gait_controlパッケージ追加（歩容パターン生成）、display_rviz_only.launch.py追加 |
 | 2026-01-23 | biped_descriptionパッケージ追加、クロスプラットフォーム対応 |

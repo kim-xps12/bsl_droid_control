@@ -18,12 +18,18 @@ dependencies = [
     "mujoco>=3.4.0",
     "imageio>=2.37.2",
     "imageio-ffmpeg>=0.6.0",
+    "pandas>=2.3.3",
+    "scipy>=1.15.3",
+    "pygame-ce>=2.5.0",
+    "pyusb>=1.2.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
-    "ruff>=0.1.0",
+    "ruff>=0.8.0",
+    "mypy>=1.8.0",
+    "pandas-stubs",
 ]
 
 [build-system]
@@ -31,18 +37,103 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["envs", "configs"]
+packages = ["biped_walking"]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=7.0.0",
-    "ruff>=0.1.0",
+    "ruff>=0.8.0",
+    "mypy>=1.8.0",
+    "pandas-stubs",
 ]
 
+# =============================================================================
+# Ruff Configuration (PEP-8準拠 + 追加チェック)
+# =============================================================================
 [tool.ruff]
 line-length = 120
 target-version = "py310"
+# チェック対象ディレクトリ
+include = ["biped_walking/**/*.py", "scripts/**/*.py", "assets/**/*.py", "check_training_logs.py"]
+# 除外ディレクトリ
+exclude = [
+    ".venv",
+    "genesis_official",
+    "mujoco_menagerie",
+    "__pycache__",
+]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I"]
-ignore = ["E501"]
+# PEP-8準拠のルールセット
+select = [
+    "E",      # pycodestyle errors (PEP-8)
+    "W",      # pycodestyle warnings (PEP-8)
+    "F",      # Pyflakes (論理エラー検出)
+    "I",      # isort (import順序)
+    "N",      # pep8-naming (命名規則)
+    "UP",     # pyupgrade (Python最新構文への更新)
+    "B",      # flake8-bugbear (バグ発生しやすいパターン)
+    "C4",     # flake8-comprehensions (リスト内包表記の最適化)
+    "SIM",    # flake8-simplify (コード簡略化)
+    "RUF",    # Ruff固有ルール
+]
+ignore = [
+    "E501",   # line-too-long (line-lengthで制御)
+    "E741",   # ambiguous variable name (l, O, I等 - 数式では許容)
+    "E402",   # module-import-not-at-top (sys.path操作後のインポートを許容)
+    "N806",   # non-lowercase-variable-in-function (大文字行列変数を許容)
+    "B008",   # function-call-in-default-argument (Pydantic等で必要)
+    "RUF001", # ambiguous-unicode-character-string (日本語文字列を許容)
+    "RUF002", # ambiguous-unicode-character-docstring (日本語ドキュメントを許容)
+    "RUF003", # ambiguous-unicode-character-comment (日本語コメントを許容)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["biped_walking"]
+force-single-line = false
+lines-after-imports = 2
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# =============================================================================
+# Mypy Configuration (型チェック)
+# =============================================================================
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = false  # torchの型スタブが不完全でTensor演算がAnyを返すため無効化
+warn_unused_configs = true
+disallow_untyped_defs = false  # 段階的に導入するため最初はfalse
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+# サードパーティライブラリの型スタブがない場合のエラーを抑制
+ignore_missing_imports = true
+# 対象ディレクトリ
+files = ["biped_walking/", "scripts/", "assets/export_urdf.py", "check_training_logs.py"]
+exclude = [
+    "genesis_official",
+    "mujoco_menagerie",
+    "\\.venv",
+]
+
+# 特定モジュールの設定
+[[tool.mypy.overrides]]
+module = [
+    "genesis.*",
+    "rsl_rl.*",
+    "torch.*",
+    "gymnasium.*",
+    "mujoco.*",
+    "tensorboard.*",
+    "imageio.*",
+    "imageio_ffmpeg.*",
+    "xacro.*",
+]
+ignore_missing_imports = true

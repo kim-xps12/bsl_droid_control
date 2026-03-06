@@ -19,6 +19,8 @@ Usage:
     cd rl_ws && uv run mjpython scripts/go2_eval_mujoco.py --model mujoco_menagerie/unitree_go2/scene.xml
 """
 
+from __future__ import annotations
+
 import argparse
 import pickle
 import time
@@ -56,7 +58,7 @@ class ActorMLP(nn.Module):
         }[activation.lower()]
 
         # Build MLP
-        layers = []
+        layers: list[nn.Module] = []
         in_dim = num_obs
         for hidden_dim in hidden_dims:
             layers.append(nn.Linear(in_dim, hidden_dim))
@@ -67,7 +69,8 @@ class ActorMLP(nn.Module):
         self.mlp = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.mlp(x)
+        result: torch.Tensor = self.mlp(x)
+        return result
 
 
 def quat_rotate_inverse(q: np.ndarray, v: np.ndarray) -> np.ndarray:
@@ -90,7 +93,7 @@ def quat_rotate_inverse(q: np.ndarray, v: np.ndarray) -> np.ndarray:
     q_vec = np.array([q_x, q_y, q_z])
 
     a = v - 2.0 * q_w * np.cross(q_vec, v)
-    b = a - 2.0 * np.cross(q_vec, np.cross(q_vec, v))
+    b: np.ndarray = a - 2.0 * np.cross(q_vec, np.cross(q_vec, v))
 
     return b
 
@@ -131,20 +134,26 @@ def compute_observations(
     dof_vel = data.qvel[6:][joint_indices]  # 最初の6つはベースのlin_vel+ang_vel
 
     # 観測を構築（スケーリング適用）
-    obs = np.concatenate([
-        local_ang_vel * obs_scales.get("ang_vel", 1.0),
-        projected_gravity,  # 通常スケーリングなし
-        commands * np.array([
-            obs_scales.get("lin_vel", 1.0),
-            obs_scales.get("lin_vel", 1.0),
-            obs_scales.get("ang_vel", 1.0),
-        ]),
-        (dof_pos - default_dof_pos) * obs_scales.get("dof_pos", 1.0),
-        dof_vel * obs_scales.get("dof_vel", 1.0),
-        last_actions,  # アクションはスケーリングなし
-    ])
+    obs = np.concatenate(
+        [
+            local_ang_vel * obs_scales.get("ang_vel", 1.0),
+            projected_gravity,  # 通常スケーリングなし
+            commands
+            * np.array(
+                [
+                    obs_scales.get("lin_vel", 1.0),
+                    obs_scales.get("lin_vel", 1.0),
+                    obs_scales.get("ang_vel", 1.0),
+                ]
+            ),
+            (dof_pos - default_dof_pos) * obs_scales.get("dof_pos", 1.0),
+            dof_vel * obs_scales.get("dof_vel", 1.0),
+            last_actions,  # アクションはスケーリングなし
+        ]
+    )
 
-    return obs.astype(np.float32)
+    result: np.ndarray = obs.astype(np.float32)
+    return result
 
 
 def get_joint_mapping(genesis_joint_names: list[str], mujoco_model: mujoco.MjModel) -> list[int]:
@@ -189,7 +198,7 @@ def get_joint_mapping(genesis_joint_names: list[str], mujoco_model: mujoco.MjMod
     return mapping
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Sim2Sim: MuJoCoでGo2ポリシーを評価")
     parser.add_argument(
         "--checkpoint",
@@ -246,7 +255,7 @@ def main():
     config_path = script_dir / args.config
     model_path = script_dir / args.model
 
-    print(f"=== Sim2Sim: Genesis -> MuJoCo ===")
+    print("=== Sim2Sim: Genesis -> MuJoCo ===")
     print(f"Checkpoint: {checkpoint_path}")
     print(f"Config: {config_path}")
     print(f"MuJoCo Model: {model_path}")
@@ -263,7 +272,7 @@ def main():
     print("\n[1/4] Loading configuration...")
     with open(config_path, "rb") as f:
         cfgs = pickle.load(f)
-    env_cfg, obs_cfg, reward_cfg, command_cfg, train_cfg = cfgs
+    env_cfg, obs_cfg, _reward_cfg, _command_cfg, train_cfg = cfgs
 
     num_actions = env_cfg["num_actions"]
     joint_names = env_cfg["joint_names"]
@@ -325,7 +334,7 @@ def main():
     decimation = int(dt_policy / dt_sim)
 
     commands = np.array([args.cmd_vel_x, args.cmd_vel_y, args.cmd_ang_vel])
-    print(f"  - Policy dt: {dt_policy} s ({1/dt_policy} Hz)")
+    print(f"  - Policy dt: {dt_policy} s ({1 / dt_policy} Hz)")
     print(f"  - Sim dt: {dt_sim} s")
     print(f"  - Decimation: {decimation}")
     print(f"  - Commands: vel_x={args.cmd_vel_x}, vel_y={args.cmd_vel_y}, ang_vel={args.cmd_ang_vel}")
@@ -360,8 +369,7 @@ def main():
 
         # 観測を計算
         obs = compute_observations(
-            mj_data, mj_model, commands, last_actions,
-            default_dof_pos, obs_scales, joint_mapping
+            mj_data, mj_model, commands, last_actions, default_dof_pos, obs_scales, joint_mapping
         )
 
         # ポリシーでアクションを計算
@@ -396,9 +404,11 @@ def main():
         if step_count % 50 == 0:
             base_pos = mj_data.qpos[:3]
             base_vel = mj_data.qvel[:3]
-            print(f"  Step {step_count}/{total_steps}: "
-                  f"pos=({base_pos[0]:.2f}, {base_pos[1]:.2f}, {base_pos[2]:.2f}), "
-                  f"vel=({base_vel[0]:.2f}, {base_vel[1]:.2f}, {base_vel[2]:.2f})")
+            print(
+                f"  Step {step_count}/{total_steps}: "
+                f"pos=({base_pos[0]:.2f}, {base_pos[1]:.2f}, {base_pos[2]:.2f}), "
+                f"vel=({base_vel[0]:.2f}, {base_vel[1]:.2f}, {base_vel[2]:.2f})"
+            )
 
         return step_count < total_steps
 
@@ -411,7 +421,7 @@ def main():
             pass
 
         total_time = time.time() - start_time
-        print(f"\n=== Simulation Complete ===")
+        print("\n=== Simulation Complete ===")
         print(f"  - Total time: {total_time:.2f} s")
         print(f"  - Total steps: {step_count}")
         print(f"  - Final position: {mj_data.qpos[:3]}")
@@ -436,7 +446,7 @@ def main():
                         time.sleep(sleep_time)
 
                 total_time = time.time() - start_time
-                print(f"\n=== Simulation Complete ===")
+                print("\n=== Simulation Complete ===")
                 print(f"  - Total time: {total_time:.2f} s")
                 print(f"  - Total steps: {step_count}")
                 print(f"  - Final position: {mj_data.qpos[:3]}")
@@ -468,11 +478,11 @@ def main():
             cam.type = mujoco.mjtCamera.mjCAMERA_TRACKING
             # baseボディが存在するか確認
             try:
-                cam.trackbodyid = mj_model.body('base').id
+                cam.trackbodyid = mj_model.body("base").id
             except KeyError:
                 # MuJoCo Menagerieの場合は"trunk"を試す
                 try:
-                    cam.trackbodyid = mj_model.body('trunk').id
+                    cam.trackbodyid = mj_model.body("trunk").id
                 except KeyError:
                     # どちらも存在しない場合はボディ1（通常ルートボディ）を追従
                     cam.trackbodyid = 1
@@ -494,7 +504,7 @@ def main():
 
                 # キー入力チェック（1ms待機）
                 key = cv2.waitKey(1) & 0xFF
-                if key == ord('q') or key == 27:  # 'q' or ESC
+                if key == ord("q") or key == 27:  # 'q' or ESC
                     break
 
                 # リアルタイム同期
@@ -505,7 +515,7 @@ def main():
 
             cv2.destroyAllWindows()
             total_time = time.time() - start_time
-            print(f"\n=== Simulation Complete ===")
+            print("\n=== Simulation Complete ===")
             print(f"  - Total time: {total_time:.2f} s")
             print(f"  - Total steps: {step_count}")
             print(f"  - Final position: {mj_data.qpos[:3]}")

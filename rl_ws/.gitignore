@@ -1,0 +1,33 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+
+# uv lock file
+uv.lock
+
+# PyTorch models and checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# Training outputs
+logs/*/checkpoints/
+logs/*/videos/
+logs/*/wandb/
+logs/*/git/
+logs/*/*.csv
+
+# Generated media
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.avi
+
+# System files
+.DS_Store
+*~

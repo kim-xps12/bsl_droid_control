@@ -10,9 +10,11 @@ Usage:
     uv run python scripts/convert_dae_to_obj.py
 """
 
+from __future__ import annotations
+
 from pathlib import Path
+
 import trimesh
-import numpy as np
 
 
 # Genesis DAEファイルのディレクトリ
@@ -52,7 +54,7 @@ def convert_dae_to_obj(
     try:
         # trimeshでDAEを読み込み
         # force='scene'で複数メッシュをシーンとして読み込む
-        scene_or_mesh = trimesh.load(str(input_path), force='scene')
+        scene_or_mesh = trimesh.load(str(input_path), force="scene")
 
         if isinstance(scene_or_mesh, trimesh.Scene):
             # 複数のメッシュを含むシーンの場合
@@ -61,8 +63,10 @@ def convert_dae_to_obj(
                 if isinstance(geom, trimesh.Trimesh):
                     meshes.append(geom)
                 if verbose:
-                    print(f"    - Found geometry: {name} "
-                          f"(vertices: {len(geom.vertices) if isinstance(geom, trimesh.Trimesh) else 'N/A'})")
+                    print(
+                        f"    - Found geometry: {name} "
+                        f"(vertices: {len(geom.vertices) if isinstance(geom, trimesh.Trimesh) else 'N/A'})"
+                    )
 
             if not meshes:
                 print(f"  WARNING: No valid meshes found in {input_path}")
@@ -75,12 +79,11 @@ def convert_dae_to_obj(
             combined = scene_or_mesh
 
         if verbose:
-            print(f"  - Combined mesh: {len(combined.vertices)} vertices, "
-                  f"{len(combined.faces)} faces")
+            print(f"  - Combined mesh: {len(combined.vertices)} vertices, {len(combined.faces)} faces")
 
         # OBJとして保存
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        combined.export(str(output_path), file_type='obj')
+        combined.export(str(output_path), file_type="obj")
 
         if verbose:
             print(f"  - Saved: {output_path}")
@@ -92,7 +95,7 @@ def convert_dae_to_obj(
         return False
 
 
-def main():
+def main() -> None:
     """メイン処理"""
     print("=== DAE to OBJ Conversion ===")
 
@@ -131,7 +134,7 @@ def main():
         else:
             fail_count += 1
 
-    print(f"\n=== Conversion Complete ===")
+    print("\n=== Conversion Complete ===")
     print(f"Success: {success_count}, Failed: {fail_count}")
 
 
