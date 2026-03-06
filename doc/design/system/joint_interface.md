@@ -410,10 +410,3 @@ trajectory.points = [
 3. **Phase 2**: MuJoCoブリッジ実装、物理シミュレーション検証
 4. **Phase 3**: Jetson連携、実機制御検証
 
----
-
-## 参考資料
-
-- [distributed_architecture.md](./distributed_architecture.md) - 分散システム全体設計
-- [next_nodes_design.md](../next_nodes_design.md) - ノード設計詳細
-- [exp001_slider_control_rs02.md](../experiments/exp001_slider_control_rs02.md) - 単関節実機制御実験
