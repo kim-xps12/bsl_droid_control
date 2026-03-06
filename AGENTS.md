@@ -4,31 +4,7 @@
 - このリポジトリは「BSL-Droid」の制御に関するソフトウェア全般を扱う
 - 動作環境はJetson Orin Nano Super（実機・RT制御）とMacBook（可視化・机上開発）の分散構成を前提としている
 
-## リポジトリ構成（要点）
-
-```
-bsl_droid_control/
-├── ros2_ws/                        # ROS 2ワークスペース（pixi管理）
-│   └── src/
-│       ├── biped_description/      # URDF/可視化/GUI
-│       ├── biped_gait_control/     # 歩容生成サンプル
-│       ├── robstride_hardware/     # ros2_control用IF（Jetson専用・開発中）
-│       └── pub_sub_cpp|python/     # ROS 2チュートリアル
-├── rl_ws/                          # 強化学習環境（uv管理）
-│   ├── biped_walking/              # 二脚ロボット環境・訓練スクリプト
-│   │   ├── envs/                   # 環境定義（biped_env.py, droid_env.py）
-│   │   └── train/                  # 訓練スクリプト群
-│   ├── assets/                     # URDFモデル
-│   ├── logs/                       # 訓練ログ・チェックポイント
-│   ├── genesis_official/           # Genesis物理シミュレータ（submodule）
-│   └── mujoco_menagerie/           # MuJoCoモデル集（submodule）
-├── doc/                            # 設計資料
-│   ├── design/                     # システム設計ドキュメント
-│   └── experiments/                # 実験レポート群
-└── ref/                            # 参考実装・外部ライブラリ
-```
-
-## セットアップ
+## 仮想化された開発環境の利用手順
 
 ### ROS 2環境（ros2_ws）
 
