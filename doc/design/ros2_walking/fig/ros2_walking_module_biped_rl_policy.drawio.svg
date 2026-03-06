@@ -1,0 +1,301 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="870px" height="628px" viewBox="20.0 32.0 870.0 628.0" style="background: transparent;" content="&lt;mxfile host=&quot;65bd71144e&quot;&gt;
+    &lt;diagram name=&quot;biped_rl_policy_node Internal Architecture&quot; id=&quot;biped-rl-policy-internal&quot;&gt;
+        &lt;mxGraphModel dx=&quot;1000&quot; dy=&quot;800&quot; grid=&quot;1&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;1&quot; page=&quot;1&quot; pageScale=&quot;1&quot; pageWidth=&quot;1000&quot; pageHeight=&quot;800&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;
+            &lt;root&gt;
+                &lt;mxCell id=&quot;0&quot;/&gt;
+                &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot;/&gt;
+
+                &lt;!-- Title --&gt;
+                &lt;mxCell id=&quot;title&quot; value=&quot;biped_rl_policy_node Internal Architecture&quot; style=&quot;text;html=1;fontSize=16;fontStyle=1;align=center;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;200&quot; y=&quot;20&quot; width=&quot;500&quot; height=&quot;30&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Inputs (purple) --&gt;
+                &lt;mxCell id=&quot;cmd_vel&quot; value=&quot;/cmd_vel (geometry_msgs/Twist)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;30&quot; y=&quot;120&quot; width=&quot;240&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;joint_states_in&quot; value=&quot;/joint_states (sensor_msgs/JointState)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;30&quot; y=&quot;240&quot; width=&quot;240&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;imu_data&quot; value=&quot;/imu/data (sensor_msgs/Imu)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;30&quot; y=&quot;360&quot; width=&quot;240&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Processing Pipeline (blue) --&gt;
+                &lt;mxCell id=&quot;obs_builder&quot; value=&quot;Observation Builder&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;340&quot; y=&quot;200&quot; width=&quot;240&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;mlp&quot; value=&quot;PyTorch MLP (512-256-128)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;340&quot; y=&quot;330&quot; width=&quot;240&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;converter&quot; value=&quot;Action → Position Converter&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;340&quot; y=&quot;460&quot; width=&quot;240&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Internal State (yellow) --&gt;
+                &lt;mxCell id=&quot;gait_clock&quot; value=&quot;Gait Phase Clock (50Hz)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;660&quot; y=&quot;100&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;prev_action&quot; value=&quot;Previous Action Buffer&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;660&quot; y=&quot;170&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;mock_values&quot; value=&quot;Mock Values (viz mode)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;dashed=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;660&quot; y=&quot;240&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Outputs (green) --&gt;
+                &lt;mxCell id=&quot;joint_states_out&quot; value=&quot;/joint_states&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;660&quot; y=&quot;430&quot; width=&quot;220&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;fwd_pos&quot; value=&quot;/fwd_pos_ctrl/commands&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;660&quot; y=&quot;510&quot; width=&quot;220&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;policy_state&quot; value=&quot;/rl_policy_state&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;660&quot; y=&quot;590&quot; width=&quot;220&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Arrows: inputs to observation builder --&gt;
+                &lt;mxCell id=&quot;e1&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;cmd_vel&quot; target=&quot;obs_builder&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e2&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;joint_states_in&quot; target=&quot;obs_builder&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e3&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;imu_data&quot; target=&quot;obs_builder&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Arrows: pipeline flow --&gt;
+                &lt;mxCell id=&quot;e4&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;obs_builder&quot; target=&quot;mlp&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e5&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;mlp&quot; target=&quot;converter&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Arrows: converter to outputs --&gt;
+                &lt;mxCell id=&quot;e6&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;converter&quot; target=&quot;joint_states_out&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e7&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;converter&quot; target=&quot;fwd_pos&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e8&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;converter&quot; target=&quot;policy_state&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Dashed arrows: internal state to observation builder --&gt;
+                &lt;mxCell id=&quot;e9&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;&quot; parent=&quot;1&quot; source=&quot;gait_clock&quot; target=&quot;obs_builder&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e10&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;&quot; parent=&quot;1&quot; source=&quot;prev_action&quot; target=&quot;obs_builder&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e11&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;&quot; parent=&quot;1&quot; source=&quot;mock_values&quot; target=&quot;obs_builder&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+            &lt;/root&gt;
+        &lt;/mxGraphModel&gt;
+    &lt;/diagram&gt;
+&lt;/mxfile&gt;">
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+        </marker>
+    </defs>
+    <g>
+<defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+        </marker>
+        <marker id="arrowhead-purple" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#9673a6"/>
+        </marker>
+    </defs>
+
+    <!-- Title -->
+    <text x="460" y="42" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="16" font-weight="bold"
+          fill="#333">biped_rl_policy_node Internal Architecture</text>
+
+    <!-- Section Labels -->
+    <text x="150" y="95" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="12" font-weight="bold"
+          fill="#9673a6">Inputs</text>
+    <text x="460" y="185" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="12" font-weight="bold"
+          fill="#6c8ebf">Processing Pipeline</text>
+    <text x="770" y="85" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="12" font-weight="bold"
+          fill="#d6b656">Internal State</text>
+    <text x="770" y="415" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="12" font-weight="bold"
+          fill="#82b366">Outputs</text>
+
+    <!-- ===== INPUT BOXES (purple) ===== -->
+    <!-- /cmd_vel -->
+    <rect x="30" y="120" width="240" height="60" rx="10" ry="10"
+          fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/>
+    <text x="150" y="144" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">/cmd_vel</text>
+    <text x="150" y="164" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="11" font-weight="normal"
+          fill="#333">geometry_msgs/Twist</text>
+
+    <!-- /joint_states input -->
+    <rect x="30" y="240" width="240" height="60" rx="10" ry="10"
+          fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/>
+    <text x="150" y="264" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">/joint_states</text>
+    <text x="150" y="284" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="11" font-weight="normal"
+          fill="#9673a6">sensor_msgs/JointState — control mode only</text>
+
+    <!-- /imu/data -->
+    <rect x="30" y="360" width="240" height="60" rx="10" ry="10"
+          fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/>
+    <text x="150" y="384" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">/imu/data</text>
+    <text x="150" y="404" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="11" font-weight="normal"
+          fill="#9673a6">sensor_msgs/Imu — control mode only</text>
+
+    <!-- ===== PROCESSING PIPELINE (blue) ===== -->
+    <!-- Observation Builder -->
+    <rect x="340" y="200" width="240" height="60" rx="10" ry="10"
+          fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+    <text x="460" y="224" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">Observation Builder</text>
+    <text x="460" y="244" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="11" font-weight="normal"
+          fill="#333">builds 50-dim vector</text>
+
+    <!-- PyTorch MLP -->
+    <rect x="340" y="330" width="240" height="60" rx="10" ry="10"
+          fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+    <text x="460" y="354" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">PyTorch MLP</text>
+    <text x="460" y="374" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="11" font-weight="normal"
+          fill="#333">(512-256-128) model inference</text>
+
+    <!-- Action → Position Converter -->
+    <rect x="340" y="460" width="240" height="60" rx="10" ry="10"
+          fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+    <text x="460" y="484" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">Action → Position Converter</text>
+    <text x="460" y="504" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="11" font-weight="normal"
+          fill="#333">action * 0.25 + default_dof_pos</text>
+
+    <!-- ===== INTERNAL STATE (yellow) ===== -->
+    <!-- Gait Phase Clock -->
+    <rect x="660" y="100" width="220" height="50" rx="10" ry="10"
+          fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+    <text x="770" y="130" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">Gait Phase Clock (50Hz)</text>
+
+    <!-- Previous Action Buffer -->
+    <rect x="660" y="170" width="220" height="50" rx="10" ry="10"
+          fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+    <text x="770" y="200" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">Previous Action Buffer</text>
+
+    <!-- Mock Values (dashed border) -->
+    <rect x="660" y="240" width="220" height="50" rx="10" ry="10"
+          fill="#fff2cc" stroke="#d6b656" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="770" y="270" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">Mock Values (viz mode)</text>
+
+    <!-- ===== OUTPUT BOXES (green) ===== -->
+    <!-- /joint_states output -->
+    <rect x="660" y="430" width="220" height="60" rx="10" ry="10"
+          fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+    <text x="770" y="454" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">/joint_states</text>
+    <text x="770" y="474" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="11" font-weight="normal"
+          fill="#82b366">viz mode</text>
+
+    <!-- /fwd_pos_ctrl/commands -->
+    <rect x="660" y="510" width="220" height="60" rx="10" ry="10"
+          fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+    <text x="770" y="534" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">/fwd_pos_ctrl/commands</text>
+    <text x="770" y="554" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="11" font-weight="normal"
+          fill="#82b366">control mode</text>
+
+    <!-- /rl_policy_state -->
+    <rect x="660" y="590" width="220" height="60" rx="10" ry="10"
+          fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+    <text x="770" y="614" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="14" font-weight="bold"
+          fill="#333">/rl_policy_state</text>
+    <text x="770" y="634" text-anchor="middle"
+          font-family="Helvetica, sans-serif" font-size="11" font-weight="normal"
+          fill="#82b366">debug</text>
+
+    <!-- ===== SOLID ARROWS: Inputs → Observation Builder ===== -->
+    <!-- /cmd_vel → Observation Builder (right then down) -->
+    <path d="M 270 150 L 305 150 L 305 220 L 340 220"
+          fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- /joint_states → Observation Builder (right to left center) -->
+    <line x1="270" y1="270" x2="340" y2="235"
+          stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- /imu/data → Observation Builder (right then up) -->
+    <path d="M 270 390 L 305 390 L 305 245 L 340 245"
+          fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- ===== SOLID ARROWS: Pipeline flow ===== -->
+    <!-- Observation Builder → MLP -->
+    <line x1="460" y1="260" x2="460" y2="330"
+          stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- MLP → Converter -->
+    <line x1="460" y1="390" x2="460" y2="460"
+          stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- ===== SOLID ARROWS: Converter → Outputs ===== -->
+    <!-- Converter → /joint_states output -->
+    <path d="M 580 475 L 620 475 L 620 460 L 660 460"
+          fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- Converter → /fwd_pos_ctrl/commands -->
+    <path d="M 580 490 L 620 490 L 620 540 L 660 540"
+          fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- Converter → /rl_policy_state -->
+    <path d="M 580 505 L 630 505 L 630 620 L 660 620"
+          fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- ===== DASHED ARROWS: Internal State → Observation Builder ===== -->
+    <!-- Gait Phase Clock → Observation Builder -->
+    <path d="M 660 125 L 620 125 L 620 210 L 580 210"
+          fill="none" stroke="#9673a6" stroke-width="2" stroke-dasharray="6 4"
+          marker-end="url(#arrowhead-purple)"/>
+
+    <!-- Previous Action Buffer → Observation Builder -->
+    <path d="M 660 195 L 620 195 L 620 230 L 580 230"
+          fill="none" stroke="#9673a6" stroke-width="2" stroke-dasharray="6 4"
+          marker-end="url(#arrowhead-purple)"/>
+
+    <!-- Mock Values → Observation Builder -->
+    <path d="M 660 265 L 620 265 L 620 250 L 580 250"
+          fill="none" stroke="#9673a6" stroke-width="2" stroke-dasharray="6 4"
+          marker-end="url(#arrowhead-purple)"/>
+    </g>
+</svg>

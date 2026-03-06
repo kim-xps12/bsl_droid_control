@@ -334,15 +334,6 @@ KDLライブラリの制限による警告で、**可視化には影響しませ
 - [biped_gait_control技術仕様](ros2_ws/src/biped_gait_control/doc/technical_specification.md) - 運動学・軌道生成詳細
 - [rl_ws README](rl_ws/README.md) - 強化学習環境の詳細
 
-### 設計資料
-
-- [次期ノード設計](doc/next_nodes_design.md) - state_estimator, safety_monitor等の設計
-- [分散システム設計](doc/design/distributed_architecture.md) - Jetson/MacBook間の通信設計
-- [統一関節インターフェース設計](doc/design/unified_joint_interface_architecture.md) - 関節制御アーキテクチャ
-
-### 実験レポート
-
-実験レポートは `doc/experiments/` 以下に格納されています。各実験ディレクトリには主レポート（`.md`）と関連する図が含まれます。
 
 ## ライセンス
 

@@ -1,0 +1,416 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1275px" height="755px" viewBox="35.0 35.0 1275.0 755.0" style="background: transparent;" content="&lt;mxfile host=&quot;app.diagrams.net&quot;&gt;
+  &lt;diagram name=&quot;Development Workflow&quot; id=&quot;dev-workflow&quot;&gt;
+    &lt;mxGraphModel dx=&quot;1422&quot; dy=&quot;900&quot; grid=&quot;1&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;1&quot; page=&quot;1&quot; pageScale=&quot;1&quot; pageWidth=&quot;1400&quot; pageHeight=&quot;900&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;
+      &lt;root&gt;
+        &lt;mxCell id=&quot;0&quot; /&gt;
+        &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot; /&gt;
+
+        &lt;!-- Title --&gt;
+        &lt;mxCell id=&quot;title&quot; value=&quot;開発ワークフロー: Jetson + MacBook 分散開発&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;400&quot; y=&quot;20&quot; width=&quot;600&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- MacBook Development --&gt;
+        &lt;mxCell id=&quot;mac-dev-section&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;strokeWidth=2;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;100&quot; y=&quot;80&quot; width=&quot;400&quot; height=&quot;280&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;mac-title&quot; value=&quot;MacBook (開発環境)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#dae8fc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;90&quot; width=&quot;360&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step1&quot; value=&quot;1. コード編集&amp;lt;br&amp;gt;VS Code / Editor&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=12;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;140&quot; y=&quot;130&quot; width=&quot;140&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step2&quot; value=&quot;2. ローカルビルド確認&amp;lt;br&amp;gt;(構文チェック)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1976d2;fontSize=12;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;140&quot; y=&quot;200&quot; width=&quot;140&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step3&quot; value=&quot;3. Git commit/push&amp;lt;br&amp;gt;リポジトリ更新&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#388e3c;fontSize=12;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;140&quot; y=&quot;270&quot; width=&quot;140&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-1-2&quot; value=&quot;&quot; style=&quot;endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;step1&quot; target=&quot;step2&quot;&gt;
+          &lt;mxGeometry width=&quot;50&quot; height=&quot;50&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;400&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;350&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-2-3&quot; value=&quot;&quot; style=&quot;endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;step2&quot; target=&quot;step3&quot;&gt;
+          &lt;mxGeometry width=&quot;50&quot; height=&quot;50&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;400&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;350&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- VS Code Remote option --&gt;
+        &lt;mxCell id=&quot;vscode-remote-box&quot; value=&quot;VS Code Remote SSH&amp;lt;br&amp;gt;Jetsonに直接接続して編集も可能&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#fbc02d;fontSize=10;dashed=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;310&quot; y=&quot;130&quot; width=&quot;170&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-remote&quot; value=&quot;&quot; style=&quot;endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=1;dashed=1;strokeColor=#666666;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;step1&quot; target=&quot;vscode-remote-box&quot;&gt;
+          &lt;mxGeometry width=&quot;50&quot; height=&quot;50&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;400&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;350&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Git Repository --&gt;
+        &lt;mxCell id=&quot;git-repo&quot; value=&quot;Git Repository&amp;lt;br&amp;gt;(GitHub/GitLab等)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;fontStyle=1;strokeWidth=2&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;560&quot; y=&quot;270&quot; width=&quot;140&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-push&quot; value=&quot;push&quot; style=&quot;endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#388e3c;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;step3&quot; target=&quot;git-repo&quot;&gt;
+          &lt;mxGeometry x=&quot;-0.2&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;400&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;350&quot; as=&quot;targetPoint&quot; /&gt;
+            &lt;mxPoint as=&quot;offset&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Jetson Execution --&gt;
+        &lt;mxCell id=&quot;jetson-exec-section&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;strokeWidth=2;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;900&quot; y=&quot;80&quot; width=&quot;400&quot; height=&quot;280&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;jetson-title&quot; value=&quot;Jetson (実行環境)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;920&quot; y=&quot;90&quot; width=&quot;360&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step4&quot; value=&quot;4. Git pull&amp;lt;br&amp;gt;最新コード取得&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#388e3c;fontSize=12;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1120&quot; y=&quot;130&quot; width=&quot;140&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step5&quot; value=&quot;5. colcon build&amp;lt;br&amp;gt;ARM向けビルド&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#fbc02d;fontSize=12;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1120&quot; y=&quot;200&quot; width=&quot;140&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step6&quot; value=&quot;6. ros2 launch&amp;lt;br&amp;gt;実機で実行&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=12;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1120&quot; y=&quot;270&quot; width=&quot;140&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-4-5&quot; value=&quot;&quot; style=&quot;endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;step4&quot; target=&quot;step5&quot;&gt;
+          &lt;mxGeometry width=&quot;50&quot; height=&quot;50&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;400&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;350&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-5-6&quot; value=&quot;&quot; style=&quot;endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;step5&quot; target=&quot;step6&quot;&gt;
+          &lt;mxGeometry width=&quot;50&quot; height=&quot;50&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;400&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;350&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-pull&quot; value=&quot;pull&quot; style=&quot;endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#388e3c;curved=1;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;git-repo&quot; target=&quot;step4&quot;&gt;
+          &lt;mxGeometry x=&quot;-0.2&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;400&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;350&quot; as=&quot;targetPoint&quot; /&gt;
+            &lt;mxPoint as=&quot;offset&quot; /&gt;
+            &lt;Array as=&quot;points&quot;&gt;
+              &lt;mxPoint x=&quot;800&quot; y=&quot;295&quot; /&gt;
+              &lt;mxPoint x=&quot;800&quot; y=&quot;100&quot; /&gt;
+            &lt;/Array&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- SSH commands --&gt;
+        &lt;mxCell id=&quot;ssh-box&quot; value=&quot;SSH経由でも操作可能&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;ssh jetson&amp;lt;br&amp;gt;cd ~/ros2_ws&amp;lt;br&amp;gt;git pull&amp;lt;br&amp;gt;colcon build&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;align=left;dashed=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;940&quot; y=&quot;130&quot; width=&quot;150&quot; height=&quot;90&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Visualization Section --&gt;
+        &lt;mxCell id=&quot;viz-section&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#4caf50;strokeWidth=2;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;100&quot; y=&quot;400&quot; width=&quot;1200&quot; height=&quot;200&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;viz-title&quot; value=&quot;可視化・デバッグ (MacBook &amp;lt;- ROS 2 DDS -&amp;gt; Jetson)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#e8f5e9;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;400&quot; y=&quot;410&quot; width=&quot;600&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step7&quot; value=&quot;7. RViz2&amp;lt;br&amp;gt;ロボット可視化&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#4caf50;fontSize=12;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;140&quot; y=&quot;460&quot; width=&quot;120&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step8&quot; value=&quot;8. Plotjuggler&amp;lt;br&amp;gt;データプロット&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#4caf50;fontSize=12;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;280&quot; y=&quot;460&quot; width=&quot;120&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step9&quot; value=&quot;9. rosbag record&amp;lt;br&amp;gt;データ記録&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#4caf50;fontSize=12;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;420&quot; y=&quot;460&quot; width=&quot;120&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;step10&quot; value=&quot;10. teleop&amp;lt;br&amp;gt;手動操作&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#4caf50;fontSize=12;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;560&quot; y=&quot;460&quot; width=&quot;100&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- DDS Network --&gt;
+        &lt;mxCell id=&quot;dds-line&quot; value=&quot;&quot; style=&quot;endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=3;strokeColor=#ff9800;dashed=1;&quot; edge=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry width=&quot;50&quot; height=&quot;50&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;140&quot; y=&quot;540&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;1260&quot; y=&quot;540&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;dds-label&quot; value=&quot;ROS 2 DDS Topics (WiFi/Ethernet)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff3e0;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=1;strokeColor=#ff9800&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;560&quot; y=&quot;525&quot; width=&quot;220&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Topics examples --&gt;
+        &lt;mxCell id=&quot;topics-flow&quot; value=&quot;/robot_state, /joint_states, /imu/data, /tf&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;700&quot; y=&quot;555&quot; width=&quot;200&quot; height=&quot;20&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;topics-flow2&quot; value=&quot;/velocity_command, /joy&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontColor=#666666;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;490&quot; y=&quot;555&quot; width=&quot;150&quot; height=&quot;20&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Jetson status --&gt;
+        &lt;mxCell id=&quot;jetson-running&quot; value=&quot;Jetson 実行中&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;ros2_control (200Hz)&amp;lt;br&amp;gt;state_estimator&amp;lt;br&amp;gt;safety_monitor&amp;lt;br&amp;gt;rl_policy&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#fbc02d;fontSize=10;align=left&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1100&quot; y=&quot;450&quot; width=&quot;140&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Arrows from step6 to viz --&gt;
+        &lt;mxCell id=&quot;arrow-6-viz&quot; value=&quot;&quot; style=&quot;endArrow=classic;html=1;rounded=0;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#ff9800;dashed=1;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;step6&quot; target=&quot;viz-section&quot;&gt;
+          &lt;mxGeometry width=&quot;50&quot; height=&quot;50&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;600&quot; y=&quot;400&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;650&quot; y=&quot;350&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Feedback loop --&gt;
+        &lt;mxCell id=&quot;feedback-arrow&quot; value=&quot;バグ発見 → Step 1 へ戻る&quot; style=&quot;endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#e91e63;dashed=1;curved=1;&quot; edge=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;0.2&quot; relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;140&quot; y=&quot;580&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;140&quot; y=&quot;130&quot; as=&quot;targetPoint&quot; /&gt;
+            &lt;Array as=&quot;points&quot;&gt;
+              &lt;mxPoint x=&quot;60&quot; y=&quot;580&quot; /&gt;
+              &lt;mxPoint x=&quot;60&quot; y=&quot;130&quot; /&gt;
+            &lt;/Array&gt;
+            &lt;mxPoint as=&quot;offset&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Commands Reference --&gt;
+        &lt;mxCell id=&quot;cmd-box&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333333;dashed=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;100&quot; y=&quot;630&quot; width=&quot;1200&quot; height=&quot;150&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;cmd-title&quot; value=&quot;よく使うコマンド&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;640&quot; width=&quot;200&quot; height=&quot;25&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;cmd-mac&quot; value=&quot;MacBook側:&amp;#xa;&amp;#xa;# ローカルビルド&amp;#xa;cd ~/ros2_ws &amp;amp;&amp;amp; colcon build&amp;#xa;&amp;#xa;# Jetsonにログイン&amp;#xa;ssh jetson&amp;#xa;&amp;#xa;# 可視化起動&amp;#xa;ros2 launch biped_bringup visualization.launch.py&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#e3f2fd;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=11;strokeColor=#1976d2&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;670&quot; width=&quot;320&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;cmd-jetson&quot; value=&quot;Jetson側:&amp;#xa;&amp;#xa;# コード更新 &amp;amp; ビルド&amp;#xa;cd ~/ros2_ws &amp;amp;&amp;amp; git pull &amp;amp;&amp;amp; colcon build&amp;#xa;&amp;#xa;# ロボット起動&amp;#xa;ros2 launch robstride_hardware robstride_control.launch.py&amp;#xa;&amp;#xa;# 全システム起動&amp;#xa;ros2 launch biped_bringup robot_bringup.launch.py&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=11;strokeColor=#fbc02d&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;460&quot; y=&quot;670&quot; width=&quot;380&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;cmd-debug&quot; value=&quot;デバッグ:&amp;#xa;&amp;#xa;# トピック確認&amp;#xa;ros2 topic list&amp;#xa;ros2 topic echo /robot_state&amp;#xa;&amp;#xa;# ノード確認&amp;#xa;ros2 node list&amp;#xa;ros2 node info /safety_monitor&amp;#xa;&amp;#xa;# ネットワーク疎通&amp;#xa;ros2 multicast receive/send&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#e8f5e9;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=11;strokeColor=#4caf50&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;860&quot; y=&quot;670&quot; width=&quot;230&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Environment setup note --&gt;
+        &lt;mxCell id=&quot;env-note&quot; value=&quot;両マシン共通設定: export ROS_DOMAIN_ID=42 (~/.bashrc)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffecb3;strokeColor=#ff8f00;fontSize=11;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1100&quot; y=&quot;670&quot; width=&quot;180&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+      &lt;/root&gt;
+    &lt;/mxGraphModel&gt;
+  &lt;/diagram&gt;
+&lt;/mxfile&gt;">
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+        </marker>
+    </defs>
+    <g>
+<defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#388e3c"/>
+    </marker>
+    <marker id="arrowhead-orange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#ff9800"/>
+    </marker>
+    <marker id="arrowhead-pink" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#e91e63"/>
+    </marker>
+    <marker id="arrowhead-gray" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#666666"/>
+    </marker>
+    <marker id="arrowhead-orange-start" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto-start-reverse">
+        <polygon points="10 0, 0 3.5, 10 7" fill="#ff9800"/>
+    </marker>
+</defs>
+<g>
+    <!-- Title -->
+    <text x="700" y="45" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="20" font-weight="bold" fill="#333">開発ワークフロー: Jetson + MacBook 分散開発</text>
+
+    <!-- MacBook Development Section (blue background) -->
+    <rect x="100" y="80" width="400" height="280" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+    <text x="300" y="108" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="16" font-weight="bold" fill="#333">MacBook (開発環境)</text>
+
+    <!-- Step 1: Code Edit -->
+    <rect x="140" y="130" width="140" height="50" rx="10" ry="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+    <text x="210" y="150" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">1. コード編集</text>
+    <text x="210" y="168" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">VS Code / Editor</text>
+
+    <!-- Step 2: Local Build -->
+    <rect x="140" y="200" width="140" height="50" rx="10" ry="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="2"/>
+    <text x="210" y="220" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" fill="#333">2. ローカルビルド確認</text>
+    <text x="210" y="238" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(構文チェック)</text>
+
+    <!-- Step 3: Git commit/push -->
+    <rect x="140" y="270" width="140" height="50" rx="10" ry="10" fill="#c8e6c9" stroke="#388e3c" stroke-width="2"/>
+    <text x="210" y="290" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">3. Git commit/push</text>
+    <text x="210" y="308" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">リポジトリ更新</text>
+
+    <!-- Arrows: step1 -> step2 -> step3 -->
+    <line x1="210" y1="180" x2="210" y2="200" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="210" y1="250" x2="210" y2="270" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- VS Code Remote SSH box -->
+    <rect x="310" y="130" width="170" height="50" rx="10" ry="10" fill="#fff9c4" stroke="#fbc02d" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="395" y="150" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">VS Code Remote SSH</text>
+    <text x="395" y="165" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">Jetsonに直接接続して編集も可能</text>
+
+    <!-- Arrow: step1 to remote box (dashed) -->
+    <line x1="280" y1="155" x2="310" y2="155" stroke="#666666" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#arrowhead-gray)"/>
+
+    <!-- Git Repository (center) -->
+    <rect x="560" y="270" width="140" height="50" rx="10" ry="10" fill="#ffffff" stroke="#333333" stroke-width="2"/>
+    <text x="630" y="290" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">Git Repository</text>
+    <text x="630" y="308" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(GitHub/GitLab等)</text>
+
+    <!-- Arrow: step3 push to git repo (green) -->
+    <line x1="280" y1="295" x2="560" y2="295" stroke="#388e3c" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <text x="420" y="288" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#388e3c">push</text>
+
+    <!-- Jetson Execution Section (yellow background) -->
+    <rect x="900" y="80" width="400" height="280" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+    <text x="1100" y="108" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="16" font-weight="bold" fill="#333">Jetson (実行環境)</text>
+
+    <!-- Step 4: Git pull -->
+    <rect x="1120" y="130" width="140" height="50" rx="10" ry="10" fill="#c8e6c9" stroke="#388e3c" stroke-width="2"/>
+    <text x="1190" y="150" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">4. Git pull</text>
+    <text x="1190" y="168" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">最新コード取得</text>
+
+    <!-- Step 5: colcon build -->
+    <rect x="1120" y="200" width="140" height="50" rx="10" ry="10" fill="#fff9c4" stroke="#fbc02d" stroke-width="2"/>
+    <text x="1190" y="220" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">5. colcon build</text>
+    <text x="1190" y="238" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">ARM向けビルド</text>
+
+    <!-- Step 6: ros2 launch -->
+    <rect x="1120" y="270" width="140" height="50" rx="10" ry="10" fill="#ffcccc" stroke="#b85450" stroke-width="2"/>
+    <text x="1190" y="290" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">6. ros2 launch</text>
+    <text x="1190" y="308" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">実機で実行</text>
+
+    <!-- Arrows: step4 -> step5 -> step6 -->
+    <line x1="1190" y1="180" x2="1190" y2="200" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+    <line x1="1190" y1="250" x2="1190" y2="270" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+    <!-- Arrow: git repo pull to step4 (green curved) -->
+    <path d="M 700 295 L 800 295 L 800 130 L 1120 130" fill="none" stroke="#388e3c" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+    <text x="810" y="215" text-anchor="start" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#388e3c">pull</text>
+
+    <!-- SSH box (gray dashed) -->
+    <rect x="940" y="130" width="150" height="90" rx="10" ry="10" fill="#f5f5f5" stroke="#666666" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="1015" y="148" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">SSH経由でも操作可能</text>
+    <text x="955" y="168" text-anchor="start" font-family="Courier, monospace" font-size="9" fill="#333">ssh jetson</text>
+    <text x="955" y="182" text-anchor="start" font-family="Courier, monospace" font-size="9" fill="#333">cd ~/ros2_ws</text>
+    <text x="955" y="196" text-anchor="start" font-family="Courier, monospace" font-size="9" fill="#333">git pull</text>
+    <text x="955" y="210" text-anchor="start" font-family="Courier, monospace" font-size="9" fill="#333">colcon build</text>
+
+    <!-- Visualization/Debug Section (green background) -->
+    <rect x="100" y="400" width="1200" height="200" rx="10" ry="10" fill="#e8f5e9" stroke="#4caf50" stroke-width="2"/>
+    <text x="700" y="428" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="16" font-weight="bold" fill="#333">可視化・デバッグ (MacBook &lt;- ROS 2 DDS -&gt; Jetson)</text>
+
+    <!-- Step 7: RViz2 -->
+    <rect x="140" y="460" width="120" height="50" rx="10" ry="10" fill="#c8e6c9" stroke="#4caf50" stroke-width="2"/>
+    <text x="200" y="480" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">7. RViz2</text>
+    <text x="200" y="498" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">ロボット可視化</text>
+
+    <!-- Step 8: Plotjuggler -->
+    <rect x="280" y="460" width="120" height="50" rx="10" ry="10" fill="#c8e6c9" stroke="#4caf50" stroke-width="2"/>
+    <text x="340" y="480" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" fill="#333">8. Plotjuggler</text>
+    <text x="340" y="498" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">データプロット</text>
+
+    <!-- Step 9: rosbag record -->
+    <rect x="420" y="460" width="120" height="50" rx="10" ry="10" fill="#c8e6c9" stroke="#4caf50" stroke-width="2"/>
+    <text x="480" y="480" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" fill="#333">9. rosbag record</text>
+    <text x="480" y="498" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">データ記録</text>
+
+    <!-- Step 10: teleop -->
+    <rect x="560" y="460" width="100" height="50" rx="10" ry="10" fill="#c8e6c9" stroke="#4caf50" stroke-width="2"/>
+    <text x="610" y="480" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" fill="#333">10. teleop</text>
+    <text x="610" y="498" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">手動操作</text>
+
+    <!-- DDS Network line (orange dashed, double-headed) -->
+    <line x1="150" y1="540" x2="1250" y2="540" stroke="#ff9800" stroke-width="3" stroke-dasharray="6 4" marker-start="url(#arrowhead-orange)" marker-end="url(#arrowhead-orange)"/>
+
+    <!-- DDS label -->
+    <rect x="560" y="525" width="220" height="25" rx="5" ry="5" fill="#fff3e0" stroke="#ff9800" stroke-width="1"/>
+    <text x="670" y="542" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">ROS 2 DDS Topics (WiFi/Ethernet)</text>
+
+    <!-- Topics flow labels -->
+    <text x="800" y="568" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#666666">/robot_state, /joint_states, /imu/data, /tf</text>
+    <text x="565" y="568" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#666666">/velocity_command, /joy</text>
+
+    <!-- Jetson running status box -->
+    <rect x="1100" y="450" width="140" height="100" rx="10" ry="10" fill="#fff9c4" stroke="#fbc02d" stroke-width="2"/>
+    <text x="1115" y="468" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">Jetson 実行中</text>
+    <text x="1115" y="490" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">ros2_control (200Hz)</text>
+    <text x="1115" y="505" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">state_estimator</text>
+    <text x="1115" y="520" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">safety_monitor</text>
+    <text x="1115" y="535" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">rl_policy</text>
+
+    <!-- Arrow: step6 to viz section (orange dashed) -->
+    <path d="M 1120 320 L 1100 340 L 1100 400" fill="none" stroke="#ff9800" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowhead-orange)"/>
+
+    <!-- Feedback loop (pink dashed, left side) -->
+    <path d="M 140 580 L 60 580 L 60 155 L 140 155" fill="none" stroke="#e91e63" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowhead-pink)"/>
+    <text x="45" y="360" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#e91e63" transform="rotate(-90, 45, 360)">バグ発見 → Step 1 へ戻る</text>
+
+    <!-- Commands Reference box (gray dashed) -->
+    <rect x="100" y="630" width="1200" height="150" rx="10" ry="10" fill="#f5f5f5" stroke="#333333" stroke-width="2" stroke-dasharray="6 4"/>
+    <text x="130" y="658" text-anchor="start" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">よく使うコマンド</text>
+
+    <!-- MacBook commands -->
+    <rect x="120" y="670" width="320" height="100" rx="10" ry="10" fill="#e3f2fd" stroke="#1976d2" stroke-width="1"/>
+    <text x="130" y="688" text-anchor="start" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">MacBook側:</text>
+    <text x="130" y="706" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333"># ローカルビルド</text>
+    <text x="130" y="720" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333">cd ~/ros2_ws &amp;&amp; colcon build</text>
+    <text x="130" y="738" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333"># Jetsonにログイン</text>
+    <text x="130" y="752" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333">ssh jetson</text>
+
+    <!-- Jetson commands -->
+    <rect x="460" y="670" width="380" height="100" rx="10" ry="10" fill="#fff9c4" stroke="#fbc02d" stroke-width="1"/>
+    <text x="470" y="688" text-anchor="start" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">Jetson側:</text>
+    <text x="470" y="706" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333"># コード更新 &amp; ビルド</text>
+    <text x="470" y="720" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333">cd ~/ros2_ws &amp;&amp; git pull &amp;&amp; colcon build</text>
+    <text x="470" y="738" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333"># ロボット起動</text>
+    <text x="470" y="752" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333">ros2 launch robstride_hardware ...</text>
+
+    <!-- Debug commands -->
+    <rect x="860" y="670" width="230" height="100" rx="10" ry="10" fill="#e8f5e9" stroke="#4caf50" stroke-width="1"/>
+    <text x="870" y="688" text-anchor="start" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">デバッグ:</text>
+    <text x="870" y="706" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333"># トピック確認</text>
+    <text x="870" y="720" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333">ros2 topic list</text>
+    <text x="870" y="738" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333"># ノード確認</text>
+    <text x="870" y="752" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333">ros2 node list</text>
+
+    <!-- Environment note -->
+    <rect x="1100" y="670" width="180" height="50" rx="10" ry="10" fill="#ffecb3" stroke="#ff8f00" stroke-width="2"/>
+    <text x="1190" y="692" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">両マシン共通設定:</text>
+    <text x="1190" y="710" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">export ROS_DOMAIN_ID=42</text>
+</g>
+    </g>
+</svg>

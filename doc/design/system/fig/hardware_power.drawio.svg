@@ -1,0 +1,186 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="800px" height="515px" viewBox="20.0 20.0 800.0 515.0" style="background: transparent;" content="&lt;mxfile host=&quot;65bd71144e&quot;&gt;
+    &lt;diagram name=&quot;power-system&quot; id=&quot;power-system-diagram&quot;&gt;
+        &lt;mxGraphModel dx=&quot;1200&quot; dy=&quot;760&quot; grid=&quot;1&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;1&quot; page=&quot;1&quot; pageScale=&quot;1&quot; pageWidth=&quot;1200&quot; pageHeight=&quot;760&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;
+            &lt;root&gt;
+                &lt;mxCell id=&quot;0&quot;/&gt;
+                &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot;/&gt;
+
+                &lt;!-- Drive Power Group --&gt;
+                &lt;mxCell id=&quot;g1&quot; value=&quot;駆動系電源 (Drive Power)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;verticalAlign=top;dashed=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;30&quot; y=&quot;30&quot; width=&quot;780&quot; height=&quot;160&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Control Power Group --&gt;
+                &lt;mxCell id=&quot;g2&quot; value=&quot;制御系電源 (Control Power)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;verticalAlign=top;dashed=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;30&quot; y=&quot;250&quot; width=&quot;780&quot; height=&quot;220&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Drive: Makita Battery --&gt;
+                &lt;mxCell id=&quot;d1&quot; value=&quot;Makita BL4025&amp;#xa;36V (40Vmax)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;60&quot; y=&quot;80&quot; width=&quot;180&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Drive: Relay --&gt;
+                &lt;mxCell id=&quot;d2&quot; value=&quot;OMRON G9EA-1-B&amp;#xa;パワーリレー (NO)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fdedec;strokeColor=#e74c3c;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;330&quot; y=&quot;80&quot; width=&quot;200&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Drive: Motors --&gt;
+                &lt;mxCell id=&quot;d3&quot; value=&quot;RS02 モータ x10&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;620&quot; y=&quot;80&quot; width=&quot;160&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Control: Moman Battery --&gt;
+                &lt;mxCell id=&quot;c1&quot; value=&quot;Moman Power 50 Touch&amp;#xa;D-TAP 16.7V&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;60&quot; y=&quot;300&quot; width=&quot;200&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Control: WAGO --&gt;
+                &lt;mxCell id=&quot;c2&quot; value=&quot;WAGO&amp;#xa;ワンタッチコネクタ&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;60&quot; y=&quot;400&quot; width=&quot;200&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Control: Jetson --&gt;
+                &lt;mxCell id=&quot;c3&quot; value=&quot;Jetson Orin Nano Super&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;330&quot; y=&quot;300&quot; width=&quot;200&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Control: DC-DC --&gt;
+                &lt;mxCell id=&quot;c4&quot; value=&quot;DC-DC 昇圧&amp;#xa;16.7V → 24V&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;330&quot; y=&quot;400&quot; width=&quot;200&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Control: ZBRRA --&gt;
+                &lt;mxCell id=&quot;c5&quot; value=&quot;Schneider ZBRRA&amp;#xa;非常停止スイッチ&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fdedec;strokeColor=#e74c3c;fontSize=14;fontStyle=1;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;620&quot; y=&quot;400&quot; width=&quot;180&quot; height=&quot;60&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Edges: Drive path --&gt;
+                &lt;mxCell id=&quot;e1&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;d1&quot; target=&quot;d2&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e2&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;d2&quot; target=&quot;d3&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Edges: Control path --&gt;
+                &lt;mxCell id=&quot;e3&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;c1&quot; target=&quot;c3&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e4&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;c1&quot; target=&quot;c2&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e5&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;c2&quot; target=&quot;c4&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+                &lt;mxCell id=&quot;e6&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;c4&quot; target=&quot;c5&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Edge: ZBRRA to Relay coil (dashed, cross-group) --&gt;
+                &lt;mxCell id=&quot;e7&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;dashed=1;strokeColor=#e74c3c;&quot; parent=&quot;1&quot; source=&quot;c5&quot; target=&quot;d2&quot; edge=&quot;1&quot;&gt;
+                    &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+                &lt;!-- Annotation --&gt;
+                &lt;mxCell id=&quot;a1&quot; value=&quot;フェイルセーフ: 制御電源喪失 → リレー開放 → モータ電源遮断&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=0;fontColor=#e74c3c;&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                    &lt;mxGeometry x=&quot;200&quot; y=&quot;510&quot; width=&quot;440&quot; height=&quot;30&quot; as=&quot;geometry&quot;/&gt;
+                &lt;/mxCell&gt;
+
+            &lt;/root&gt;
+        &lt;/mxGraphModel&gt;
+    &lt;/diagram&gt;
+&lt;/mxfile&gt;">
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+        </marker>
+    </defs>
+    <g>
+<defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#e74c3c"/>
+    </marker>
+</defs>
+
+<!-- Drive Power Group background -->
+<rect x="30" y="30" width="780" height="160" rx="10" ry="10" fill="#fff2cc" fill-opacity="0.3" stroke="#d6b656" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="420" y="55" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#d6b656">駆動系電源 (Drive Power)</text>
+
+<!-- Control Power Group background -->
+<rect x="30" y="250" width="780" height="220" rx="10" ry="10" fill="#dae8fc" fill-opacity="0.3" stroke="#6c8ebf" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="420" y="275" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#6c8ebf">制御系電源 (Control Power)</text>
+
+<!-- Drive: Makita Battery -->
+<rect x="60" y="80" width="180" height="60" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+<text x="150" y="104" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Makita BL4025</text>
+<text x="150" y="122" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="normal" fill="#333">36V (40Vmax)</text>
+
+<!-- Drive: Relay -->
+<rect x="330" y="80" width="200" height="60" rx="10" ry="10" fill="#fdedec" stroke="#e74c3c" stroke-width="2"/>
+<text x="430" y="104" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">OMRON G9EA-1-B</text>
+<text x="430" y="122" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="normal" fill="#333">パワーリレー (NO)</text>
+
+<!-- Drive: Motors -->
+<rect x="620" y="80" width="160" height="60" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+<text x="700" y="104" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">RS02 モータ</text>
+<text x="700" y="122" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="normal" fill="#333">x10</text>
+
+<!-- Control: Moman Battery -->
+<rect x="60" y="300" width="200" height="60" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+<text x="160" y="324" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Moman Power 50 Touch</text>
+<text x="160" y="342" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="normal" fill="#333">D-TAP 16.7V</text>
+
+<!-- Control: WAGO -->
+<rect x="60" y="400" width="200" height="60" rx="10" ry="10" fill="#f5f5f5" stroke="#666666" stroke-width="2"/>
+<text x="160" y="424" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">WAGO</text>
+<text x="160" y="442" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="normal" fill="#333">ワンタッチコネクタ</text>
+
+<!-- Control: Jetson -->
+<rect x="330" y="300" width="200" height="60" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+<text x="430" y="336" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Jetson Orin Nano Super</text>
+
+<!-- Control: DC-DC -->
+<rect x="330" y="400" width="200" height="60" rx="10" ry="10" fill="#f5f5f5" stroke="#666666" stroke-width="2"/>
+<text x="430" y="424" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">DC-DC 昇圧</text>
+<text x="430" y="442" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="normal" fill="#333">16.7V → 24V</text>
+
+<!-- Control: ZBRRA -->
+<rect x="620" y="400" width="180" height="60" rx="10" ry="10" fill="#fdedec" stroke="#e74c3c" stroke-width="2"/>
+<text x="710" y="424" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Schneider ZBRRA</text>
+<text x="710" y="442" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="normal" fill="#333">非常停止スイッチ</text>
+
+<!-- Edge: Makita -> Relay (36V) -->
+<line x1="240" y1="110" x2="320" y2="110" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="280" y="102" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#555">36V</text>
+
+<!-- Edge: Relay -> Motors (36V) -->
+<line x1="530" y1="110" x2="610" y2="110" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="570" y="102" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#555">36V</text>
+
+<!-- Edge: Moman -> Jetson (16.7V) -->
+<line x1="260" y1="330" x2="320" y2="330" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="290" y="322" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#555">16.7V</text>
+
+<!-- Edge: Moman -> WAGO (16.7V) -->
+<line x1="160" y1="360" x2="160" y2="390" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="175" y="380" text-anchor="start" font-family="Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#555">16.7V</text>
+
+<!-- Edge: WAGO -> DC-DC -->
+<line x1="260" y1="430" x2="320" y2="430" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+<!-- Edge: DC-DC -> ZBRRA (24V) -->
+<line x1="530" y1="430" x2="610" y2="430" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="570" y="422" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="normal" fill="#555">24V</text>
+
+<!-- Edge: ZBRRA -> Relay coil (dashed, red, going up) -->
+<path d="M 710 400 L 710 210 L 430 210 L 430 140" fill="none" stroke="#e74c3c" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowhead-red)"/>
+<text x="580" y="202" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#e74c3c">24V リレーコイル制御</text>
+
+<!-- Annotation -->
+<text x="420" y="520" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="normal" fill="#e74c3c">フェイルセーフ: 制御電源喪失 → リレー開放 → モータ電源遮断</text>
+    </g>
+</svg>

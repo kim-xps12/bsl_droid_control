@@ -1,0 +1,370 @@
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1300px" height="735px" viewBox="30.0 35.0 1300.0 735.0" style="background: transparent;" content="&lt;mxfile host=&quot;app.diagrams.net&quot;&gt;
+  &lt;diagram name=&quot;System Architecture&quot; id=&quot;system-architecture&quot;&gt;
+    &lt;mxGraphModel dx=&quot;1422&quot; dy=&quot;794&quot; grid=&quot;1&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;1&quot; page=&quot;1&quot; pageScale=&quot;1&quot; pageWidth=&quot;1169&quot; pageHeight=&quot;827&quot; math=&quot;0&quot; shadow=&quot;0&quot;&gt;
+      &lt;root&gt;
+        &lt;mxCell id=&quot;0&quot; /&gt;
+        &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot; /&gt;
+
+        &lt;!-- Title --&gt;
+        &lt;mxCell id=&quot;title&quot; value=&quot;二脚ロボット制御システム アーキテクチャ&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;320&quot; y=&quot;20&quot; width=&quot;520&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Layer: High-Level Control --&gt;
+        &lt;mxCell id=&quot;layer-highlevel&quot; value=&quot;High-Level Control Layer (10-50 Hz)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontSize=14;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;80&quot; width=&quot;920&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;node-navigation&quot; value=&quot;Navigation Node&amp;lt;br&amp;gt;(Nav2 Integration)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;160&quot; y=&quot;120&quot; width=&quot;180&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;node-task-manager&quot; value=&quot;Task Manager Node&amp;lt;br&amp;gt;(Behavior FSM)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;380&quot; y=&quot;120&quot; width=&quot;180&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;node-planner&quot; value=&quot;Path Planner&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;600&quot; y=&quot;120&quot; width=&quot;180&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;label-phase3&quot; value=&quot;Phase 3 (Future)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=2;fontColor=#666666;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;820&quot; y=&quot;120&quot; width=&quot;200&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Arrow: High-Level to Gait --&gt;
+        &lt;mxCell id=&quot;arrow-hl-to-gait&quot; value=&quot;Velocity/Direction Commands&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;fontSize=12;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;layer-highlevel&quot; target=&quot;layer-gait&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;580&quot; y=&quot;180&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;580&quot; y=&quot;210&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Layer: Gait Generation --&gt;
+        &lt;mxCell id=&quot;layer-gait&quot; value=&quot;Gait Generation Layer (50-100 Hz)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalAlign=top;fontSize=14;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;220&quot; width=&quot;920&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;node-rl-policy&quot; value=&quot;RL Policy Node&amp;lt;br&amp;gt;(PyTorch/libtorch)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;160&quot; y=&quot;260&quot; width=&quot;200&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;node-gait-generator&quot; value=&quot;Gait Pattern Generator&amp;lt;br&amp;gt;(CPG / Trajectory)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#c3e88d;strokeColor=#82b366;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;400&quot; y=&quot;260&quot; width=&quot;200&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;label-phase2&quot; value=&quot;Phase 2&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=2;fontColor=#666666;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;640&quot; y=&quot;260&quot; width=&quot;380&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Arrow: Gait to Control --&gt;
+        &lt;mxCell id=&quot;arrow-gait-to-control&quot; value=&quot;Target Joint Positions/Velocities&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;fontSize=12;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;layer-gait&quot; target=&quot;layer-state&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;580&quot; y=&quot;320&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;580&quot; y=&quot;360&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Layer: State Estimation --&gt;
+        &lt;mxCell id=&quot;layer-state&quot; value=&quot;State Estimation Layer (200 Hz)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;verticalAlign=top;fontSize=14;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;360&quot; width=&quot;920&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;node-state-estimator&quot; value=&quot;State Estimator Node&amp;lt;br&amp;gt;(EKF/UKF + Kinematics)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;160&quot; y=&quot;400&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;node-contact-detector&quot; value=&quot;Contact Detector&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#d6b656;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;420&quot; y=&quot;400&quot; width=&quot;160&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;label-phase1&quot; value=&quot;Phase 1 (Priority)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=2;fontColor=#cc0000;fontStyle=3&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;620&quot; y=&quot;400&quot; width=&quot;400&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Arrow: State to Safety and RT Control --&gt;
+        &lt;mxCell id=&quot;arrow-state-to-safety&quot; value=&quot;Robot State&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;fontSize=12;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;layer-state&quot; target=&quot;node-safety&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;350&quot; y=&quot;460&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;250&quot; y=&quot;500&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-state-to-rt&quot; value=&quot;Robot State&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;fontSize=12;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;layer-state&quot; target=&quot;node-hardware&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;810&quot; y=&quot;460&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;750&quot; y=&quot;500&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- RT Control and Safety Layer --&gt;
+        &lt;mxCell id=&quot;layer-rt&quot; value=&quot;Real-Time Control &amp;amp; Safety Layer (200 Hz, SCHED_FIFO)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;verticalAlign=top;fontSize=14;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;500&quot; width=&quot;920&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;node-safety&quot; value=&quot;Safety Monitor Node&amp;lt;br&amp;gt;(Fall Detection, Limits)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;160&quot; y=&quot;540&quot; width=&quot;200&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;node-hardware&quot; value=&quot;robstride_hardware&amp;lt;br&amp;gt;(ros2_control HW Interface)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;620&quot; y=&quot;540&quot; width=&quot;220&quot; height=&quot;50&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Safety to Hardware --&gt;
+        &lt;mxCell id=&quot;arrow-safety-to-hw&quot; value=&quot;Safety Signals / E-Stop&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;fontSize=12;strokeColor=#cc0000;dashed=1;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;node-safety&quot; target=&quot;node-hardware&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Arrow: Hardware to Motors --&gt;
+        &lt;mxCell id=&quot;arrow-hw-to-motors&quot; value=&quot;CAN Commands&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;fontSize=12;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;layer-rt&quot; target=&quot;layer-hardware&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;mxPoint x=&quot;580&quot; y=&quot;600&quot; as=&quot;sourcePoint&quot; /&gt;
+            &lt;mxPoint x=&quot;580&quot; y=&quot;640&quot; as=&quot;targetPoint&quot; /&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Hardware Layer --&gt;
+        &lt;mxCell id=&quot;layer-hardware&quot; value=&quot;Hardware Layer&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;verticalAlign=top;fontSize=14;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;120&quot; y=&quot;640&quot; width=&quot;920&quot; height=&quot;120&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;hw-motors&quot; value=&quot;RobStride Motors&amp;lt;br&amp;gt;(RS02/RS05)&amp;lt;br&amp;gt;CAN Bus&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;180&quot; y=&quot;680&quot; width=&quot;140&quot; height=&quot;60&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;hw-imu&quot; value=&quot;IMU Sensor&amp;lt;br&amp;gt;(200-1000 Hz)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;360&quot; y=&quot;680&quot; width=&quot;140&quot; height=&quot;60&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;hw-force&quot; value=&quot;Force Sensors&amp;lt;br&amp;gt;(Optional)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;540&quot; y=&quot;680&quot; width=&quot;140&quot; height=&quot;60&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;hw-encoders&quot; value=&quot;Joint Encoders&amp;lt;br&amp;gt;(Built-in)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;720&quot; y=&quot;680&quot; width=&quot;140&quot; height=&quot;60&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Feedback arrows from hardware --&gt;
+        &lt;mxCell id=&quot;arrow-feedback-motors&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.2;entryY=1;entryDx=0;entryDy=0;strokeWidth=1;fontSize=10;dashed=1;strokeColor=#666666;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;hw-motors&quot; target=&quot;layer-rt&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-feedback-imu&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.4;entryY=1;entryDx=0;entryDy=0;strokeWidth=1;fontSize=10;dashed=1;strokeColor=#666666;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;hw-imu&quot; target=&quot;layer-rt&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-feedback-force&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.6;entryY=1;entryDx=0;entryDy=0;strokeWidth=1;fontSize=10;dashed=1;strokeColor=#666666;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;hw-force&quot; target=&quot;layer-rt&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;arrow-feedback-encoders&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.8;entryY=1;entryDx=0;entryDy=0;strokeWidth=1;fontSize=10;dashed=1;strokeColor=#666666;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;hw-encoders&quot; target=&quot;layer-rt&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;label-feedback&quot; value=&quot;Sensor Feedback&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;fontStyle=2;fontColor=#666666;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;880&quot; y=&quot;620&quot; width=&quot;140&quot; height=&quot;20&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Feedback loop from State to Gait --&gt;
+        &lt;mxCell id=&quot;arrow-state-to-gait&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;fontSize=10;strokeColor=#00aa00;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;layer-state&quot; target=&quot;layer-gait&quot;&gt;
+          &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;&gt;
+            &lt;Array as=&quot;points&quot;&gt;
+              &lt;mxPoint x=&quot;80&quot; y=&quot;410&quot; /&gt;
+              &lt;mxPoint x=&quot;80&quot; y=&quot;270&quot; /&gt;
+            &lt;/Array&gt;
+          &lt;/mxGeometry&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;label-state-feedback&quot; value=&quot;Robot State Feedback&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontColor=#00aa00;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;20&quot; y=&quot;330&quot; width=&quot;50&quot; height=&quot;60&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;!-- Legend --&gt;
+        &lt;mxCell id=&quot;legend-box&quot; value=&quot;&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;verticalAlign=top;fontSize=12;align=left;dashed=1;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1100&quot; y=&quot;80&quot; width=&quot;220&quot; height=&quot;180&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;legend-title&quot; value=&quot;実装フェーズ&quot; style=&quot;text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1110&quot; y=&quot;90&quot; width=&quot;200&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;legend-phase1&quot; value=&quot;Phase 1: 基盤ノード (Priority)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff2cc;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1120&quot; y=&quot;130&quot; width=&quot;180&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;legend-phase2&quot; value=&quot;Phase 2: 歩容生成&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#d5e8d4;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1120&quot; y=&quot;170&quot; width=&quot;180&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+        &lt;mxCell id=&quot;legend-phase3&quot; value=&quot;Phase 3: 高レベル制御 (Future)&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#dae8fc;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+          &lt;mxGeometry x=&quot;1120&quot; y=&quot;210&quot; width=&quot;180&quot; height=&quot;30&quot; as=&quot;geometry&quot; /&gt;
+        &lt;/mxCell&gt;
+
+      &lt;/root&gt;
+    &lt;/mxGraphModel&gt;
+  &lt;/diagram&gt;
+&lt;/mxfile&gt;">
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+        </marker>
+    </defs>
+    <g>
+<defs>
+  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+  </marker>
+  <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#cc0000"/>
+  </marker>
+  <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#00aa00"/>
+  </marker>
+</defs>
+
+<!-- Title -->
+<text x="580" y="45" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="20" font-weight="bold" fill="#333">Biped Robot Control System Architecture</text>
+
+<!-- Layer 1: High-Level Control (blue) -->
+<rect x="120" y="80" width="920" height="100" rx="10" ry="10" fill="#dae8fc" stroke="#6c8ebf" stroke-width="2"/>
+<text x="580" y="100" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">High-Level Control Layer (10-50 Hz)</text>
+
+<!-- Navigation Node -->
+<rect x="160" y="120" width="180" height="50" rx="10" ry="10" fill="#b1ddf0" stroke="#10739e" stroke-width="2"/>
+<text x="250" y="140" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">Navigation Node</text>
+<text x="250" y="157" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(Nav2 Integration)</text>
+
+<!-- Task Manager Node -->
+<rect x="380" y="120" width="180" height="50" rx="10" ry="10" fill="#b1ddf0" stroke="#10739e" stroke-width="2"/>
+<text x="470" y="140" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">Task Manager Node</text>
+<text x="470" y="157" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(Behavior FSM)</text>
+
+<!-- Path Planner -->
+<rect x="600" y="120" width="180" height="50" rx="10" ry="10" fill="#b1ddf0" stroke="#10739e" stroke-width="2"/>
+<text x="690" y="150" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">Path Planner</text>
+
+<!-- Phase 3 label -->
+<text x="920" y="140" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-style="italic" fill="#666666">Phase 3 (Future)</text>
+
+<!-- Arrow: High-Level to Gait -->
+<line x1="580" y1="180" x2="580" y2="220" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="590" y="205" text-anchor="start" font-family="Helvetica, sans-serif" font-size="12" fill="#555">Velocity/Direction Commands</text>
+
+<!-- Layer 2: Gait Generation (green) -->
+<rect x="120" y="220" width="920" height="100" rx="10" ry="10" fill="#d5e8d4" stroke="#82b366" stroke-width="2"/>
+<text x="580" y="240" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Gait Generation Layer (50-100 Hz)</text>
+
+<!-- RL Policy Node -->
+<rect x="160" y="260" width="200" height="50" rx="10" ry="10" fill="#c3e88d" stroke="#82b366" stroke-width="2"/>
+<text x="260" y="280" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">RL Policy Node</text>
+<text x="260" y="297" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(PyTorch/libtorch)</text>
+
+<!-- Gait Pattern Generator -->
+<rect x="400" y="260" width="200" height="50" rx="10" ry="10" fill="#c3e88d" stroke="#82b366" stroke-width="2"/>
+<text x="500" y="280" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">Gait Pattern Generator</text>
+<text x="500" y="297" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(CPG / Trajectory)</text>
+
+<!-- Phase 2 label -->
+<text x="830" y="280" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-style="italic" fill="#666666">Phase 2</text>
+
+<!-- Arrow: Gait to State -->
+<line x1="580" y1="320" x2="580" y2="360" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="590" y="345" text-anchor="start" font-family="Helvetica, sans-serif" font-size="12" fill="#555">Target Joint Positions/Velocities</text>
+
+<!-- Layer 3: State Estimation (yellow) -->
+<rect x="120" y="360" width="920" height="100" rx="10" ry="10" fill="#fff2cc" stroke="#d6b656" stroke-width="2"/>
+<text x="580" y="380" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">State Estimation Layer (200 Hz)</text>
+
+<!-- State Estimator Node -->
+<rect x="160" y="400" width="220" height="50" rx="10" ry="10" fill="#fff9c4" stroke="#d6b656" stroke-width="2"/>
+<text x="270" y="420" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">State Estimator Node</text>
+<text x="270" y="437" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(EKF/UKF + Kinematics)</text>
+
+<!-- Contact Detector -->
+<rect x="420" y="400" width="160" height="50" rx="10" ry="10" fill="#fff9c4" stroke="#d6b656" stroke-width="2"/>
+<text x="500" y="430" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">Contact Detector</text>
+
+<!-- Phase 1 label -->
+<text x="820" y="420" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-style="italic" font-weight="bold" fill="#cc0000">Phase 1 (Priority)</text>
+
+<!-- Arrow: State to Safety -->
+<line x1="350" y1="460" x2="260" y2="540" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="270" y="500" text-anchor="start" font-family="Helvetica, sans-serif" font-size="12" fill="#555">Robot State</text>
+
+<!-- Arrow: State to RT Hardware -->
+<line x1="810" y1="460" x2="730" y2="540" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="740" y="500" text-anchor="start" font-family="Helvetica, sans-serif" font-size="12" fill="#555">Robot State</text>
+
+<!-- Layer 4: RT Control & Safety (red) -->
+<rect x="120" y="500" width="920" height="100" rx="10" ry="10" fill="#f8cecc" stroke="#b85450" stroke-width="2"/>
+<text x="580" y="525" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Real-Time Control &amp; Safety Layer (200 Hz, SCHED_FIFO)</text>
+
+<!-- Safety Monitor Node -->
+<rect x="160" y="540" width="200" height="50" rx="10" ry="10" fill="#ffcccc" stroke="#b85450" stroke-width="2"/>
+<text x="260" y="560" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">Safety Monitor Node</text>
+<text x="260" y="577" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(Fall Detection, Limits)</text>
+
+<!-- robstride_hardware -->
+<rect x="620" y="540" width="220" height="50" rx="10" ry="10" fill="#ffcccc" stroke="#b85450" stroke-width="2"/>
+<text x="730" y="560" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">robstride_hardware</text>
+<text x="730" y="577" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(ros2_control HW Interface)</text>
+
+<!-- Safety to Hardware (dashed red) -->
+<path d="M 360 565 L 620 565" fill="none" stroke="#cc0000" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrowhead-red)"/>
+<text x="460" y="558" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#cc0000">Safety Signals / E-Stop</text>
+
+<!-- Arrow: RT to Hardware Layer -->
+<line x1="580" y1="600" x2="580" y2="640" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+<text x="590" y="625" text-anchor="start" font-family="Helvetica, sans-serif" font-size="12" fill="#555">CAN Commands</text>
+
+<!-- Layer 5: Hardware (purple) -->
+<rect x="120" y="640" width="920" height="120" rx="10" ry="10" fill="#e1d5e7" stroke="#9673a6" stroke-width="2"/>
+<text x="580" y="665" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Hardware Layer</text>
+
+<!-- Motors -->
+<rect x="180" y="680" width="140" height="60" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
+<text x="250" y="700" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">RobStride Motors</text>
+<text x="250" y="715" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(RS02/RS05)</text>
+<text x="250" y="730" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">CAN Bus</text>
+
+<!-- IMU -->
+<rect x="360" y="680" width="140" height="60" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
+<text x="430" y="705" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">IMU Sensor</text>
+<text x="430" y="722" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(200-1000 Hz)</text>
+
+<!-- Force Sensors -->
+<rect x="540" y="680" width="140" height="60" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
+<text x="610" y="705" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">Force Sensors</text>
+<text x="610" y="722" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(Optional)</text>
+
+<!-- Encoders -->
+<rect x="720" y="680" width="140" height="60" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
+<text x="790" y="705" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="12" font-weight="bold" fill="#333">Joint Encoders</text>
+<text x="790" y="722" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" fill="#333">(Built-in)</text>
+
+<!-- Feedback arrows (dashed, from hardware up to RT layer) -->
+<path d="M 250 680 L 250 660 L 304 660 L 304 600" fill="none" stroke="#666666" stroke-width="1" stroke-dasharray="6 4"/>
+<path d="M 430 680 L 430 660 L 488 660 L 488 600" fill="none" stroke="#666666" stroke-width="1" stroke-dasharray="6 4"/>
+<path d="M 610 680 L 610 660 L 672 660 L 672 600" fill="none" stroke="#666666" stroke-width="1" stroke-dasharray="6 4"/>
+<path d="M 790 680 L 790 660 L 856 660 L 856 600" fill="none" stroke="#666666" stroke-width="1" stroke-dasharray="6 4"/>
+<text x="950" y="632" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-style="italic" fill="#666666">Sensor Feedback</text>
+
+<!-- Feedback loop: State to Gait (green, left side) -->
+<path d="M 120 410 L 80 410 L 80 270 L 120 270" fill="none" stroke="#00aa00" stroke-width="2" marker-end="url(#arrowhead-green)"/>
+<text x="40" y="335" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#00aa00">Robot</text>
+<text x="40" y="350" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#00aa00">State</text>
+<text x="40" y="365" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#00aa00">Feedback</text>
+
+<!-- Legend -->
+<rect x="1100" y="80" width="220" height="180" rx="10" ry="10" fill="#ffffff" stroke="#333333" stroke-width="2" stroke-dasharray="6 4"/>
+<text x="1210" y="108" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="14" font-weight="bold" fill="#333">Implementation Phases</text>
+
+<rect x="1120" y="130" width="180" height="30" rx="10" ry="10" fill="#fff2cc" stroke="none"/>
+<text x="1130" y="150" text-anchor="start" font-family="Helvetica, sans-serif" font-size="11" fill="#333">Phase 1: Foundation (Priority)</text>
+
+<rect x="1120" y="170" width="180" height="30" rx="10" ry="10" fill="#d5e8d4" stroke="none"/>
+<text x="1130" y="190" text-anchor="start" font-family="Helvetica, sans-serif" font-size="11" fill="#333">Phase 2: Gait Generation</text>
+
+<rect x="1120" y="210" width="180" height="30" rx="10" ry="10" fill="#dae8fc" stroke="none"/>
+<text x="1130" y="230" text-anchor="start" font-family="Helvetica, sans-serif" font-size="11" fill="#333">Phase 3: High-Level (Future)</text>
+    </g>
+</svg>
