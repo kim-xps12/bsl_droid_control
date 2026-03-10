@@ -21,5 +21,5 @@ teleop_twist_joy_node:
 
 biped_joy_safety_node:
   ros__parameters:
-    emergency_stop_button: 7  # START button (FR-05)
+    emergency_stop_buttons: [9, 10]  # L3+R3 simultaneous press (FR-05)
     joy_timeout: 0.5  # Gamepad disconnect detection timeout [s] (FR-07)
