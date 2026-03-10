@@ -1,0 +1,37 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 200
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    forward_position_controller:
+      type: forward_command_controller/ForwardCommandController
+
+# gz_ros2_control plugin node parameters
+gz_ros_control:
+  ros__parameters:
+    # PD gain for position tracking (default: 0.1)
+    # velocity = gain * position_error
+    # With 1kHz physics: gain=20 → 50ms to reach target → stable (gain*dt=0.02 << 2)
+    position_proportional_gain: 20.0
+
+joint_state_broadcaster:
+  ros__parameters:
+    publish_rate: 50.0
+    use_local_topics: false
+
+forward_position_controller:
+  ros__parameters:
+    joints:
+      - left_hip_yaw_joint
+      - left_hip_roll_joint
+      - left_hip_pitch_joint
+      - left_knee_pitch_joint
+      - left_ankle_pitch_joint
+      - right_hip_yaw_joint
+      - right_hip_roll_joint
+      - right_hip_pitch_joint
+      - right_knee_pitch_joint
+      - right_ankle_pitch_joint
+    interface_name: position

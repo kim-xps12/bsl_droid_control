@@ -1,0 +1,18 @@
+# Safety monitoring parameters
+# Reference: doc/design/ros2_walking/modules/bringup.md §4.3
+
+biped_safety_node:
+  ros__parameters:
+    # Joint position limits [rad] (matching URDF)
+    joint_limits:
+      hip_yaw: [-0.785, 0.785]
+      hip_roll: [-0.524, 0.524]
+      hip_pitch: [-1.571, 1.047]
+      knee_pitch: [-2.094, 0.0]
+      ankle_pitch: [-1.047, 1.047]
+
+    max_joint_velocity: 25.0  # [rad/s] RS02 motor spec
+    max_tilt_angle: 1.047     # [rad] 60 deg (SR-01)
+    min_base_height: 0.1      # [m] Fall detection (SR-02)
+    warning_threshold_ratio: 0.8
+    cmd_vel_timeout: 1.0      # [s] Command watchdog
