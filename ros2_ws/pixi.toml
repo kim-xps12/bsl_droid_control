@@ -5,15 +5,22 @@ platforms = ["linux-aarch64", "osx-arm64"]
 version = "0.1.0"
 
 [activation]
-scripts = ["install/setup.sh"]
+scripts = ["activate.sh"]
 
 # Jetson用環境変数
 [target.linux-aarch64.activation.env]
 DISPLAY = ":1"
 
 [tasks]
-build = { cmd = "colcon build --symlink-install", inputs = ["src"] }
 rviz2 = "rviz2"
+
+# macOS: robstride_hardware はLinux専用（linux/can.h依存）のため除外
+[target.osx-arm64.tasks]
+build = { cmd = "./scripts/run_colcon_build.sh --packages-ignore robstride_hardware", inputs = ["src", "scripts/run_colcon_build.sh"] }
+
+# Jetson: 全パッケージをビルド
+[target.linux-aarch64.tasks]
+build = { cmd = "./scripts/run_colcon_build.sh", inputs = ["src", "scripts/run_colcon_build.sh"] }
 
 # ========================================
 # 共通依存関係（両プラットフォームで利用可能）
@@ -33,11 +40,9 @@ cmake = ">=4.2.2,<5"
 ninja = ">=1.13.2,<2"
 pyqt = ">=5.15"
 filelock = ">=3.20.3,<4"
-
-# ========================================
-# Jetson専用依存関係（ros2_control関連）
-# ========================================
-[target.linux-aarch64.dependencies]
+numpy = ">=2.0"  # ros-jazzy-std-msgs is built with numpy 2 (np2); numpy 1.x lacks _core/include
+ros-jazzy-joy = "*"
+ros-jazzy-teleop-twist-joy = "*"
 ros-jazzy-ros2-control = ">=4.42.1,<5"
 ros-jazzy-ros2-controllers = ">=4.36.0,<5"
 ros-jazzy-controller-manager = ">=4.42.1,<5"
@@ -45,3 +50,6 @@ ros-jazzy-hardware-interface = ">=4.42.1,<5"
 ros-jazzy-joint-state-broadcaster = ">=4.36.0,<5"
 ros-jazzy-joint-trajectory-controller = ">=4.36.0,<5"
 ros-jazzy-forward-command-controller = ">=4.36.0,<5"
+pytorch = "*"
+# NOTE: genesis-world はpixi pypi-dependenciesではpillow版競合により追加不可。
+# activate.shで自動インストールする（pip install --no-deps genesis-world）。
