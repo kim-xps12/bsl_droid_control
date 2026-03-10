@@ -11,7 +11,6 @@
 
   <exec_depend>biped_description</exec_depend>
   <exec_depend>biped_msgs</exec_depend>
-  <exec_depend>biped_teleop</exec_depend>
   <exec_depend>biped_rl_policy</exec_depend>
   <exec_depend>biped_safety</exec_depend>
   <exec_depend>biped_genesis_sim</exec_depend>

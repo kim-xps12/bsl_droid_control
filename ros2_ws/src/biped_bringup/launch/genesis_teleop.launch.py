@@ -104,7 +104,7 @@ def generate_launch_description():
 
     # biped_joy_safety_node (emergency stop)
     joy_safety = Node(
-        package="biped_teleop",
+        package="biped_safety",
         executable="biped_joy_safety_node",
         parameters=[joy_config, {"use_sim_time": True}],
         output="screen",
