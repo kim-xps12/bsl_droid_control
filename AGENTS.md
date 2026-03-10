@@ -13,8 +13,10 @@ pixiでROS 2環境を管理している．
 ```bash
 cd ros2_ws
 pixi install
-pixi run colcon build --symlink-install
+pixi run build
 ```
+
+> **注意**: `pixi run build` は `pixi.toml` の `[tasks]` で定義されたビルドコマンドを実行する。`--cmake-args -DPython3_EXECUTABLE=$CONDA_PREFIX/bin/python3` はタスク定義に含まれているため、手動で指定する必要はない。pyenvなど他のPython環境がある場合でもpixi環境のPythonが自動的に使用される。
 
 ### 強化学習環境（rl_ws）
 
@@ -48,11 +50,19 @@ cd ros2_ws
 # URDF可視化（カスタムGUI付き）
 pixi run ros2 launch biped_description display_custom.launch.py
 
-# 歩容生成 + RViz可視化
-pixi run ros2 launch biped_gait_control gait_visualization.launch.py
-
 # 外部から /joint_states を供給する場合（競合回避）
 pixi run ros2 launch biped_description display_rviz_only.launch.py
+
+# 軌道リプレイ（足軌道 / 単関節振動 / ウェイポイント補間）
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py config_file:=replay_oscillation.yaml
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py config_file:=replay_waypoint.yaml
+
+# RL歩行テレオペ（Genesis物理シミュレーション + ゲームパッド）
+pixi run ros2 launch biped_bringup genesis_teleop.launch.py
+
+# 実機制御（Jetson専用）
+pixi run ros2 launch robstride_hardware bringup.launch.py
 ```
 
 ### 注意事項
@@ -115,6 +125,23 @@ python biped_walking/...               # uvなしでは依存関係が解決さ�
 ## トラブルシュート
 - macOSでのthread affinity警告は無視可
 - KDL root link inertia警告は可視化に影響なし
+
+## ビルド警告の取り扱い【必須】
+
+Coding Agentはビルド時に発生する**すべての警告**に対処する義務がある．「ツールチェーン起因」「実害なし」等の理由で警告を無視することは許されない．
+
+### 原則
+
+1. **プロジェクト側で修正可能な警告**: 直ちにソースコードや設定ファイルを修正して解消すること
+2. **ツールチェーン・外部依存起因で直接修正不可能な警告**: CMakeやビルドスクリプトの設定で警告を抑制する対策を講じること（例: `set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)`, 環境変数の設定等）
+3. **対策が不明な場合**: 調査を行い、対策案をユーザに提示すること．「無視してよい」という結論は出さない
+
+### 具体的な既知ケース
+
+| 警告 | 対処 |
+|------|------|
+| `cmake_minimum_required` deprecation | `VERSION 3.14` 以上を指定 |
+| `install_name_tool: warning: changes being made to the file will invalidate the code signature` | macOS + conda-forge環境固有．ビルドツールチェーン起因で直接修正不可だが、`MACOSX_RPATH`設定やcodesign再署名スクリプトの導入を検討すること |
 
 ## コード品質ルール【必須】
 
