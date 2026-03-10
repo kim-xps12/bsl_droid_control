@@ -103,6 +103,10 @@ ros-jazzy-controller-manager = "*"
 |------|--------|---------|
 | URDF可視化 | ✅ | ✅ |
 | 関節操作GUI | ✅ | ✅ |
+| Genesis物理シミュレーション | ❌ | ✅ |
+| RLポリシー推論 | ✅ | ✅ |
+| ゲームパッド遠隔操作 | ✅ | ✅ |
+| 安全監視 | ✅ | ✅ |
 | ros2_control | ✅ | ❌ |
 | 実機制御 | ✅ | ❌ |
 
@@ -128,30 +132,38 @@ pixi run ros2 launch biped_description display_rviz_only.launch.py
 pixi run ros2 launch biped_description display_custom.launch.py
 ```
 
-### 歩容サンプル実装の表示
+### 軌道リプレイ（RViz / 実機検証）
+
+事前設計された脚軌道を再生し、RViz2上の3Dモデルと実機の動きが一致するかを確認する。
 
 ```bash
-# 歩容生成 + RViz可視化（推奨・1コマンドで完結）
-pixi run ros2 launch biped_gait_control gait_visualization.launch.py
+# 足軌道（CamberTrajectory + IK）— デフォルト
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py
 
-# または以下のように分割して起動もできる
-# ターミナル1: RViz2
-pixi run ros2 launch biped_description display_rviz_only.launch.py
+# 単関節の正弦波振動（ハードウェア個別検証）
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py config_file:=replay_oscillation.yaml
 
-# ターミナル2: 歩容生成ノード
-pixi run ros2 launch biped_gait_control gait_control.launch.py
+# ウェイポイント補間による再生
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py config_file:=replay_waypoint.yaml
+
+# 実機制御モード（ros2_control経由でモータ駆動）
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py mode:=control
 ```
 
-パラメータを変えて起動する場合は以下．
+### RL歩行テレオペ（Genesis）
+
+RLポリシーによる歩行制御をゲームパッドで操作する。
+
 ```bash
-# パラメータをカスタマイズ
-pixi run ros2 launch biped_gait_control gait_visualization.launch.py \
-    step_frequency:=1.0 \
-    step_height:=0.05
+pixi run ros2 launch biped_bringup genesis_teleop.launch.py
 ```
-> **注意**: `display.launch.py` は `joint_state_publisher_gui` を起動するため、
-> 外部からの `/joint_states` と競合します。外部ソースを使用する場合は
-> `display_rviz_only.launch.py` を使用してください。
+
+### 実機制御（Jetson専用）
+
+```bash
+# RS02 単関節（joint1）の単体検証
+pixi run ros2 launch robstride_hardware bringup.launch.py
+```
 
 ### トピックの確認
 
@@ -167,11 +179,14 @@ pixi run ros2 run tf2_tools view_frames
 
 | パッケージ | 説明 | 状態 |
 |-----------|------|------|
+| `biped_bringup` | 起動・設定統合（genesis_teleop） | ✅ 完成 |
 | `biped_description` | URDFモデル・RViz2可視化・関節操作GUI | ✅ 完成 |
-| `biped_gait_control` | 歩容生成のサンプル実装（50Hz関節角度出力） | ✅ 完成 |
+| `biped_gait_control` | 歩容生成・軌道リプレイ（50Hz関節角度出力） | ✅ 完成 |
+| `biped_genesis_sim` | Genesis物理シミュレータブリッジ | ✅ 完成 |
+| `biped_msgs` | カスタムメッセージ定義（SafetyStatus / RLPolicyState） | ✅ 完成 |
+| `biped_rl_policy` | RLポリシー推論ノード（simモード） | ✅ 完成 |
+| `biped_safety` | 安全監視ノード（緊急停止・ゲームパッド切断検知・将来: 関節・姿勢監視） | 🔄 一部実装済み |
 | `robstride_hardware` | ros2_control用ハードウェアインターフェース | 🔄 開発中 |
-| `pub_sub_cpp` | ROS 2チュートリアル（C++） | 📚 サンプル |
-| `pub_sub_python` | ROS 2チュートリアル（Python） | 📚 サンプル |
 
 ## 強化学習環境（rl_ws）
 
@@ -300,10 +315,15 @@ bsl_droid_control/
 └── ros2_ws/                  # ROS 2ワークスペース（pixi管理）
     ├── pixi.toml             # pixi環境設定
     └── src/
-        ├── biped_description/    # URDFモデル・RViz2可視化・GUI
-        ├── biped_gait_control/   # 歩容パターン生成
-        ├── robstride_hardware/   # ros2_control用IF（開発中）
-        └── pub_sub_*/            # ROS 2チュートリアル
+        ├── biped_bringup/           # 起動・設定統合
+        ├── biped_description/       # URDFモデル・RViz2可視化・GUI
+        ├── biped_gait_control/      # 歩容パターン生成・軌道リプレイ
+        ├── biped_genesis_sim/       # Genesis物理シミュレータブリッジ
+        ├── biped_msgs/              # カスタムメッセージ定義
+        ├── biped_rl_policy/         # RLポリシー推論
+        ├── biped_safety/            # 安全監視（緊急停止・ゲームパッド切断検知・将来: 関節・姿勢監視）
+        ├── robstride_hardware/      # ros2_control用IF（開発中）
+        └── pub_sub_*/               # ROS 2チュートリアル
 ```
 
 ## 既知の問題
@@ -329,10 +349,14 @@ KDLライブラリの制限による警告で、**可視化には影響しませ
 
 ### パッケージドキュメント
 
-- [biped_description技術仕様](ros2_ws/src/biped_description/doc/technical_specification.md) - ロボットモデル詳細
-- [biped_gait_control README](ros2_ws/src/biped_gait_control/doc/README.md) - 歩容生成パッケージ概要
-- [biped_gait_control技術仕様](ros2_ws/src/biped_gait_control/doc/technical_specification.md) - 運動学・軌道生成詳細
+- [biped_gait_control README](ros2_ws/src/biped_gait_control/doc/README.md) - 歩容生成パッケージ概要・技術仕様
 - [rl_ws README](rl_ws/README.md) - 強化学習環境の詳細
+
+### 設計ドキュメント
+
+- [ROS 2歩行制御アーキテクチャ](doc/design/ros2_walking/architecture.md) - システム全体設計
+- [ROS 2歩行制御要件定義](doc/design/ros2_walking/requirements.md) - 機能・非機能要件
+- [ROS 2歩行制御開発計画](doc/design/ros2_walking/system_plan.md) - フェーズ別実装計画
 
 
 ## ライセンス
@@ -343,6 +367,7 @@ MIT License
 
 | 日付 | 変更内容 |
 |------|----------|
+| 2026-03-10 | ros2_wsドキュメントを実態に即して更新（新規6パッケージ追加、コマンド二重管理解消、.gitignore整備） |
 | 2026-02-01 | README全体を実態に即して更新（ディレクトリ構造、ドキュメントリンク、MuJoCo評価追加） |
 | 2026-02-01 | 強化学習環境を整理（biped_walking/配下にenvs, train, 評価スクリプトを集約） |
 | 2026-02-01 | droid-walking系実験追加、統一評価スクリプト（biped_eval.py）導入 |
