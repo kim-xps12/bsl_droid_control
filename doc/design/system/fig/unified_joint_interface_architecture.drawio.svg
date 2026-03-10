@@ -43,7 +43,7 @@
                 <mxCell id="gait-layer-title" value="Gait Generation Layer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=14;" parent="1" vertex="1">
                     <mxGeometry x="500" y="85" width="200" height="25" as="geometry"/>
                 </mxCell>
-                <mxCell id="gait-node" value="gait_pattern_generator&#xa;(biped_gait_control)&#xa;&#xa;50Hz 関節角度生成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
+                <mxCell id="gait-node" value="trajectory_replay&#xa;(biped_gait_control)&#xa;&#xa;50Hz 関節角度生成" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
                     <mxGeometry x="430" y="115" width="160" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="rl-node" value="RL Policy Node&#xa;(将来拡張)&#xa;&#xa;強化学習ポリシー" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;strokeDashArray=3 3;fontSize=11;" parent="1" vertex="1">
