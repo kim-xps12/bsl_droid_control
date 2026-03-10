@@ -30,7 +30,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'gait_pattern_generator = biped_gait_control.gait_pattern_generator:main',
+            'trajectory_replay = biped_gait_control.trajectory_replay_node:main',
         ],
     },
 )

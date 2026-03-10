@@ -1,0 +1,20 @@
+# Trajectory Replay: Single joint oscillation
+# For hardware verification of individual joints
+
+trajectory_replay:
+  ros__parameters:
+    source_type: "oscillation"
+    mode: "viz"
+    publish_rate: 50.0
+    enabled: true
+
+    oscillation:
+      # Target joint to oscillate
+      # Valid: left/right_hip_yaw/roll/pitch_joint, left/right_knee_pitch_joint, left/right_ankle_pitch_joint
+      joint_name: "left_knee_pitch_joint"
+      amplitude: 0.3       # [rad] (~17 deg)
+      frequency: 0.5       # [Hz]
+      offset: -0.5         # [rad] center offset from default position
+      # Default positions for all 10 joints [rad]
+      # All joints not being oscillated hold these positions
+      default_positions: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

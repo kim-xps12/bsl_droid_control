@@ -79,8 +79,8 @@ class WalkingPatternGenerator:
     def __init__(
         self,
         gait_params: GaitParameters = None,
-        thigh_length: float = 0.18,
-        shank_length: float = 0.20
+        thigh_length: float = 0.11,
+        shank_length: float = 0.12
     ):
         """
         Initialize walking pattern generator.

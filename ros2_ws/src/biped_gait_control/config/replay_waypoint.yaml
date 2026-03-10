@@ -1,0 +1,35 @@
+# Trajectory Replay: Multi-joint waypoint playback
+# Defines waypoints with timestamps and joint positions,
+# linearly interpolated between waypoints
+
+trajectory_replay:
+  ros__parameters:
+    source_type: "waypoint"
+    mode: "viz"
+    publish_rate: 50.0
+    enabled: true
+
+    waypoint:
+      loop: true
+      # Waypoint timestamps [sec]
+      times: [0.0, 1.0, 2.0, 3.0, 4.0]
+      # Joint positions: 10 values per waypoint (flattened)
+      # Order: L_hip_yaw, L_hip_roll, L_hip_pitch, L_knee_pitch, L_ankle_pitch,
+      #        R_hip_yaw, R_hip_roll, R_hip_pitch, R_knee_pitch, R_ankle_pitch
+      # Waypoint 0 (t=0.0s): standing pose
+      # Waypoint 1 (t=1.0s): left leg slightly bent
+      # Waypoint 2 (t=2.0s): standing pose
+      # Waypoint 3 (t=3.0s): right leg slightly bent
+      # Waypoint 4 (t=4.0s): standing pose (loop back to 0)
+      positions: [
+        # wp0: standing
+        0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0,
+        # wp1: left knee bend
+        0.0, 0.0, 0.3, -0.6, 0.3,  0.0, 0.0, 0.0, 0.0, 0.0,
+        # wp2: standing
+        0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0,
+        # wp3: right knee bend
+        0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.3, -0.6, 0.3,
+        # wp4: standing
+        0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0,
+      ]
