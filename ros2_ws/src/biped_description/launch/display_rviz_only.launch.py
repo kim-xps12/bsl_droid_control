@@ -1,14 +1,13 @@
 """
-Launch file for RViz visualization only (no joint_state_publisher).
+RViz可視化専用のLaunchファイル（joint_state_publisherなし）.
 
-Use this launch file when joint states are provided by an external node
-(e.g., gait_pattern_generator, ros2_control, etc.)
+外部ノードからjoint statesが供給される場合に使用する.
+デフォルトモデルはBSL-Droid simplified V2.
 
-Usage:
+使い方:
     ros2 launch biped_description display_rviz_only.launch.py
 
-    Then separately run your joint state publisher:
-    ros2 launch biped_gait_control gait_control.launch.py
+    別途，joint state publisherを起動すること.
 """
 
 from launch import LaunchDescription
@@ -25,7 +24,7 @@ def generate_launch_description():
     pkg_share = FindPackageShare('biped_description')
 
     # URDF file path
-    urdf_file = PathJoinSubstitution([pkg_share, 'urdf', 'biped_digitigrade.urdf.xacro'])
+    urdf_file = PathJoinSubstitution([pkg_share, 'urdf', 'bsl_droid_simplified_v2.urdf.xacro'])
 
     # RViz config file
     rviz_config = PathJoinSubstitution([pkg_share, 'rviz', 'biped_display.rviz'])
@@ -59,7 +58,9 @@ def generate_launch_description():
         name='rviz2',
         output='screen',
         arguments=['-d', rviz_config],
-        parameters=[{'use_sim_time': use_sim_time}]
+        parameters=[{'use_sim_time': use_sim_time}],
+        sigterm_timeout='5',
+        sigkill_timeout='2',
     )
 
     return LaunchDescription([
