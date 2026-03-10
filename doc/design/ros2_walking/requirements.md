@@ -4,7 +4,7 @@
 
 BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲームパッドで操縦するROS 2歩行制御システムの要件を定義する。RL学習済みポリシー（droid-walking-omni系、50次元観測・10次元行動）が速度指令から歩容を生成し、ros2_controlを介して10個のRS02モータを制御する。
 
-本システムはシミュレーション検証後に実機（Jetson Orin Nano Super）へ展開する段階的アプローチをとる。Phase 1（RViz可視化）→ Phase 2（安全監視整備）→ Phase 3（実機展開）の順に構築する。
+本システムはシミュレーション検証後に実機（Jetson Orin Nano Super）へ展開する段階的アプローチをとる。simモード（Genesis物理シミュレーション）→ Phase 2（安全監視整備）→ Phase 3（実機展開・controlモード）の順に構築する。simモードではGenesis物理エンジンを採用し、RL学習環境と同一のエンジンでシミュレーションを行う（ros2_controlは使用しない）。
 
 ## 機能要件
 
@@ -24,9 +24,9 @@ BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲーム�
 
 - 学習済みRLポリシー（droid-walking-omni系）で速度指令から10関節の目標位置を50Hzで生成する
 - 観測ベクトルは50次元で、`rl_ws/biped_walking/envs/droid_env_unitree.py:714-730`と完全一致させる
-  - `base_lin_vel` [3]: ベース線速度（vizモードではモック [0,0,0]、実機ではIMU推定値）
-  - `base_ang_vel` [3]: ベース角速度（vizモードではモック [0,0,0]、実機ではIMU角速度）
-  - `projected_gravity` [3]: 射影重力ベクトル（vizモードではモック [0,0,-1]、実機ではIMU姿勢から計算）
+  - `base_lin_vel` [3]: ベース線速度（simモードではgenesis_sim_node構築、実機ではIMU推定値）
+  - `base_ang_vel` [3]: ベース角速度（simモードではgenesis_sim_node構築、実機ではIMU角速度）
+  - `projected_gravity` [3]: 射影重力ベクトル（simモードではgenesis_sim_node構築、実機ではIMU姿勢から計算）
   - `commands` [3]: 速度指令（/cmd_velから取得、×commands_scale）
   - `dof_pos - default_dof_pos` [10]: 関節偏差（前回出力から計算、×obs_scales.dof_pos）
   - `dof_vel` [10]: 関節速度（差分計算、×obs_scales.dof_vel）
@@ -34,16 +34,17 @@ BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲーム�
   - `gait_phase_sin/cos` [2]: 歩容位相（内部クロック50Hz、周期は学習時と同一）
   - `leg_phase` [2]: 脚位相（gait_phaseから導出）
   - `feet_pos_z` [2]: 足先Z座標（FK計算 or 定数）
-  - `contact_state` [2]: 接地状態（vizモードではモック [1,1]、実機ではトルク推定）
+  - `contact_state` [2]: 接地状態（simモードではgenesis_sim_node構築、実機ではトルク推定）
 - アクション→関節位置変換: `target = action * action_scale + default_dof_pos`
   - `action_scale` = 0.25（`droid_env_unitree.py:487`）
   - `default_dof_pos`: hip_pitch=60°, knee=-100°, ankle=45°（`droid_train_omni_v21.py:120-122`）
 - モデルはPyTorch MLP（512-256-128）。Pythonでの50Hz推論はレイテンシ要件を満たす（libtorch化は時期尚早）
 - モデル・設定ファイルは`rl_ws/logs/droid-walking-omni-v{N}/`からロードする
 
-### FR-03: ros2_controlによるモータ制御（Must）
+### FR-03: ros2_controlによるモータ制御（Must）[controlモードのみ]
 
 - ros2_controlの`ForwardCommandController`を介して10個のRS02モータを200Hzで位置制御する
+- simモード（Genesisシミュレーション）ではros2_controlは使用せず、genesis_sim_nodeが内部PD制御（kp=35, kd=2）を直接実行する
 - RLポリシー出力（50Hz）をForwardCommandControllerが200Hzで補間しハードウェアPD制御を適用する
   - ハードウェアPDゲイン: kp=35, kd=2（robstride_hardware設定に準拠）
 - 10関節の構成:
@@ -55,14 +56,14 @@ BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲーム�
 ### FR-04: RViz2リアルタイム可視化（Must）
 
 - `/joint_states`をrobot_state_publisher経由でRViz2に反映し、ロボットの関節状態をリアルタイム可視化する
-- vizモード（Phase 1）ではRLポリシーノードが直接`/joint_states`をpublishする
+- simモード（Phase 1）ではgenesis_sim_nodeが`/joint_states`をpublishする
 - controlモード（Phase 3）ではjoint_state_broadcasterが実エンコーダデータをpublishする
 - MacBookからDDS経由で/joint_statesを受信しRViz2で表示する（分散構成）
 - 参照: biped_description技術仕様
 
 ### FR-05: 緊急停止（Must）
 
-- ゲームパッドの専用ボタン（STARTボタン等）で即座に緊急停止を発行する
+- ゲームパッドの左右ジョイスティック同時押し込み（L3: button 9 + R3: button 10）で即座に緊急停止を発行する
 - 緊急停止時は全関節を現在位置で保持（急なトルクオフは転倒リスクあり）
 - `/emergency_stop`トピック（std_msgs/Bool）で全ノードに通知する
 - 緊急停止からの復帰には明示的な操作（ボタン再押下等）を要求する
@@ -126,7 +127,7 @@ BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲーム�
 
 - IMUで計測したRoll/Pitchが60°を超えた場合、即座に緊急停止を発行する
 - 閾値60°は転倒復帰不能な姿勢に至る前のマージンとして設定
-- Phase 1（vizモード）ではIMU非搭載のためこのチェックは無効、Phase 3（実機）で有効化する
+- Phase 1ではIMU非搭載のためこのチェックは無効、Phase 3（実機）で有効化する
 
 ### SR-02: 転倒検出による緊急停止
 

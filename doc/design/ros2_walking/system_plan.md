@@ -2,7 +2,7 @@
 
 ## Context
 
-BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲームパッドで操縦するROS 2システムを構築する。RL学習済みポリシー（droid-walking-omni系、50次元観測・10次元行動）が速度指令から歩容を生成する。シミュレーションで検証後、実機（Jetson Orin Nano Super）に展開する段階的アプローチをとる。
+BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲームパッドで操縦するROS 2システムを構築する。RL学習済みポリシー（droid-walking-omni系、50次元観測・10次元行動）が速度指令から歩容を生成する。Genesis物理シミュレーションで検証後、実機（Jetson Orin Nano Super）に展開する段階的アプローチをとる。
 
 実装済み資産:
 - `ros2_ws/src/biped_description/` — URDF/RViz可視化（実装済み）
@@ -17,13 +17,13 @@ BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲーム�
 
 ### セッション一覧
 
-| セッション | 対応Step | 内容 | 推定規模 | 前提 |
-|---|---|---|---|---|
-| **Session A** | Step 1 + Step 2 | 要件定義ドキュメント + アーキテクチャ図（drawio.svg） | ドキュメント2ファイル | なし |
-| **Session B** | Step 3 | 5パッケージ骨格作成 + pixi.toml更新（Gazebo含む） + ビルド確認 | 新規ファイル ~25個 | Session A完了 |
-| **Session C** | Step 4 | biped_teleop_node + biped_rl_policy_node(viz/sim) + Gazeboシミュレーション + launch + 動作確認 | ノード実装3ファイル + launch + Gazebo設定 | Session B完了 |
-| **Session D** | Step 5 | biped_safety_node + 設定ファイル整備 + ユニットテスト | ノード実装 + テスト + config | Session C完了 |
-| **Session E** | Step 6 | 実機展開（controllers.yaml 10関節化 + controlモード + IMU統合 + Jetson launch） | 設定変更 + ノード修正 + launch | Session D完了 + Jetson環境 + IMU搭載済み実機 |
+| セッション | 対応Step | 内容 | 進捗 |
+|---|---|---|---|
+| **Session A** | Step 1 + Step 2 | 要件定義ドキュメント + アーキテクチャ図（drawio.svg） | [完了] |
+| **Session B** | Step 3 | パッケージ骨格作成 + pixi.toml更新 + ビルド確認 | [完了] |
+| **Session C** | Step 4 | biped_safety(joy_safety) + biped_rl_policy(sim) + Genesis sim + launch + 動作確認 | [完了] |
+| **Session D** | Step 5 | biped_safety_node + 設定ファイル整備 + ユニットテスト | [未着手] |
+| **Session E** | Step 6 | 実機展開（controllers.yaml 10関節化 + controlモード + IMU統合 + Jetson launch） | [未着手] |
 
 ### 使い方
 
@@ -40,7 +40,7 @@ doc/design/ros2_walking/system_plan.md のSession {X} を実行してくださ�
 
 ---
 
-## Step 1: 要件定義（Session A）
+## Step 1: 要件定義（Session A）[完了]
 
 `doc/design/ros2_walking/requirements.md` を作成し、以下の要件を軽量な表形式で列挙する。
 
@@ -50,7 +50,7 @@ doc/design/ros2_walking/system_plan.md のSession {X} を実行してくださ�
 |---|---|---|
 | FR-01 | F710rゲームパッドの左スティック上下→前後速度、左右→横速度、右スティック左右→yaw角速度として速度指令を入力 | Must |
 | FR-02 | 学習済みRLポリシー（droid-walking-omni系）で速度指令から10関節の目標位置を50Hzで生成 | Must |
-| FR-03 | ros2_controlのForwardCommandControllerを介して10個のRS02モータを200Hzで制御 | Must |
+| FR-03 | ros2_controlのForwardCommandControllerを介して10個のRS02モータを200Hzで制御（controlモードのみ） | Must |
 | FR-04 | RViz2でロボットの関節状態をリアルタイム可視化 | Must |
 | FR-05 | ゲームパッドのボタンで緊急停止 | Must |
 | FR-06 | 関節角度/速度リミット・姿勢異常を200Hzで監視し安全停止 | Must |
@@ -79,7 +79,7 @@ doc/design/ros2_walking/system_plan.md のSession {X} を実行してくださ�
 
 ---
 
-## Step 2: システムアーキテクチャ設計（Session A）
+## Step 2: システムアーキテクチャ設計（Session A）[完了]
 
 `doc/design/ros2_walking/fig/ros2_walking_architecture.drawio.svg` を作成する。
 
@@ -89,14 +89,36 @@ doc/design/ros2_walking/system_plan.md のSession {X} を実行してくださ�
 ros2_ws/src/
   biped_description/         # [実装済み] URDF, RViz
   robstride_hardware/        # [実装済み] ros2_control HW Interface (Jetson専用)
-  biped_msgs/                # [新規] カスタムメッセージ定義
-  biped_teleop/              # [新規] ゲームパッドteleop (Python)
-  biped_rl_policy/           # [新規] RLポリシー推論 (Python)
-  biped_safety/              # [新規] 安全監視 (Python)
-  biped_bringup/             # [新規] Launch統合・設定ファイル
+  biped_msgs/                # [実装済み] カスタムメッセージ定義
+  biped_rl_policy/           # [実装済み] RLポリシー推論 (Python)
+  biped_genesis_sim/         # [実装済み] Genesis物理シミュレーションブリッジ (Python)
+  biped_gait_control/        # [実装済み] IK軌道歩容生成 (Python)
+  biped_safety/              # [一部実装済み] 安全監視（緊急停止・ゲームパッド切断検知・将来: 関節・姿勢監視） (Python)
+  biped_bringup/             # [実装済み] Launch統合・設定ファイル
 ```
 
-### ノードグラフ（データフロー）
+### ノードグラフ（データフロー）— simモード（Genesis）[実装済み]
+
+```
+[joy_node] →(sensor_msgs/Joy)→ [teleop_twist_joy_node]
+                              →(sensor_msgs/Joy)→ [biped_joy_safety_node] → /emergency_stop
+                                    │
+                              (geometry_msgs/Twist)
+                              /cmd_vel
+                                    │
+                                    ▼
+                          [genesis_sim_node]
+                              │           ▲
+               /policy_obs    │           │  /policy_actions
+         (Float64MultiArray)  │           │  (Float64MultiArray)
+                              ▼           │
+                    [biped_rl_policy_node] (sim, イベント駆動)
+
+[genesis_sim_node] → /joint_states → [robot_state_publisher] → /tf
+                   → /clock
+```
+
+### ノードグラフ（データフロー）— controlモード [未実装・計画]
 
 ```
 [joy_node] →(sensor_msgs/Joy)→ [teleop_twist_joy_node]
@@ -126,20 +148,16 @@ ros2_ws/src/
 [biped_safety_node] (200Hz) ←── /joint_states, /imu/data, /cmd_vel
   │
   └→ /safety_status, /emergency_stop
-
-[biped_joy_safety_node] ←── /joy
-  │
-  └→ /emergency_stop（緊急停止ボタン、ゲームパッド切断検出）
 ```
 
 ### 主要な設計判断
 
 1. **joy_node（ROS 2標準）を使用** — pygameではなく。デバイスhotplug対応・ROS 2エコシステム統合
 2. **RLポリシーはPython (rclpy)** — PyTorchモデル（MLP 512-256-128）の50Hz推論はPythonで十分。libtorch化は時期尚早
-3. **ForwardCommandController利用** — RL出力 `action * 0.25 + default_dof_pos` を直接コマンド。ハードウェアPD（kp=35, kd=2）が200Hzで補間
-4. **観測ベクトルは50次元を厳密に再現** — `droid_env_unitree.py:714-730` と完全一致させる。simモード（Phase 1）ではGazeboのセンサデータ、実機（Phase 3）では実センサデータを使用
-5. **viz/sim/controlの3モード** — vizはノード起動確認用（モックセンサ）、simはGazeboシミュレーションで歩行検証（物理フィードバック）、controlは実機制御用。`joint_interface.md`の設計と整合
-6. **Gazebo HarmonicによるMacBook上の物理シミュレーション** — RLポリシーは閉ループ制御器であり、物理フィードバックなしでは歩容を検証できない。`ros-jazzy-ros-gz`と`ros-jazzy-gz-ros2-control`がpixi (robostack-jazzy) でmacOS ARM64に対応しているため、MacBook上でros2_controlを含むフルシミュレーションが可能
+3. **ForwardCommandController利用（controlモード）** — RL出力 `action * 0.25 + default_dof_pos` を直接コマンド。ハードウェアPD（kp=35, kd=2）が200Hzで補間。simモードではgenesis_sim_nodeが内部PD制御を実行
+4. **観測ベクトルは50次元を厳密に再現** — `droid_env_unitree.py:714-730` と完全一致させる。simモードではgenesis_sim_nodeが構築、controlモードではbiped_rl_policy_nodeが構築
+5. **sim/controlの2モード** — simはGenesisシミュレーションで歩行検証（物理フィードバック）、controlは実機制御用。`joint_interface.md`の設計と整合
+6. **Genesis物理エンジンの採用** [計画変更] — 当初計画のGazebo Harmonicから変更。RL学習環境と同一エンジンを使用することでsim-to-sim gapを排除。観測ベクトル構築ロジックを学習環境から直接移植可能
 7. **IMUは実機に最初から搭載** — 二脚ロボットにおいてIMUは姿勢制御の最も基本的なセンサ。実機のハードウェア構成にIMUは必須
 
 ### カスタムメッセージ（biped_msgs）
@@ -153,28 +171,29 @@ ros2_ws/src/
 
 ---
 
-## Step 3: パッケージ骨格作成（Session B — Phase 0）
+## Step 3: パッケージ骨格作成（Session B — Phase 0）[完了]
 
 ### タスク
 1. `biped_msgs` パッケージ作成（ament_cmake, SafetyStatus.msg, RLPolicyState.msg）
-2. `biped_teleop` パッケージ骨格（ament_python）
+2. `biped_safety` パッケージ骨格（ament_python（当初 biped_teleop として作成、後に統合）
 3. `biped_rl_policy` パッケージ骨格（ament_python）
 4. `biped_safety` パッケージ骨格（ament_python）
-5. `biped_bringup` パッケージ骨格（ament_cmake, launch/config）
-6. `pixi.toml` に `ros-jazzy-joy`, `ros-jazzy-teleop-twist-joy`, `ros-jazzy-ros-gz`, `ros-jazzy-gz-ros2-control` 依存追加
-7. `controllers.yaml` を10関節対応に拡張（現在はjoint1のみ）
-8. `pixi run colcon build` でビルド確認
+5. `biped_genesis_sim` パッケージ骨格（ament_python）
+6. `biped_bringup` パッケージ骨格（ament_cmake, launch/config）
+7. `pixi.toml` に `ros-jazzy-joy`, `ros-jazzy-teleop-twist-joy` 依存追加
+8. `controllers.yaml` を10関節対応に拡張
+9. `pixi run colcon build` でビルド確認
 
 ### 変更対象ファイル
-- `ros2_ws/pixi.toml` — joy, teleop_twist_joy, Gazebo関連依存追加
+- `ros2_ws/pixi.toml` — joy, teleop_twist_joy依存追加
 - `ros2_ws/src/robstride_hardware/config/controllers.yaml` — 10関節化
-- 新規パッケージ5つ（上記）
+- 新規パッケージ6つ（上記）
 
 ---
 
-## Step 4: ゲームパッド→Gazeboシミュレーション歩行（Session C — Phase 1 MVP）
+## Step 4: ゲームパッド→Genesisシミュレーション歩行（Session C — Phase 1 MVP）[完了]
 
-F710でスティックを倒すとGazebo上のロボットが物理シミュレーションで歩行する、最初のデモ。RLポリシーは閉ループ制御器であり、物理シミュレータからのセンサフィードバック（IMU、接触、関節状態）が歩容生成に必須である。
+F710でスティックを倒すとGenesis上のロボットが物理シミュレーションで歩行する、最初のデモ。RLポリシーは閉ループ制御器であり、物理シミュレータからのセンサフィードバック（関節状態、接触、重力方向）が歩容生成に必須である。
 
 ### タスク
 
@@ -193,54 +212,38 @@ F710でスティックを倒すとGazebo上のロボットが物理シミュレ�
 - `/joy` subscribe → 緊急停止ボタン（STARTボタン）監視、ゲームパッド切断検出
 - 緊急停止時またはゲームパッド切断時に `/emergency_stop` に `true` を publish
 
-#### 4.2 Gazeboシミュレーション環境構築
-- URDF/xacroにGazeboプラグインを追加:
-  - `gz_ros2_control`プラグイン: ros2_controlをGazebo上で動作させる
-  - IMUセンサプラグイン: `/imu/data` (sensor_msgs/Imu) を配信
-  - 接触センサプラグイン: 足裏の接地状態を検出
-- Gazeboワールドファイル作成（平面地形 + ロボットspawn）
-- `controllers.yaml`はPhase 3（実機）と同一設定を使用
+#### 4.2 Genesis物理シミュレーション環境構築 [計画変更: Gazebo → Genesis]
 
-#### 4.3 biped_rl_policy_node（sim/vizモード）
+当初計画のGazebo Harmonicに代わり、Genesis物理エンジンを採用した。genesis_sim_nodeがRL学習環境（`droid_env_unitree.py`）と同等の物理シミュレーション・観測構築を行う。
 
-**simモード（主要）— Gazeboシミュレーション:**
-- `/cmd_vel` subscribe → `/forward_position_controller/commands` publish (50Hz)
-- `/joint_states`からGazeboの実関節状態を取得（joint_state_broadcaster経由）
-- `/imu/data`からGazeboのIMUデータを取得
-- 観測ベクトル構築（`droid_env_unitree.py:714-730` を忠実に再現）:
-  - base_lin_vel: IMU加速度積分 or 運動学推定
-  - base_ang_vel: IMU角速度（`/imu/data`から取得）
-  - projected_gravity: IMU姿勢（クォータニオン）から計算
-  - commands: /cmd_velから（×commands_scale）
-  - dof_pos - default_dof_pos: `/joint_states`から取得（×obs_scales.dof_pos）
-  - dof_vel: `/joint_states`から取得（×obs_scales.dof_vel）
-  - actions: 前回出力
-  - gait_phase_sin/cos: 内部クロック（50Hz, 周期は学習時と同じ）
-  - leg_phase: gait_phaseから導出
-  - feet_pos_z: FK計算 or 定数
-  - contact_state: 接触センサ or 関節トルクから推定
-- アクション→関節位置: `target = action * 0.25 + default_dof_pos`
-- `default_dof_pos`: hip_pitch=60°, knee=-100°, ankle=45°（`droid_train_omni_v21.py:120-122`）
+**genesis_sim_node（biped_genesis_simパッケージ）:**
+- アクション駆動型の環境ノード。RL学習時のステップ関数を忠実に再現
+- Subscribe: `/policy_actions` (Float64MultiArray, 10次元), `/cmd_vel` (Twist)
+- Publish: `/policy_obs` (Float64MultiArray, 50次元), `/joint_states` (JointState), `/clock` (Clock)
+- 内部PD制御: kp=35, kd=2（関節別オーバーライド: knee kp=50, ankle kd=8）
+- 観測ベクトル構築（50次元）は学習環境と完全一致
+- アクションレイテンシ: 前フレームのアクションを適用（学習環境と同一）
+- URDFはプレーンURDF（xacroではなく）を使用: `rl_ws/assets/bsl_droid_simplified_v2.urdf`
+- hip_roll_inward_limit: -0.05 rad（PDターゲットクランプ、訓練環境と一致）
 
-**vizモード（簡易確認用）— RViz可視化のみ:**
-- ノード起動確認・トピック疎通確認用途に限定
-- `/cmd_vel` subscribe → `/joint_states` publish (50Hz)
-- 全センサ値をモック（base_ang_vel=[0,0,0], projected_gravity=[0,0,-1], contact_state=[1,1]）
-- 物理フィードバックなしのため歩行品質の検証には使用しない
+#### 4.3 biped_rl_policy_node（simモード）
+
+**simモード（主要）— Genesis物理シミュレーション:**
+- `/policy_obs` subscribe → 推論 → `/policy_actions` publish（イベント駆動）
+- 純粋な推論ラッパー: 観測ベクトル構築はgenesis_sim_nodeが担当
+- ros2_controlは使用しない
+- 緊急停止時はゼロアクション出力
 
 #### 4.4 biped_bringup/launch
 
-**sim_teleop.launch.py（主要）:**
-- Gazebo（gz_sim） + gz_ros2_control + controller_manager + forward_position_controller + joint_state_broadcaster + biped_rl_policy_node(sim) + biped_teleop_node + joy_node + robot_state_publisher + rviz2
-- `use_sim_time:=true`を全ノードに設定
+**genesis_teleop.launch.py（主要）:**
+- robot_state_publisher + genesis_sim_node + biped_rl_policy_node(sim) + joy_node + teleop_twist_joy_node + biped_joy_safety_node
+- 段階的起動: t=0でrobot_state_publisher + genesis_sim_node、t=3sでrl_policy + joy/teleopノード群
+- `use_sim_time:=true`を全ノードに設定（genesis_sim_nodeはクロックソースのため`false`）
 
-**viz_teleop.launch.py（簡易確認用）:**
-- joy_node + biped_teleop_node + biped_rl_policy_node(viz) + robot_state_publisher + rviz2
-- ros2_control不使用、Gazebo不使用
-
-### 検証方法（sim_teleop.launch.py）
-- Gazebo上でロボットが立位姿勢で安定
-- F710左スティックを前に倒す → Gazebo上でロボットが歩行
+### 検証方法（genesis_teleop.launch.py）
+- Genesis上でロボットが立位姿勢で安定
+- F710左スティックを前に倒す → Genesis上でロボットが歩行
 - スティックをニュートラルに戻す → 立位姿勢に復帰
 - LBボタンを離す → 動作停止（ゼロ指令）
 - ロボットが転倒せず安定歩行を維持
@@ -252,7 +255,7 @@ F710でスティックを倒すとGazebo上のロボットが物理シミュレ�
 
 ---
 
-## Step 5: 安全監視・設定整備（Session D — Phase 2）
+## Step 5: 安全監視・設定整備（Session D — Phase 2）[未着手]
 
 ### タスク
 
@@ -276,7 +279,7 @@ F710でスティックを倒すとGazebo上のロボットが物理シミュレ�
 
 ---
 
-## Step 6: 実機展開（Session E — Phase 3）
+## Step 6: 実機展開（Session E — Phase 3）[未着手]
 
 実機にはIMUが最初から搭載されている前提で構築する。二脚ロボットにおいてIMUは姿勢制御の最も基本的なセンサであり、実機開発の初日から利用可能であるべきもの。
 
@@ -292,28 +295,12 @@ F710でスティックを倒すとGazebo上のロボットが物理シミュレ�
 - 足接地推定（関節トルクから推定、力センサなし）
 
 #### 6.2 biped_rl_policy_node controlモード化
-- simモードと同一のトピック構成（`/forward_position_controller/commands`出力、`/joint_states`・`/imu/data`入力）
-- センサデータのソースがGazeboから実ハードウェア（エンコーダ、IMU）に変わるのみ
-- 観測ベクトル構築ロジックはsimモードと完全共通
+- `/forward_position_controller/commands`出力、`/joint_states`・`/imu/data`入力
+- センサデータのソースが実ハードウェア（エンコーダ、IMU）
+- 観測ベクトル構築ロジックはgenesis_sim_nodeの実装を参考にbiped_rl_policy_node内に移植
 
 #### 6.3 controllers.yaml 10関節化
-現在の`joint1`のみ → 10関節全てを定義:
-```yaml
-forward_position_controller:
-  ros__parameters:
-    joints:
-      - left_hip_yaw_joint
-      - left_hip_roll_joint
-      - left_hip_pitch_joint
-      - left_knee_pitch_joint
-      - left_ankle_pitch_joint
-      - right_hip_yaw_joint
-      - right_hip_roll_joint
-      - right_hip_pitch_joint
-      - right_knee_pitch_joint
-      - right_ankle_pitch_joint
-    interface_name: position
-```
+controllers.yamlは既に10関節対応済み（Session Bで完了）。
 
 #### 6.4 Launch分離
 - `real_control.launch.py`（Jetson）: robstride_hardware + controllers + imu_driver + rl_policy + safety + joy + teleop
@@ -327,7 +314,6 @@ forward_position_controller:
 5. セーフティテザー付き自立歩行
 
 ### 変更対象ファイル
-- `ros2_ws/src/robstride_hardware/config/controllers.yaml`
 - `ros2_ws/src/biped_rl_policy/biped_rl_policy/rl_policy_node.py`
 - `ros2_ws/src/biped_bringup/launch/` 新規launch
 
@@ -341,16 +327,15 @@ forward_position_controller:
 | 観測ベクトルのシミュレータとの不一致 | シミュレータで記録したobs/actionペアでユニットテスト |
 | controllers.yaml 1→10関節拡張でHW Interface不具合 | 単関節→2関節→全関節と段階的に拡張・テスト |
 | F710のDirectInput/XInputモード差異 | 両モード用config作成、ドキュメントにスイッチ位置明記 |
-| Gazebo Harmonic macOSでのパフォーマンス | GPUレンダリング無効化オプション（headlessモード）の活用。物理ステップレートの調整 |
-| Gazebo↔Genesis間のsim-to-sim gap | 物理パラメータ（質量・慣性・摩擦係数）をGenesis学習環境と統一。まずは定性的な歩行安定性の確認を優先 |
+| GenesisのROSノードとしての安定性 | Genesis初期化タイムアウト・例外処理を実装。GPU非対応環境ではCPUフォールバック |
 
 ---
 
 ## 全体の検証計画
 
-| Phase | 検証内容 | 方法 |
-|---|---|---|
-| Phase 0 | 全パッケージビルド成功 | `pixi run colcon build` |
-| Phase 1 | viz簡易確認（ノード起動・トピック疎通） + Gazeboシミュレーション歩行 | viz: トピック確認、sim: Gazebo上でF710操作・歩行安定性確認 |
-| Phase 2 | 安全停止・ユニットテスト | `pixi run colcon test` + 手動テスト |
-| Phase 3 | IMU確認→単関節→全関節→テストスタンド→自立歩行 | 段階的ハードウェアテスト |
+| Phase | 検証内容 | 方法 | 進捗 |
+|---|---|---|---|
+| Phase 0 | 全パッケージビルド成功 | `pixi run colcon build` | [完了] |
+| Phase 1 | Genesisシミュレーション歩行 | Genesis上でF710操作・歩行安定性確認 | [完了] |
+| Phase 2 | 安全停止・ユニットテスト | `pixi run colcon test` + 手動テスト | [未着手] |
+| Phase 3 | IMU確認→単関節→全関節→テストスタンド→自立歩行 | 段階的ハードウェアテスト | [未着手] |
