@@ -13,6 +13,7 @@
 #include <hardware_interface/handle.hpp>
 #include <hardware_interface/hardware_info.hpp>
 #include <hardware_interface/types/hardware_interface_return_values.hpp>
+#include <hardware_interface/types/hardware_component_interface_params.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/state.hpp>
 #include <vector>
@@ -62,7 +63,7 @@ struct WriteTimingStats {
 class RobStrideHardware : public hardware_interface::SystemInterface
 {
 public:
-  CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
+  CallbackReturn on_init(const hardware_interface::HardwareComponentInterfaceParams & params) override;
   CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
   CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
   CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
@@ -106,8 +107,16 @@ private:
   // Aggregate statistics (logged every kTimingLogInterval cycles)
   int timing_log_counter_ = 0;
   static constexpr int kTimingLogInterval = 200;  // 1 second @ 200Hz
+  double total_us_min_ = 1e9;
   double total_us_max_ = 0.0;
   double total_us_sum_ = 0.0;
+  double total_us_sum_sq_ = 0.0;  // for stddev
+  double send_us_min_ = 1e9;
+  double send_us_max_ = 0.0;
+  double send_us_sum_ = 0.0;
+  double recv_us_min_ = 1e9;
+  double recv_us_max_ = 0.0;
+  double recv_us_sum_ = 0.0;
   int total_missed_sum_ = 0;
 };
 

@@ -9,7 +9,9 @@
 #include "robstride_hardware/robstride_hardware.hpp"
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
 #include <chrono>
+#include <cmath>
 #include <algorithm>
+#include <thread>
 
 namespace robstride_hardware
 {
@@ -18,9 +20,10 @@ namespace robstride_hardware
 // Lifecycle callbacks
 // ============================================================================
 
-CallbackReturn RobStrideHardware::on_init(const hardware_interface::HardwareInfo & info)
+CallbackReturn RobStrideHardware::on_init(
+  const hardware_interface::HardwareComponentInterfaceParams & params)
 {
-  if (SystemInterface::on_init(info) != CallbackReturn::SUCCESS) {
+  if (SystemInterface::on_init(params) != CallbackReturn::SUCCESS) {
     return CallbackReturn::ERROR;
   }
 
@@ -94,10 +97,16 @@ CallbackReturn RobStrideHardware::on_activate(
 {
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Activating...");
 
-  // Enable each motor and set MIT mode
+  // Enable each motor, set MIT mode, and probe — one at a time with
+  // drain between each motor to avoid CAN response collisions.
   for (size_t i = 0; i < joints_.size(); ++i) {
     const auto & jcfg = joints_[i];
     auto & driver = buses_.at(jcfg.can_interface).driver;
+
+    // Disable auto-report (comm type 24) to prevent unsolicited CAN frames
+    driver.disable_auto_report(jcfg.motor_id);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    driver.drain_rx_buffer();
 
     if (!driver.enable(jcfg.motor_id)) {
       RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
@@ -105,6 +114,8 @@ CallbackReturn RobStrideHardware::on_activate(
         jcfg.motor_id, jcfg.can_interface.c_str());
       return CallbackReturn::ERROR;
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    driver.drain_rx_buffer();
 
     if (!driver.set_mode(jcfg.motor_id, robstride_driver::ControlMode::MIT)) {
       RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
@@ -112,15 +123,35 @@ CallbackReturn RobStrideHardware::on_activate(
         jcfg.motor_id, jcfg.can_interface.c_str());
       return CallbackReturn::ERROR;
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    driver.drain_rx_buffer();
 
     RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
       "Motor %d on %s: enabled, MIT mode set",
       jcfg.motor_id, jcfg.can_interface.c_str());
-  }
 
-  // Drain receive buffers (consume enable/set_mode responses)
-  for (auto & [bus_name, bus] : buses_) {
-    bus.driver.drain_rx_buffer();
+    // Probe: send zero-torque MIT command and verify motor responds
+    robstride_driver::MitCommand probe;
+    probe.position = 0.0;
+    probe.velocity = 0.0;
+    probe.kp = 0.0;
+    probe.kd = 0.0;
+    probe.torque_ff = 0.0;
+    driver.send_command(jcfg.motor_id, probe);
+
+    auto [recv_id, state] = driver.read_one_response(50);
+    if (recv_id == jcfg.motor_id && state.valid) {
+      hw_positions_[i] = state.position;
+      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+        "Motor %d on %s: probe OK (pos=%.3f rad)",
+        jcfg.motor_id, jcfg.can_interface.c_str(), state.position);
+    } else {
+      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
+        "Motor %d on %s: no response to probe command. "
+        "Check: motor power, CAN wiring, CAN bitrate (1Mbps), motor ID",
+        jcfg.motor_id, jcfg.can_interface.c_str());
+      return CallbackReturn::ERROR;
+    }
   }
 
   // Initialize commands to current positions
@@ -130,8 +161,16 @@ CallbackReturn RobStrideHardware::on_activate(
 
   // Reset timing statistics
   timing_log_counter_ = 0;
+  total_us_min_ = 1e9;
   total_us_max_ = 0.0;
   total_us_sum_ = 0.0;
+  total_us_sum_sq_ = 0.0;
+  send_us_min_ = 1e9;
+  send_us_max_ = 0.0;
+  send_us_sum_ = 0.0;
+  recv_us_min_ = 1e9;
+  recv_us_max_ = 0.0;
+  recv_us_sum_ = 0.0;
   total_missed_sum_ = 0;
 
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
@@ -158,7 +197,12 @@ CallbackReturn RobStrideHardware::on_deactivate(
     safe_cmd.kd = 0.0;
     safe_cmd.torque_ff = 0.0;
     driver.send_command(jcfg.motor_id, safe_cmd);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    driver.drain_rx_buffer();
+
     driver.disable(jcfg.motor_id);
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    driver.drain_rx_buffer();
 
     RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
       "Motor %d on %s: deactivated", jcfg.motor_id, jcfg.can_interface.c_str());
@@ -228,7 +272,7 @@ hardware_interface::return_type RobStrideHardware::write(
   using clock = std::chrono::steady_clock;
   const auto t_start = clock::now();
 
-  // === Phase 1: Send commands to all buses (burst) ===
+  // === Phase 1: Burst-send commands to all buses ===
   for (auto & [bus_name, bus] : buses_) {
     const auto t_bus_send_start = clock::now();
 
@@ -248,15 +292,16 @@ hardware_interface::return_type RobStrideHardware::write(
 
   const auto t_send_done = clock::now();
 
-  // === Phase 2: Read responses from all buses ===
+  // === Phase 2: Read responses from all buses (ID matching) ===
   std::fill(response_received_.begin(), response_received_.end(), false);
   int total_received = 0;
+  int total_missed = 0;
 
   for (auto & [bus_name, bus] : buses_) {
     const auto t_bus_recv_start = clock::now();
     int remaining = static_cast<int>(bus.joint_indices.size());
     int bus_received = 0;
-    int timeout_ms = 2;  // Full timeout for first read
+    int timeout_ms = 3;  // Wait for all burst responses (~1.5ms for 5 motors)
 
     while (remaining > 0) {
       auto [motor_id, state] = bus.driver.read_one_response(timeout_ms);
@@ -291,7 +336,6 @@ hardware_interface::return_type RobStrideHardware::write(
   const auto t_recv_done = clock::now();
 
   // === Phase 3: Handle missed responses ===
-  int total_missed = 0;
   for (size_t i = 0; i < joints_.size(); ++i) {
     if (!response_received_[i]) {
       missed_response_count_[i]++;
@@ -302,11 +346,10 @@ hardware_interface::return_type RobStrideHardware::write(
           joints_[i].motor_id, joints_[i].can_interface.c_str(),
           missed_response_count_[i]);
       }
-      // Keep last-known state (do not update)
     }
   }
 
-  // === Phase 4: Timing diagnostics ===
+  // === Timing diagnostics ===
   last_timing_.send_us = std::chrono::duration<double, std::micro>(
     t_send_done - t_start).count();
   last_timing_.receive_us = std::chrono::duration<double, std::micro>(
@@ -317,15 +360,33 @@ hardware_interface::return_type RobStrideHardware::write(
   last_timing_.responses_expected = static_cast<int>(joints_.size());
 
   total_us_sum_ += last_timing_.total_us;
+  total_us_sum_sq_ += last_timing_.total_us * last_timing_.total_us;
+  total_us_min_ = std::min(total_us_min_, last_timing_.total_us);
   total_us_max_ = std::max(total_us_max_, last_timing_.total_us);
+  send_us_sum_ += last_timing_.send_us;
+  send_us_min_ = std::min(send_us_min_, last_timing_.send_us);
+  send_us_max_ = std::max(send_us_max_, last_timing_.send_us);
+  recv_us_sum_ += last_timing_.receive_us;
+  recv_us_min_ = std::min(recv_us_min_, last_timing_.receive_us);
+  recv_us_max_ = std::max(recv_us_max_, last_timing_.receive_us);
   total_missed_sum_ += total_missed;
   timing_log_counter_++;
 
   if (timing_log_counter_ >= kTimingLogInterval) {
-    double avg_us = total_us_sum_ / timing_log_counter_;
+    const double n = static_cast<double>(timing_log_counter_);
+    const double avg_us = total_us_sum_ / n;
+    const double variance = (total_us_sum_sq_ / n) - (avg_us * avg_us);
+    const double stddev_us = std::sqrt(std::max(0.0, variance));
+    const double send_avg = send_us_sum_ / n;
+    const double recv_avg = recv_us_sum_ / n;
     RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-      "[Timing] write() avg=%.0fus, max=%.0fus, missed=%d/%d",
-      avg_us, total_us_max_, total_missed_sum_,
+      "[Timing] write() min=%.0fus avg=%.0fus max=%.0fus stddev=%.1fus | "
+      "send min=%.0f avg=%.0f max=%.0fus | recv min=%.0f avg=%.0f max=%.0fus | "
+      "missed=%d/%d",
+      total_us_min_, avg_us, total_us_max_, stddev_us,
+      send_us_min_, send_avg, send_us_max_,
+      recv_us_min_, recv_avg, recv_us_max_,
+      total_missed_sum_,
       timing_log_counter_ * static_cast<int>(joints_.size()));
 
     for (const auto & [bus_name, bt] : bus_timing_) {
@@ -335,10 +396,27 @@ hardware_interface::return_type RobStrideHardware::write(
         bt.received, bt.expected);
     }
 
+    // Motor state snapshot (per-joint)
+    for (size_t i = 0; i < joints_.size(); ++i) {
+      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+        "[State] %s (id=%d): cmd=%.4f rad | pos=%.4f rad, vel=%.4f rad/s, effort=%.4f Nm",
+        joints_[i].name.c_str(), joints_[i].motor_id,
+        hw_commands_position_[i],
+        hw_positions_[i], hw_velocities_[i], hw_efforts_[i]);
+    }
+
     // Reset aggregates
     timing_log_counter_ = 0;
+    total_us_min_ = 1e9;
     total_us_sum_ = 0.0;
+    total_us_sum_sq_ = 0.0;
     total_us_max_ = 0.0;
+    send_us_min_ = 1e9;
+    send_us_max_ = 0.0;
+    send_us_sum_ = 0.0;
+    recv_us_min_ = 1e9;
+    recv_us_max_ = 0.0;
+    recv_us_sum_ = 0.0;
     total_missed_sum_ = 0;
   }
 

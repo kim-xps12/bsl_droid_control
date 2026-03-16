@@ -146,6 +146,15 @@ public:
   std::pair<int, MotorState> read_one_response(int timeout_ms = 2);
 
   /**
+   * @brief Disable motor auto-report (comm type 24, F_CMD=0x00)
+   *
+   * Explicitly disables periodic unsolicited feedback frames from the motor.
+   * @param motor_id Motor CAN ID
+   * @return true if send succeeded
+   */
+  bool disable_auto_report(int motor_id);
+
+  /**
    * @brief Drain the receive buffer (discard stale frames)
    */
   void drain_rx_buffer();
@@ -203,6 +212,7 @@ namespace protocol
     constexpr uint32_t DISABLE = 4;
     constexpr uint32_t SET_ZERO = 6;
     constexpr uint32_t WRITE_PARAMETER = 18;
+    constexpr uint32_t DISABLE_AUTO_REPORT = 24;
   }
   
   // Parameter IDs

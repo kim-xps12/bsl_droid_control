@@ -311,6 +311,16 @@ std::pair<int, MotorState> RobStrideDriver::read_one_response(int timeout_ms)
   return {-1, MotorState{}};
 }
 
+bool RobStrideDriver::disable_auto_report(int motor_id)
+{
+  uint32_t ext_id = (protocol::comm_type::DISABLE_AUTO_REPORT << 24) |
+                    (static_cast<uint32_t>(host_id_) << 8) |
+                    static_cast<uint32_t>(motor_id);
+
+  uint8_t data[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x00};  // F_CMD=0x00: disable
+  return send_frame(ext_id, data, 7);
+}
+
 void RobStrideDriver::drain_rx_buffer()
 {
   struct can_frame frame;
