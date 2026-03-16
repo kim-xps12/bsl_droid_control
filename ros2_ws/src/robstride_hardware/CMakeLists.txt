@@ -11,7 +11,6 @@ find_package(hardware_interface REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
-find_package(sensor_msgs REQUIRED)
 
 # 共有ライブラリを作成（driver + hardware interface）
 add_library(${PROJECT_NAME} SHARED
@@ -25,7 +24,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 ament_target_dependencies(${PROJECT_NAME}
-  hardware_interface pluginlib rclcpp rclcpp_lifecycle sensor_msgs
+  hardware_interface pluginlib rclcpp rclcpp_lifecycle
 )
 
 # Plugin export（ros2_control用）

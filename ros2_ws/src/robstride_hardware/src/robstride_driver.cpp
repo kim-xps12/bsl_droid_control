@@ -9,7 +9,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <unistd.h>
-#include <fcntl.h>
+#include <poll.h>
 #include <cstring>
 #include <cmath>
 #include <algorithm>
@@ -90,10 +90,7 @@ bool RobStrideDriver::connect(const std::string& interface)
     return false;
   }
   
-  // Set non-blocking read (no timeout)
-  int flags = fcntl(can_socket_, F_GETFL, 0);
-  fcntl(can_socket_, F_SETFL, flags | O_NONBLOCK);
-  
+  // Socket is blocking; timeouts are handled via poll() in read_frame().
   return true;
 }
 
@@ -124,12 +121,20 @@ bool RobStrideDriver::send_frame(uint32_t can_id, const uint8_t* data, uint8_t d
   return nbytes == sizeof(frame);
 }
 
-bool RobStrideDriver::read_frame(struct can_frame* frame, int /*timeout_ms*/)
+bool RobStrideDriver::read_frame(struct can_frame* frame, int timeout_ms)
 {
   if (can_socket_ < 0 || !frame) {
     return false;
   }
-  
+
+  struct pollfd pfd;
+  pfd.fd = can_socket_;
+  pfd.events = POLLIN;
+  int ret = ::poll(&pfd, 1, timeout_ms);
+  if (ret <= 0) {
+    return false;  // timeout or error
+  }
+
   ssize_t nbytes = ::read(can_socket_, frame, sizeof(*frame));
   return nbytes == sizeof(*frame);
 }
@@ -268,6 +273,50 @@ MotorState RobStrideDriver::read_state(int motor_id)
   }
   
   return state;  // valid = false
+}
+
+std::pair<int, MotorState> RobStrideDriver::read_one_response(int timeout_ms)
+{
+  struct can_frame frame;
+
+  while (read_frame(&frame, timeout_ms)) {
+    // Skip standard frames (we only use extended)
+    if (!(frame.can_id & CAN_EFF_FLAG)) {
+      timeout_ms = 0;  // Only drain remaining buffer
+      continue;
+    }
+
+    uint32_t raw_id = frame.can_id & CAN_EFF_MASK;
+    uint32_t comm_type = (raw_id >> 24) & 0x1F;
+    int recv_motor_id = static_cast<int>((raw_id >> 8) & 0xFF);
+
+    if (comm_type == protocol::comm_type::OPERATION_STATUS) {
+      MotorState state;
+      uint16_t pos_u16 = unpack_u16_be(&frame.data[0]);
+      uint16_t vel_u16 = unpack_u16_be(&frame.data[2]);
+      uint16_t torque_u16 = unpack_u16_be(&frame.data[4]);
+
+      state.position = ((static_cast<double>(pos_u16) / 0x7FFF) - 1.0) * scale::POSITION;
+      state.velocity = ((static_cast<double>(vel_u16) / 0x7FFF) - 1.0) * scale::VELOCITY;
+      state.torque = ((static_cast<double>(torque_u16) / 0x7FFF) - 1.0) * scale::TORQUE;
+      state.valid = true;
+
+      return {recv_motor_id, state};
+    }
+
+    // Non-OPERATION_STATUS frame: skip and drain remaining buffer
+    timeout_ms = 0;
+  }
+
+  return {-1, MotorState{}};
+}
+
+void RobStrideDriver::drain_rx_buffer()
+{
+  struct can_frame frame;
+  while (read_frame(&frame, /*timeout_ms=*/0)) {
+    // Discard
+  }
 }
 
 }  // namespace robstride_driver

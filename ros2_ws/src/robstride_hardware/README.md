@@ -1,13 +1,12 @@
 # robstride_hardware
 
-`robstride_hardware` は RobStride RS02 を `ros2_control` から扱うための Linux 専用パッケージです。現在の実装は「BSL-Droid 全身制御」ではなく、`joint1` という単関節の単体検証に焦点を当てています。
+RobStride RS02 モータを `ros2_control` から駆動するための Linux 専用パッケージ。BSL-Droid の全 10 関節（左右各 5 軸）をデュアル CAN バス（can1/can2）で制御する。
 
-## 現在のスコープ
+## 特徴
 
-- SocketCAN ベースの RobStride ドライバ
-- `ros2_control` SystemInterface
-- 200 Hz の state reader thread
-- 単関節 `joint1` を対象にした bringup / 正弦波デモ
+- 同期送受信パターン: `write()` 内で全モータへのコマンド送信と応答受信を完結（別スレッド不要）
+- 多モータ・多バス対応: URDF の関節ごとに CAN バス・モータ ID・ゲインを設定
+- タイミング診断: 1 秒ごとに送受信所要時間・未応答数をログ出力
 
 ## 入口文書
 

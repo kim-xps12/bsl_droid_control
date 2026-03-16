@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <linux/can.h>
 
 namespace robstride_driver
@@ -132,7 +133,29 @@ public:
    * @return Motor state (check .valid flag)
    */
   MotorState read_state(int motor_id);
-  
+
+  /**
+   * @brief Read one OPERATION_STATUS response from CAN bus
+   *
+   * Reads frames with poll()-based timeout. Skips non-status frames.
+   * Used by the synchronous send/receive pattern in the hardware interface.
+   *
+   * @param timeout_ms Timeout for poll() [ms]
+   * @return (motor_id, MotorState) pair. motor_id = -1 on timeout.
+   */
+  std::pair<int, MotorState> read_one_response(int timeout_ms = 2);
+
+  /**
+   * @brief Drain the receive buffer (discard stale frames)
+   */
+  void drain_rx_buffer();
+
+  /**
+   * @brief Get the underlying socket file descriptor
+   * @return Socket fd (-1 if not connected)
+   */
+  int socket_fd() const { return can_socket_; }
+
   /**
    * @brief Set host ID for CAN communication
    * @param host_id Host ID (default: 0xFF)

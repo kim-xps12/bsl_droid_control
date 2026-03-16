@@ -1,6 +1,10 @@
 /**
  * @file robstride_hardware.hpp
  * @brief ros2_control Hardware Interface for RobStride motors
+ *
+ * Synchronous send/receive pattern: all CAN I/O happens in write(),
+ * read() just copies from internal buffers (RT-safe).
+ * Supports multiple motors across multiple CAN buses.
  */
 
 #pragma once
@@ -11,11 +15,10 @@
 #include <hardware_interface/types/hardware_interface_return_values.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/state.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
 #include <vector>
 #include <string>
-#include <thread>
-#include <atomic>
+#include <unordered_map>
+#include <chrono>
 
 #include "robstride_hardware/robstride_driver.hpp"
 
@@ -23,6 +26,38 @@ namespace robstride_hardware
 {
 
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+
+/// Per-joint configuration (populated from URDF in on_init())
+struct JointConfig {
+  std::string name;
+  std::string can_interface;
+  int motor_id = 0;
+  double kp = 30.0;
+  double kd = 1.0;
+};
+
+/// Per-CAN-bus context
+struct BusContext {
+  robstride_driver::RobStrideDriver driver;
+  std::vector<size_t> joint_indices;  ///< Indices into joints_ vector
+};
+
+/// Per-bus timing breakdown (for diagnostics)
+struct BusTimingStats {
+  double send_us = 0.0;
+  double receive_us = 0.0;
+  int received = 0;
+  int expected = 0;
+};
+
+/// write() timing statistics (for diagnostics)
+struct WriteTimingStats {
+  double send_us = 0.0;       ///< Phase1: total send time [us]
+  double receive_us = 0.0;    ///< Phase2: total receive time [us]
+  double total_us = 0.0;      ///< write() total time [us]
+  int responses_received = 0;
+  int responses_expected = 0;
+};
 
 class RobStrideHardware : public hardware_interface::SystemInterface
 {
@@ -43,44 +78,37 @@ public:
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 private:
-  // State reader thread (runs at state_reader_rate_ Hz, separate from RT loop)
-  void state_reader_loop();
-  
-  // RobStride driver (ROS 2 independent)
-  robstride_driver::RobStrideDriver driver_;
-  
-  // Configuration from URDF
-  std::string can_interface_;
-  int motor_id_ = 11;
-  double kp_ = 30.0;
-  double kd_ = 1.0;
+  // Joint configuration (from URDF)
+  std::vector<JointConfig> joints_;
 
-  // State reader thread configuration (from URDF).
-  // These in-class initializers act as fallback defaults and may be overridden in on_init()
-  // if corresponding parameters are provided; if parameters are missing, these values apply.
-  int state_reader_rate_ = 200;           // Fallback default: Hz (200Hz to match RT loop)
-  int state_reader_cpu_affinity_ = 3;     // Fallback default: bind to CPU 3 (RT loop uses CPU 2)
-  int state_reader_priority_ = 80;        // Fallback default: SCHED_FIFO priority (lower than RT loop's 90)
-  
-  // State storage (updated in read())
+  // CAN bus contexts (key = interface name, e.g. "can1")
+  std::unordered_map<std::string, BusContext> buses_;
+
+  // State storage (updated in write(), read by controllers via StateInterface pointers)
   std::vector<double> hw_positions_;
   std::vector<double> hw_velocities_;
   std::vector<double> hw_efforts_;
-  
-  // Command storage (used in write())
+
+  // Command storage (written by controllers via CommandInterface pointers)
   std::vector<double> hw_commands_position_;
-  
-  // Asynchronous state reader (does not affect RT loop)
-  std::thread state_reader_thread_;
-  std::atomic<bool> state_reader_running_{false};
-  std::atomic<double> latest_position_{0.0};
-  std::atomic<double> latest_velocity_{0.0};
-  std::atomic<double> latest_torque_{0.0};
-  
-  // ROS 2 publisher for joint states (used by state reader thread only)
-  rclcpp::Node::SharedPtr pub_node_;
-  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
-  std::string joint_name_;
+
+  // Per-cycle response tracking (pre-allocated, no RT allocation)
+  std::vector<bool> response_received_;
+
+  // Missed response counter per joint (for diagnostics)
+  std::vector<int> missed_response_count_;
+  static constexpr int kMissedResponseWarnThreshold = 10;  // 50ms @ 200Hz
+
+  // === Timing diagnostics ===
+  WriteTimingStats last_timing_;
+  std::unordered_map<std::string, BusTimingStats> bus_timing_;
+
+  // Aggregate statistics (logged every kTimingLogInterval cycles)
+  int timing_log_counter_ = 0;
+  static constexpr int kTimingLogInterval = 200;  // 1 second @ 200Hz
+  double total_us_max_ = 0.0;
+  double total_us_sum_ = 0.0;
+  int total_missed_sum_ = 0;
 };
 
 }  // namespace robstride_hardware

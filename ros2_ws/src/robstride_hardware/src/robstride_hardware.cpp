@@ -1,14 +1,15 @@
 /**
  * @file robstride_hardware.cpp
  * @brief ros2_control Hardware Interface implementation for RobStride motors
+ *
+ * Synchronous send/receive: all CAN I/O in write(), read() is a no-op.
+ * Supports multiple motors across multiple CAN buses (e.g. can1, can2).
  */
 
 #include "robstride_hardware/robstride_hardware.hpp"
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
 #include <chrono>
-#include <pthread.h>
-#include <sched.h>
-#include <cstring>
+#include <algorithm>
 
 namespace robstride_hardware
 {
@@ -22,170 +23,157 @@ CallbackReturn RobStrideHardware::on_init(const hardware_interface::HardwareInfo
   if (SystemInterface::on_init(info) != CallbackReturn::SUCCESS) {
     return CallbackReturn::ERROR;
   }
-  
-  // Read parameters from URDF
-  can_interface_ = info_.hardware_parameters.count("can_interface")
-    ? info_.hardware_parameters.at("can_interface") : "can0";
-  motor_id_ = info_.hardware_parameters.count("motor_id")
-    ? std::stoi(info_.hardware_parameters.at("motor_id")) : 11;
-  kp_ = info_.hardware_parameters.count("kp")
-    ? std::stod(info_.hardware_parameters.at("kp")) : 30.0;
-  kd_ = info_.hardware_parameters.count("kd")
-    ? std::stod(info_.hardware_parameters.at("kd")) : 1.0;
 
-  // Read state reader thread configuration from URDF
-  state_reader_rate_ = info_.hardware_parameters.count("state_reader_rate")
-    ? std::stoi(info_.hardware_parameters.at("state_reader_rate")) : 200;
-  state_reader_cpu_affinity_ = info_.hardware_parameters.count("state_reader_cpu_affinity")
-    ? std::stoi(info_.hardware_parameters.at("state_reader_cpu_affinity")) : 3;
-  state_reader_priority_ = info_.hardware_parameters.count("state_reader_priority")
-    ? std::stoi(info_.hardware_parameters.at("state_reader_priority")) : 80;
-  
-  // Initialize storage for each joint
-  hw_positions_.resize(info_.joints.size(), 0.0);
-  hw_velocities_.resize(info_.joints.size(), 0.0);
-  hw_efforts_.resize(info_.joints.size(), 0.0);
-  hw_commands_position_.resize(info_.joints.size(), 0.0);
-  
-  // Store joint name for publisher
-  if (!info_.joints.empty()) {
-    joint_name_ = info_.joints[0].name;
+  const size_t n = info_.joints.size();
+  joints_.resize(n);
+  hw_positions_.resize(n, 0.0);
+  hw_velocities_.resize(n, 0.0);
+  hw_efforts_.resize(n, 0.0);
+  hw_commands_position_.resize(n, 0.0);
+  response_received_.resize(n, false);
+  missed_response_count_.resize(n, 0);
+
+  for (size_t i = 0; i < n; ++i) {
+    auto & jcfg = joints_[i];
+    const auto & params = info_.joints[i].parameters;
+
+    jcfg.name = info_.joints[i].name;
+    jcfg.can_interface = params.count("can_interface")
+      ? params.at("can_interface") : "can0";
+    jcfg.motor_id = params.count("motor_id")
+      ? std::stoi(params.at("motor_id")) : 11;
+    jcfg.kp = params.count("kp")
+      ? std::stod(params.at("kp")) : 30.0;
+    jcfg.kd = params.count("kd")
+      ? std::stod(params.at("kd")) : 1.0;
+
+    // Group joints by CAN bus
+    buses_[jcfg.can_interface].joint_indices.push_back(i);
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("RobStrideHardware"),
+      "Joint[%zu]: name=%s, bus=%s, motor_id=%d, kp=%.1f, kd=%.2f",
+      i, jcfg.name.c_str(), jcfg.can_interface.c_str(),
+      jcfg.motor_id, jcfg.kp, jcfg.kd);
   }
-  
+
+  // Pre-allocate bus timing map
+  for (const auto & [bus_name, _] : buses_) {
+    bus_timing_[bus_name] = BusTimingStats{};
+  }
+
   RCLCPP_INFO(
     rclcpp::get_logger("RobStrideHardware"),
-    "Initialized: can=%s, motor_id=%d, kp=%.1f, kd=%.1f, joints=%zu",
-    can_interface_.c_str(), motor_id_, kp_, kd_, info_.joints.size());
-  RCLCPP_INFO(
-    rclcpp::get_logger("RobStrideHardware"),
-    "State reader config: rate=%dHz, cpu=%d, priority=%d",
-    state_reader_rate_, state_reader_cpu_affinity_, state_reader_priority_);
-  
+    "Initialized: %zu joints on %zu CAN bus(es)",
+    n, buses_.size());
+
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_configure(const rclcpp_lifecycle::State & /*previous_state*/)
+CallbackReturn RobStrideHardware::on_configure(
+  const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Configuring...");
-  
-  // Create node and publisher for joint states (used by state reader thread)
-  pub_node_ = rclcpp::Node::make_shared("robstride_state_publisher");
-  joint_state_pub_ = pub_node_->create_publisher<sensor_msgs::msg::JointState>(
-    "/robstride/joint_states", rclcpp::QoS(10).best_effort());
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), 
-    "Created publisher: /robstride/joint_states");
-  
-  // Connect to CAN interface
-  if (!driver_.connect(can_interface_)) {
-    RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"), 
-      "Failed to connect to CAN interface: %s", can_interface_.c_str());
-    return CallbackReturn::ERROR;
+
+  for (auto & [bus_name, bus] : buses_) {
+    if (!bus.driver.connect(bus_name)) {
+      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
+        "Failed to connect to CAN interface: %s", bus_name.c_str());
+      return CallbackReturn::ERROR;
+    }
+    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+      "Connected to CAN interface: %s (%zu motors)",
+      bus_name.c_str(), bus.joint_indices.size());
   }
-  
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), 
-    "Connected to CAN interface: %s", can_interface_.c_str());
+
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State & /*previous_state*/)
+CallbackReturn RobStrideHardware::on_activate(
+  const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Activating...");
-  
-  // Enable motor
-  if (!driver_.enable(motor_id_)) {
-    RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"), 
-      "Failed to enable motor %d", motor_id_);
-    return CallbackReturn::ERROR;
+
+  // Enable each motor and set MIT mode
+  for (size_t i = 0; i < joints_.size(); ++i) {
+    const auto & jcfg = joints_[i];
+    auto & driver = buses_.at(jcfg.can_interface).driver;
+
+    if (!driver.enable(jcfg.motor_id)) {
+      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
+        "Failed to enable motor %d on %s",
+        jcfg.motor_id, jcfg.can_interface.c_str());
+      return CallbackReturn::ERROR;
+    }
+
+    if (!driver.set_mode(jcfg.motor_id, robstride_driver::ControlMode::MIT)) {
+      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
+        "Failed to set MIT mode for motor %d on %s",
+        jcfg.motor_id, jcfg.can_interface.c_str());
+      return CallbackReturn::ERROR;
+    }
+
+    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+      "Motor %d on %s: enabled, MIT mode set",
+      jcfg.motor_id, jcfg.can_interface.c_str());
   }
-  
-  // Set MIT mode
-  if (!driver_.set_mode(motor_id_, robstride_driver::ControlMode::MIT)) {
-    RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"), 
-      "Failed to set MIT mode for motor %d", motor_id_);
-    return CallbackReturn::ERROR;
+
+  // Drain receive buffers (consume enable/set_mode responses)
+  for (auto & [bus_name, bus] : buses_) {
+    bus.driver.drain_rx_buffer();
   }
-  
-  // Initialize command to current position
+
+  // Initialize commands to current positions
   for (size_t i = 0; i < hw_commands_position_.size(); ++i) {
     hw_commands_position_[i] = hw_positions_[i];
   }
-  
-  // Start state reader thread (separate from RT loop)
-  state_reader_running_ = true;
-  state_reader_thread_ = std::thread(&RobStrideHardware::state_reader_loop, this);
 
-  // Set CPU affinity for state reader thread (bind to specific CPU core).
-  // Note: Negative values mean "no affinity setting"; 0 and positive values are valid CPU indices.
-  if (state_reader_cpu_affinity_ >= 0) {
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(state_reader_cpu_affinity_, &cpuset);
-    int ret = pthread_setaffinity_np(state_reader_thread_.native_handle(),
-                                      sizeof(cpu_set_t), &cpuset);
-    if (ret != 0) {
-      RCLCPP_WARN(rclcpp::get_logger("RobStrideHardware"),
-        "Failed to set CPU affinity to CPU %d: %s",
-        state_reader_cpu_affinity_, std::strerror(ret));
-    } else {
-      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-        "State reader thread bound to CPU %d", state_reader_cpu_affinity_);
-    }
-  }
-
-  // Set real-time scheduling priority (SCHED_FIFO)
-  if (state_reader_priority_ > 0) {
-    struct sched_param param{};
-    param.sched_priority = state_reader_priority_;
-    int ret = pthread_setschedparam(state_reader_thread_.native_handle(),
-                                     SCHED_FIFO, &param);
-    if (ret != 0) {
-      RCLCPP_WARN(rclcpp::get_logger("RobStrideHardware"),
-        "Failed to set RT priority %d: %s (may need sudo or rtprio limits configured)",
-        state_reader_priority_, std::strerror(ret));
-    } else {
-      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-        "State reader thread priority set to %d (SCHED_FIFO)", state_reader_priority_);
-    }
-  }
+  // Reset timing statistics
+  timing_log_counter_ = 0;
+  total_us_max_ = 0.0;
+  total_us_sum_ = 0.0;
+  total_missed_sum_ = 0;
 
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-    "Motor %d activated in MIT mode, state reader thread started (%dHz)",
-    motor_id_, state_reader_rate_);
+    "Activated: %zu motors on %zu bus(es), synchronous send/receive mode",
+    joints_.size(), buses_.size());
+
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
+CallbackReturn RobStrideHardware::on_deactivate(
+  const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Deactivating...");
-  
-  // Stop state reader thread first
-  state_reader_running_ = false;
-  if (state_reader_thread_.joinable()) {
-    state_reader_thread_.join();
+
+  // Send zero-torque command (safe state) and disable each motor
+  for (size_t i = 0; i < joints_.size(); ++i) {
+    const auto & jcfg = joints_[i];
+    auto & driver = buses_.at(jcfg.can_interface).driver;
+
+    robstride_driver::MitCommand safe_cmd;
+    safe_cmd.position = hw_positions_[i];
+    safe_cmd.velocity = 0.0;
+    safe_cmd.kp = 0.0;
+    safe_cmd.kd = 0.0;
+    safe_cmd.torque_ff = 0.0;
+    driver.send_command(jcfg.motor_id, safe_cmd);
+    driver.disable(jcfg.motor_id);
+
+    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+      "Motor %d on %s: deactivated", jcfg.motor_id, jcfg.can_interface.c_str());
   }
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "State reader thread stopped");
-  
-  // Send zero torque command (safe state)
-  robstride_driver::MitCommand safe_cmd;
-  safe_cmd.position = hw_positions_[0];
-  safe_cmd.velocity = 0.0;
-  safe_cmd.kp = 0.0;
-  safe_cmd.kd = 0.0;
-  safe_cmd.torque_ff = 0.0;
-  driver_.send_command(motor_id_, safe_cmd);
-  
-  // Disable motor
-  driver_.disable(motor_id_);
-  
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), 
-    "Motor %d deactivated", motor_id_);
+
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_cleanup(const rclcpp_lifecycle::State & /*previous_state*/)
+CallbackReturn RobStrideHardware::on_cleanup(
+  const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Cleaning up...");
-  driver_.disconnect();
+  for (auto & [_, bus] : buses_) {
+    bus.driver.disconnect();
+  }
   return CallbackReturn::SUCCESS;
 }
 
@@ -216,7 +204,8 @@ std::vector<hardware_interface::CommandInterface> RobStrideHardware::export_comm
   for (size_t i = 0; i < info_.joints.size(); ++i) {
     command_interfaces.emplace_back(
       hardware_interface::CommandInterface(
-        info_.joints[i].name, hardware_interface::HW_IF_POSITION, &hw_commands_position_[i]));
+        info_.joints[i].name, hardware_interface::HW_IF_POSITION,
+        &hw_commands_position_[i]));
   }
   return command_interfaces;
 }
@@ -228,92 +217,132 @@ std::vector<hardware_interface::CommandInterface> RobStrideHardware::export_comm
 hardware_interface::return_type RobStrideHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // Ultra-lightweight: just copy from atomic variables (updated by separate thread)
-  // This does NOT perform any CAN I/O, so RT loop is not affected
-  hw_positions_[0] = latest_position_.load(std::memory_order_relaxed);
-  hw_velocities_[0] = latest_velocity_.load(std::memory_order_relaxed);
-  hw_efforts_[0] = latest_torque_.load(std::memory_order_relaxed);
-  
+  // hw_positions_ / hw_velocities_ / hw_efforts_ were already updated
+  // by the previous write() call. Nothing to do here.
   return hardware_interface::return_type::OK;
 }
 
 hardware_interface::return_type RobStrideHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // Build and send MIT command
-  robstride_driver::MitCommand cmd;
-  cmd.position = hw_commands_position_[0];
-  cmd.velocity = 0.0;
-  cmd.kp = kp_;
-  cmd.kd = kd_;
-  cmd.torque_ff = 0.0;
-  
-  driver_.send_command(motor_id_, cmd);
-  
-  return hardware_interface::return_type::OK;
-}
+  using clock = std::chrono::steady_clock;
+  const auto t_start = clock::now();
 
-// ============================================================================
-// State reader thread (configurable Hz, completely separate from RT control loop)
-// ============================================================================
+  // === Phase 1: Send commands to all buses (burst) ===
+  for (auto & [bus_name, bus] : buses_) {
+    const auto t_bus_send_start = clock::now();
 
-void RobStrideHardware::state_reader_loop()
-{
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-    "State reader thread started (%dHz) for motor %d", state_reader_rate_, motor_id_);
-
-  // Calculate period from state_reader_rate_ (200Hz = 5ms period)
-  const auto period = std::chrono::microseconds(1000000 / state_reader_rate_);
-  auto next_time = std::chrono::steady_clock::now();
-  
-  // Pre-allocate message to avoid allocation in loop
-  sensor_msgs::msg::JointState msg;
-  msg.name.push_back(joint_name_);
-  msg.position.resize(1);
-  msg.velocity.resize(1);
-  msg.effort.resize(1);
-  
-  int read_count = 0;
-  int valid_count = 0;
-  
-  while (state_reader_running_.load(std::memory_order_acquire)) {
-    // Read motor state (this is the only thread doing CAN reads)
-    auto state = driver_.read_state(motor_id_);
-    
-    if (state.valid) {
-      // Update atomic variables (for RT loop's read())
-      latest_position_.store(state.position, std::memory_order_relaxed);
-      latest_velocity_.store(state.velocity, std::memory_order_relaxed);
-      latest_torque_.store(state.torque, std::memory_order_relaxed);
-      
-      // Publish joint state (this thread only, no RT impact)
-      msg.header.stamp = pub_node_->now();
-      msg.position[0] = state.position;
-      msg.velocity[0] = state.velocity;
-      msg.effort[0] = state.torque;
-      joint_state_pub_->publish(msg);
-      
-      valid_count++;
+    for (size_t ji : bus.joint_indices) {
+      robstride_driver::MitCommand cmd;
+      cmd.position = hw_commands_position_[ji];
+      cmd.velocity = 0.0;
+      cmd.kp = joints_[ji].kp;
+      cmd.kd = joints_[ji].kd;
+      cmd.torque_ff = 0.0;
+      bus.driver.send_command(joints_[ji].motor_id, cmd);
     }
-    read_count++;
-    
-    // Log every 1 second (state_reader_rate_ cycles)
-    if (read_count % state_reader_rate_ == 0) {
-      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-        "[StateReader] pos: %.3f rad, vel: %.3f rad/s, torque: %.3f, valid: %d/%d (%.1f%%)",
-        latest_position_.load(), latest_velocity_.load(), latest_torque_.load(),
-        valid_count, read_count, (100.0 * valid_count / read_count));
-      read_count = 0;
-      valid_count = 0;
-    }
-    
-    // Sleep until next period (fixed 100Hz)
-    next_time += period;
-    std::this_thread::sleep_until(next_time);
+
+    bus_timing_[bus_name].send_us = std::chrono::duration<double, std::micro>(
+      clock::now() - t_bus_send_start).count();
   }
-  
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), 
-    "State reader thread stopped for motor %d", motor_id_);
+
+  const auto t_send_done = clock::now();
+
+  // === Phase 2: Read responses from all buses ===
+  std::fill(response_received_.begin(), response_received_.end(), false);
+  int total_received = 0;
+
+  for (auto & [bus_name, bus] : buses_) {
+    const auto t_bus_recv_start = clock::now();
+    int remaining = static_cast<int>(bus.joint_indices.size());
+    int bus_received = 0;
+    int timeout_ms = 2;  // Full timeout for first read
+
+    while (remaining > 0) {
+      auto [motor_id, state] = bus.driver.read_one_response(timeout_ms);
+      if (motor_id < 0) {
+        break;  // Timeout
+      }
+
+      for (size_t ji : bus.joint_indices) {
+        if (joints_[ji].motor_id == motor_id && !response_received_[ji]) {
+          hw_positions_[ji] = state.position;
+          hw_velocities_[ji] = state.velocity;
+          hw_efforts_[ji] = state.torque;
+          response_received_[ji] = true;
+          missed_response_count_[ji] = 0;
+          remaining--;
+          bus_received++;
+          break;
+        }
+      }
+
+      timeout_ms = 1;  // Shorter timeout for subsequent reads
+    }
+
+    auto & bt = bus_timing_[bus_name];
+    bt.receive_us = std::chrono::duration<double, std::micro>(
+      clock::now() - t_bus_recv_start).count();
+    bt.received = bus_received;
+    bt.expected = static_cast<int>(bus.joint_indices.size());
+    total_received += bus_received;
+  }
+
+  const auto t_recv_done = clock::now();
+
+  // === Phase 3: Handle missed responses ===
+  int total_missed = 0;
+  for (size_t i = 0; i < joints_.size(); ++i) {
+    if (!response_received_[i]) {
+      missed_response_count_[i]++;
+      total_missed++;
+      if (missed_response_count_[i] == kMissedResponseWarnThreshold) {
+        RCLCPP_WARN(rclcpp::get_logger("RobStrideHardware"),
+          "Motor %d on %s: %d consecutive missed responses",
+          joints_[i].motor_id, joints_[i].can_interface.c_str(),
+          missed_response_count_[i]);
+      }
+      // Keep last-known state (do not update)
+    }
+  }
+
+  // === Phase 4: Timing diagnostics ===
+  last_timing_.send_us = std::chrono::duration<double, std::micro>(
+    t_send_done - t_start).count();
+  last_timing_.receive_us = std::chrono::duration<double, std::micro>(
+    t_recv_done - t_send_done).count();
+  last_timing_.total_us = std::chrono::duration<double, std::micro>(
+    t_recv_done - t_start).count();
+  last_timing_.responses_received = total_received;
+  last_timing_.responses_expected = static_cast<int>(joints_.size());
+
+  total_us_sum_ += last_timing_.total_us;
+  total_us_max_ = std::max(total_us_max_, last_timing_.total_us);
+  total_missed_sum_ += total_missed;
+  timing_log_counter_++;
+
+  if (timing_log_counter_ >= kTimingLogInterval) {
+    double avg_us = total_us_sum_ / timing_log_counter_;
+    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+      "[Timing] write() avg=%.0fus, max=%.0fus, missed=%d/%d",
+      avg_us, total_us_max_, total_missed_sum_,
+      timing_log_counter_ * static_cast<int>(joints_.size()));
+
+    for (const auto & [bus_name, bt] : bus_timing_) {
+      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+        "[Timing]   %s: send=%.0fus, recv=%.0fus, ok=%d/%d",
+        bus_name.c_str(), bt.send_us, bt.receive_us,
+        bt.received, bt.expected);
+    }
+
+    // Reset aggregates
+    timing_log_counter_ = 0;
+    total_us_sum_ = 0.0;
+    total_us_max_ = 0.0;
+    total_missed_sum_ = 0;
+  }
+
+  return hardware_interface::return_type::OK;
 }
 
 }  // namespace robstride_hardware
