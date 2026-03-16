@@ -136,5 +136,6 @@ BSL-Droidの開発作業において得られた知見を技術記事として�
 |------|--------|------|----------|
 | art001 | [Coding Agentに編集可能な図付きでドキュメントを書かせたい！](./art001_drawio_with_coding_agent/art001_drawio_with_coding_agent.md) | DrawIO XML形式でCoding Agentに編集可能な図を生成させる方法 | - |
 | art003 | [Claude Codeで強化学習の実験サイクルを半自動化した話](./art003_introduce_dev_with_ai/art003_introduce_dev_with_ai.md) | Claude CodeのSkills/Hooks/Settings/Agent Teamsを組み合わせたRL実験サイクルの半自動化 | exp007, exp008, exp009 |
+| art004 | [Jetson Orin上のROS 2リアルタイム制御でSCHED_FIFOを導入してジッタを抑える](./art004_sched_fifo_jetson/art004_sched_fifo_jetson.md) | CFS環境でのジッタスパイクの原因分析とSCHED_FIFO導入による改善手順 | - |
 
 ※ 記事追加時に本表を更新すること
