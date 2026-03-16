@@ -10,10 +10,11 @@ RobStride Hardware ros2_control Launch File
 """
 import os
 from launch import LaunchDescription
-from launch.actions import RegisterEventHandler
+from launch.actions import RegisterEventHandler, TimerAction
 from launch.event_handlers import OnProcessExit
 from launch_ros.actions import Node
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -34,7 +35,9 @@ def generate_launch_description():
     ])
     
     # ROS 2パラメータとして渡すための辞書形式
-    robot_description = {'robot_description': robot_description_content}
+    robot_description = {
+        'robot_description': ParameterValue(robot_description_content, value_type=str)
+    }
     
     # ============================================================
     # 2. コントローラー設定ファイル
@@ -95,20 +98,17 @@ def generate_launch_description():
     # ============================================================
     # 6. 起動シーケンス制御 (依存関係の定義)
     # ============================================================
-    # RegisterEventHandlerでプロセス終了イベントをトリガーに次のノードを起動
-    # これにより、確実な初期化順序を保証する
+    # Controller Manager初期化完了後にspawnerを起動
+    # control_nodeは長時間動作するためOnProcessExitではなくTimerActionを使用
     
-    # ステップ1: control_node終了後 → joint_state_broadcaster起動
-    # (※OnProcessExitはプロセス終了時ではなく、準備完了時にも発火する設計)
-    delay_joint_state_broadcaster_after_control_node = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=control_node,
-            on_exit=[joint_state_broadcaster_spawner],
-        )
+    # ステップ1: 待機後 → joint_state_broadcaster起動
+    delay_joint_state_broadcaster_after_control_node = TimerAction(
+        period=3.0,
+        actions=[joint_state_broadcaster_spawner],
     )
     
-    # ステップ2: joint_state_broadcaster起動後 → forward_position_controller起動
-    # joint_statesが配信される前にコマンドを送っても意味がないため
+    # ステップ2: joint_state_broadcaster spawner完了後 → forward_position_controller起動
+    # spawnerは短命プロセスなのでOnProcessExitで正しくチェーンできる
     delay_forward_controller_after_joint_state_broadcaster = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
