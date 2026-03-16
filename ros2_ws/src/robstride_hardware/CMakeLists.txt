@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.14)
 project(robstride_hardware)
 
+# CMP0167: FindBoost removed in CMake 3.30+.
+# realtime_tools (dependency of hardware_interface) still triggers FindBoost.
+# Use the NEW behaviour (use BoostConfig.cmake) to suppress the dev warning.
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -37,9 +44,33 @@ install(DIRECTORY urdf config launch DESTINATION share/${PROJECT_NAME})
 
 # Install Python scripts
 install(PROGRAMS
-  scripts/sinusoidal_motion_publisher.py
+  scripts/single_motor_test_commander.py
+  scripts/multi_motor_zero_commander.py
+  scripts/analyze_timing_log.py
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Standalone CAN latency test (no ROS 2 dependency)
+add_executable(can_latency_test
+  test/can_latency_test.cpp
+  src/robstride_driver.cpp
+)
+target_include_directories(can_latency_test PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+target_compile_features(can_latency_test PRIVATE cxx_std_17)
+install(TARGETS can_latency_test DESTINATION lib/${PROJECT_NAME})
+
+# Multi-bus CAN latency test (no ROS 2 dependency)
+add_executable(multi_bus_latency_test
+  test/multi_bus_latency_test.cpp
+  src/robstride_driver.cpp
+)
+target_include_directories(multi_bus_latency_test PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
+target_compile_features(multi_bus_latency_test PRIVATE cxx_std_17)
+install(TARGETS multi_bus_latency_test DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
