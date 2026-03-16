@@ -8,8 +8,9 @@ RobStride RS02 モータを `ros2_control` から駆動するための Linux 専
 - 多モータ・多バス対応: URDF の関節ごとに CAN バス・モータ ID・ゲインを設定
 - タイミング診断: 1 秒ごとに送受信所要時間・未応答数をログ出力
 
-## 入口文書
+## 設計ドキュメント
 
-- `doc/README.md`
+- 詳細設計: `doc/design/ros2_walking/modules/robstride_hardware.md`
+- クイックリファレンス（CAN マッピング等）: `doc/README.md`
 
 起動コマンドはプロジェクトルートの `README.md` を参照してください。
