@@ -13,13 +13,13 @@ DISPLAY = ":1"
 
 [tasks]
 rviz2 = "rviz2"
-format-cpp = { cmd = "clang-format -i src/robstride_hardware/include/robstride_hardware/*.hpp src/robstride_hardware/src/*.cpp src/robstride_hardware/test/*.cpp" }
-check-format-cpp = { cmd = "clang-format --dry-run --Werror src/robstride_hardware/include/robstride_hardware/*.hpp src/robstride_hardware/src/*.cpp src/robstride_hardware/test/*.cpp" }
-lint-cpp = { cmd = "ament_cpplint --linelength 100 --filters=-build/header_guard src/robstride_hardware/include/robstride_hardware/*.hpp src/robstride_hardware/src/*.cpp src/robstride_hardware/test/*.cpp" }
+format-cpp = { cmd = "clang-format -i src/aoba_hardware/include/aoba_hardware/*.hpp src/aoba_hardware/src/*.cpp src/aoba_hardware/test/*.cpp" }
+check-format-cpp = { cmd = "clang-format --dry-run --Werror src/aoba_hardware/include/aoba_hardware/*.hpp src/aoba_hardware/src/*.cpp src/aoba_hardware/test/*.cpp" }
+lint-cpp = { cmd = "ament_cpplint --linelength 100 --filters=-build/header_guard src/aoba_hardware/include/aoba_hardware/*.hpp src/aoba_hardware/src/*.cpp src/aoba_hardware/test/*.cpp" }
 
-# macOS: robstride_hardware はLinux専用（linux/can.h依存）のため除外
+# macOS: aoba_hardware はLinux専用（linux/can.h依存）のため除外
 [target.osx-arm64.tasks]
-build = { cmd = "./scripts/run_colcon_build.sh --packages-ignore robstride_hardware", inputs = ["src", "scripts/run_colcon_build.sh"] }
+build = { cmd = "./scripts/run_colcon_build.sh --packages-ignore aoba_hardware", inputs = ["src", "scripts/run_colcon_build.sh"] }
 
 # Jetson: 全パッケージをビルド
 [target.linux-aarch64.tasks]
