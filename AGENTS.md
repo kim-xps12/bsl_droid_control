@@ -62,7 +62,7 @@ pixi run ros2 launch biped_gait_control trajectory_replay.launch.py config_file:
 pixi run ros2 launch biped_bringup genesis_teleop.launch.py
 
 # 実機制御（Jetson専用）
-pixi run ros2 launch robstride_hardware bringup.launch.py
+pixi run ros2 launch aoba_hardware bringup.launch.py
 ```
 
 ### 注意事項
@@ -194,7 +194,7 @@ uv run mypy biped_walking/ scripts/ assets/export_urdf.py check_training_logs.py
 
 ### C++ 自動チェック（Claude Code Hooks）
 
-`.claude/settings.json`で設定されたhooksにより、`ros2_ws/src/robstride_hardware/` 以下のC++ファイル（`.cpp`, `.hpp`）のEdit/Write後に自動でclang-formatとcpplintが実行される。Coding Agentはフィードバックされたエラーを修正すること。
+`.claude/settings.json`で設定されたhooksにより、`ros2_ws/src/aoba_hardware/` 以下のC++ファイル（`.cpp`, `.hpp`）のEdit/Write後に自動でclang-formatとcpplintが実行される。Coding Agentはフィードバックされたエラーを修正すること。
 
 ### C++ 手動チェックコマンド
 
@@ -225,8 +225,8 @@ pixi run lint-cpp
 
 ### C++ 設定ファイル
 
-- `ros2_ws/src/robstride_hardware/.clang-format`: clang-formatの設定
-- `ros2_ws/src/robstride_hardware/.clang-tidy`: clang-tidyの設定（Jetson上での手動実行用）
+- `ros2_ws/src/aoba_hardware/.clang-format`: clang-formatの設定
+- `ros2_ws/src/aoba_hardware/.clang-tidy`: clang-tidyの設定（Jetson上での手動実行用）
 - `.claude/hooks/cpp-lint-check.sh`: C++自動チェックスクリプト
 
 ## ドキュメント類の作成ルール
