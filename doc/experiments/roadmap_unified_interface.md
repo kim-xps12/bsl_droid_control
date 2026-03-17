@@ -13,7 +13,7 @@ MacBookで歩容設計 → 物理シミュレータで検証 → 送信先切り
 ### 前提条件
 
 - `biped_gait_control`パッケージで50Hz関節角度生成が動作済み
-- `robstride_hardware`パッケージでros2_control Hardware Interfaceが実装済み（未統合）
+- `aoba_hardware`パッケージでros2_control Hardware Interfaceが実装済み（未統合）
 - Jetson Orin Nano SuperとMacBookの分散構成が確立済み
 
 ---
@@ -302,7 +302,7 @@ pixi run ros2 topic list  # Jetson側のトピックが見えるか
 
 #### タスク 3.3.2: コントローラ設定更新
 
-**変更対象**: `robstride_hardware/config/controllers.yaml`
+**変更対象**: `aoba_hardware/config/controllers.yaml`
 
 ```yaml
 forward_position_controller:
@@ -383,7 +383,7 @@ MacBook                          Jetson
    ```bash
    cd ~/Projects/bsl_droid_ros2/ros2_ws
    export ROS_DOMAIN_ID=42
-   pixi run ros2 launch robstride_hardware bringup.launch.py
+   pixi run ros2 launch aoba_hardware bringup.launch.py
    ```
 
 2. **【MacBook】歩容生成起動（hardwareモード）**
@@ -408,7 +408,7 @@ MacBook                          Jetson
 
 ```bash
 # 【Jetson】実機制御
-pixi run ros2 launch robstride_hardware bringup.launch.py
+pixi run ros2 launch aoba_hardware bringup.launch.py
 
 # 【MacBook】歩容生成
 pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=hardware
@@ -489,7 +489,7 @@ pixi run ros2 bag record -a -o experiment_data
 3. **実機モード（MacBook + Jetson）**
    ```bash
    # Jetson
-   pixi run ros2 launch robstride_hardware bringup.launch.py
+   pixi run ros2 launch aoba_hardware bringup.launch.py
    
    # MacBook
    pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=hardware

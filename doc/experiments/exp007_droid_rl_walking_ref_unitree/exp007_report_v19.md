@@ -419,4 +419,4 @@ V19では、V17（静止の局所解で失敗）とV18（歩行実現、スト�
 - **STRIDE** (arXiv:2502.04692): 階層的報酬構造
 - **Leveraging Symmetry in RL-based Legged Locomotion Control** (IROS 2024, arXiv:2403.17320): 対称性強制
 - **Revisiting Reward Design and Evaluation for Robust Humanoid Standing and Walking** (arXiv:2404.19173): 報酬設計のベストプラクティス
-- **RobStride RS-02仕様**: `ros2_ws/src/robstride_hardware/include/robstride_hardware/robstride_driver.hpp`
+- **RobStride RS-02仕様**: `ros2_ws/src/aoba_hardware/include/aoba_hardware/aoba_driver.hpp`
