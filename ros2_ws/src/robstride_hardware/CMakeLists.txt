@@ -74,9 +74,15 @@ install(TARGETS multi_bus_latency_test DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  set(ament_cmake_copyright_FOUND TRUE)
+  # cpplint: 手動設定（#pragma once許容フィルタ付き）
   set(ament_cmake_cpplint_FOUND TRUE)
+  # uncrustify: clang-formatを使用するためスキップ
+  set(ament_cmake_uncrustify_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
+  # cpplint: #pragma once を許容するフィルタ付きで手動実行
+  find_package(ament_cmake_cpplint REQUIRED)
+  ament_cpplint(FILTERS "-build/header_guard" MAX_LINE_LENGTH 100)
 endif()
 
 ament_package()
