@@ -162,7 +162,7 @@ pixi run ros2 launch biped_bringup genesis_teleop.launch.py
 
 ```bash
 # RS02 単関節（joint1）の単体検証
-pixi run ros2 launch robstride_hardware bringup.launch.py
+pixi run ros2 launch aoba_hardware bringup.launch.py
 ```
 
 ### トピックの確認
@@ -186,7 +186,7 @@ pixi run ros2 run tf2_tools view_frames
 | `biped_msgs` | カスタムメッセージ定義（SafetyStatus / RLPolicyState） | ✅ 完成 |
 | `biped_rl_policy` | RLポリシー推論ノード（simモード） | ✅ 完成 |
 | `biped_safety` | 安全監視ノード（緊急停止・ゲームパッド切断検知・将来: 関節・姿勢監視） | 🔄 一部実装済み |
-| `robstride_hardware` | ros2_control用ハードウェアインターフェース | 🔄 開発中 |
+| `aoba_hardware` | ros2_control用ハードウェアインターフェース | 🔄 開発中 |
 
 ## 強化学習環境（rl_ws）
 
@@ -322,7 +322,7 @@ bsl_droid_control/
         ├── biped_msgs/              # カスタムメッセージ定義
         ├── biped_rl_policy/         # RLポリシー推論
         ├── biped_safety/            # 安全監視（緊急停止・ゲームパッド切断検知・将来: 関節・姿勢監視）
-        ├── robstride_hardware/      # ros2_control用IF（開発中）
+        ├── aoba_hardware/      # ros2_control用IF（開発中）
         └── pub_sub_*/               # ROS 2チュートリアル
 ```
 
