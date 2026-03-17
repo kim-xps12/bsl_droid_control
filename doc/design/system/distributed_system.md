@@ -110,7 +110,7 @@ export ROS_DOMAIN_ID=42
 
 | ノード | 周波数 | 説明 |
 |--------|--------|------|
-| `robstride_hardware` | 200 Hz | ✅ 実装済み。ros2_control HW Interface |
+| `aoba_hardware` | 200 Hz | ✅ 実装済み。ros2_control HW Interface |
 | `controller_manager` | 200 Hz | ros2_control コントローラ管理 |
 | `state_estimator` | 200 Hz | センサフュージョン、状態推定 |
 | `safety_monitor` | 200 Hz | 安全監視、緊急停止 |
@@ -147,7 +147,7 @@ export ROS_DOMAIN_ID=42
 
 ```
 ros2_ws/src/
-├── robstride_hardware/          # ✅ 実装済み (Jetson)
+├── aoba_hardware/          # ✅ 実装済み (Jetson)
 │   ├── CMakeLists.txt
 │   ├── package.xml
 │   ├── config/

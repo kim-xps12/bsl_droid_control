@@ -194,7 +194,7 @@ pixi run ros2 launch biped_gait_control gait_simulation.launch.py simulator:=muj
 │  │                 │            │  │  │  └─────────┬───────────┘   ││
 │  │  Robot Model    │  /joint_   │  │  │            │               ││
 │  │  TF Tree        │  states    │  │  │  ┌─────────▼───────────┐   ││
-│  └─────────────────┘  (200Hz)   │  │  │  │ robstride_hardware  │   ││
+│  └─────────────────┘  (200Hz)   │  │  │  │ aoba_hardware  │   ││
 │                                  │  │  │  │                     │   ││
 │  ┌─────────────────┐            │  │  │  │ CAN → RobStride    │   ││
 │  │  Plotjuggler    │◀───────────│  │  │  │        RS02         │   ││
@@ -208,7 +208,7 @@ pixi run ros2 launch biped_gait_control gait_simulation.launch.py simulator:=muj
 Jetson側:
 ```bash
 # ros2_control + Hardware Interface起動
-pixi run ros2 launch robstride_hardware bringup.launch.py
+pixi run ros2 launch aoba_hardware bringup.launch.py
 ```
 
 MacBook側:
