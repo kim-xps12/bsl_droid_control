@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * @file robstride_driver.hpp
+ * @file aoba_driver.hpp
  * @brief RobStrideモータ CAN通信ドライバ（ROS 2非依存）
  *
  * MITコントロールプロトコルを使用してRobStrideモータとの
@@ -17,7 +17,7 @@
 #include <string>
 #include <utility>
 
-namespace robstride_driver {
+namespace aoba_driver {
 
 /**
  * @brief モータ状態を保持する構造体
@@ -62,14 +62,14 @@ enum class ControlMode : int8_t {
  * RobStrideモータ（RS-01, RS-02, RS-03）とのCAN通信を管理する。
  * ROS 2に依存せず、単体テストやデバッグにも使用可能。
  */
-class RobStrideDriver {
+class AobaDriver {
 public:
-  RobStrideDriver() = default;
-  ~RobStrideDriver();
+  AobaDriver() = default;
+  ~AobaDriver();
 
   // コピー禁止（ソケットリソースの二重解放を防止）
-  RobStrideDriver(const RobStrideDriver&) = delete;
-  RobStrideDriver& operator=(const RobStrideDriver&) = delete;
+  AobaDriver(const AobaDriver&) = delete;
+  AobaDriver& operator=(const AobaDriver&) = delete;
 
   /**
    * @brief CANインターフェースに接続する
@@ -230,4 +230,4 @@ constexpr uint16_t TORQUE_LIMIT = 0x700B;    // トルクリミット
 }  // namespace param_id
 }  // namespace protocol
 
-}  // namespace robstride_driver
+}  // namespace aoba_driver

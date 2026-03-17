@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * @file robstride_hardware.hpp
+ * @file aoba_hardware.hpp
  * @brief RobStrideモータ用 ros2_control ハードウェアインターフェース
  *
  * 同期送受信パターン: 全CAN I/Oはwrite()内で実行され、
@@ -25,9 +25,9 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/state.hpp>
 
-#include "robstride_hardware/robstride_driver.hpp"
+#include "aoba_hardware/aoba_driver.hpp"
 
-namespace robstride_hardware {
+namespace aoba_hardware {
 
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
@@ -42,8 +42,8 @@ struct JointConfig {
 
 /// CANバス毎のコンテキスト
 struct BusContext {
-  robstride_driver::RobStrideDriver driver;  // CANドライバインスタンス
-  std::vector<size_t> joint_indices;         ///< joints_ベクタへのインデックス
+  aoba_driver::AobaDriver driver;     // CANドライバインスタンス
+  std::vector<size_t> joint_indices;  ///< joints_ベクタへのインデックス
 };
 
 /// バス毎のタイミング内訳（診断用）
@@ -70,7 +70,7 @@ struct WriteTimingStats {
  * write()内で全モータへのコマンド送信とレスポンス受信を同期的に行い、
  * read()ではwrite()で更新済みの内部バッファを返すだけ（リアルタイム安全）。
  */
-class RobStrideHardware : public hardware_interface::SystemInterface {
+class AobaHardware : public hardware_interface::SystemInterface {
 public:
   // ライフサイクルコールバック
   CallbackReturn on_init(
@@ -133,4 +133,4 @@ private:
   int total_missed_sum_ = 0;                      // レスポンス欠落の累積数
 };
 
-}  // namespace robstride_hardware
+}  // namespace aoba_hardware
