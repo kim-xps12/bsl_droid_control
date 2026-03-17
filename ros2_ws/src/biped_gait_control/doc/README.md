@@ -14,7 +14,7 @@
 - 出力は常に `joint_limits.py` でクランプ
 - `viz` モードでは `/joint_states` を publish
 - `control` モードでは加えて `/forward_position_controller/commands` を publish
-- 実機制御そのものは起動しないため、`control` モード時は別途 `robstride_hardware` 側の bringup が必要
+- 実機制御そのものは起動しないため、`control` モード時は別途 `aoba_hardware` 側の bringup が必要
 
 ### トピック
 
@@ -43,6 +43,6 @@
 ## 制限事項
 
 - `trajectory_replay` はトルク制御や速度制御を行わない
-- 実機と可視化の統合検証は `robstride_hardware` 側の単関節デモを超えていない
+- 実機と可視化の統合検証は `aoba_hardware` 側の単関節デモを超えていない
 
 起動コマンドはプロジェクトルートの `README.md` を参照してください。

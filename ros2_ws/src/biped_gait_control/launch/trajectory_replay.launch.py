@@ -14,7 +14,7 @@ Usage:
     # Waypoint playback:
     ros2 launch biped_gait_control trajectory_replay.launch.py config_file:=replay_waypoint.yaml
 
-    # Control mode (requires external robstride_hardware bringup):
+    # Control mode (requires external aoba_hardware bringup):
     ros2 launch biped_gait_control trajectory_replay.launch.py mode:=control
 """
 
