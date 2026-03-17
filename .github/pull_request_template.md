@@ -25,7 +25,7 @@
 ### ROS 2環境（ros2_ws）
 - [ ] biped_description（URDF/可視化/GUI）
 - [ ] biped_gait_control（歩容生成）
-- [ ] robstride_hardware（ros2_control HW Interface・Jetson専用）
+- [ ] aoba_hardware（ros2_control HW Interface・Jetson専用）
 - [ ] pub_sub_cpp / pub_sub_python（チュートリアル）
 
 ### 強化学習環境（rl_ws）
