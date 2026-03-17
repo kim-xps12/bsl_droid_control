@@ -196,7 +196,7 @@ joint_trajectory_controller を active にしようとすると失敗
 **役割**: 実際のハードウェアとの通信を担当。**ユーザーが実装する唯一の部分**。
 
 ```cpp
-class RobStrideHardware : public hardware_interface::SystemInterface
+class AobaHardware : public hardware_interface::SystemInterface
 {
 public:
   // 初期化 (URDF パラメータ読み込み)
@@ -327,10 +327,10 @@ CommandInterface(
 ### 4.3 URDF での定義
 
 ```xml
-<ros2_control name="robstride_system" type="system">
+<ros2_control name="aoba_system" type="system">
   <hardware>
     <!-- どのプラグインを使うか -->
-    <plugin>robstride_hardware/RobStrideHardware</plugin>
+    <plugin>aoba_hardware/AobaHardware</plugin>
     <!-- Hardware Interface に渡すパラメータ -->
     <param name="can_interface">can0</param>
     <param name="motor_id">11</param>
@@ -430,9 +430,9 @@ ros2 control <subcommand>
 $ ros2 control list_hardware_components
 
 Hardware Component 1
-        name: robstride_system          # URDF の ros2_control name
+        name: aoba_system          # URDF の ros2_control name
         type: system                     # system / actuator / sensor
-        plugin name: robstride_hardware/RobStrideHardware
+        plugin name: aoba_hardware/AobaHardware
         state: id=3 label=active         # ライフサイクル状態
         read/write rate: 200 Hz          # 制御周波数
         is_async: False                  # 非同期モードかどうか

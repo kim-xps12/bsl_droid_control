@@ -50,4 +50,4 @@ ros2_controlはROS 2におけるリアルタイムハードウェア制御の標
 
 ## 実装例
 
-詳細な実装コードは [robstride_hardware_impl.md](robstride_hardware_impl.md) を参照。
+詳細な実装コードは [aoba_hardware_impl.md](aoba_hardware_impl.md) を参照。

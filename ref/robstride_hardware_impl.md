@@ -10,23 +10,23 @@ ros2_control準拠のHardware Interface実装例。
 ## ファイル構成
 
 ```
-robstride_hardware/
+aoba_hardware/
 ├── CMakeLists.txt
 ├── package.xml
-├── robstride_hardware_plugin.xml
+├── aoba_hardware_plugin.xml
 ├── urdf/
 │   └── robstride_rs02.urdf.xacro
 ├── config/
 │   └── controllers.yaml
 ├── launch/
 │   └── robstride_control.launch.py
-├── include/robstride_hardware/
-│   └── robstride_hardware.hpp
+├── include/aoba_hardware/
+│   └── aoba_hardware.hpp
 └── src/
-    └── robstride_hardware.cpp
+    └── aoba_hardware.cpp
 ```
 
-## robstride_hardware.hpp
+## aoba_hardware.hpp
 
 ```cpp
 #pragma once
@@ -38,11 +38,11 @@ robstride_hardware/
 #include <vector>
 #include <string>
 
-namespace robstride_hardware
+namespace aoba_hardware
 {
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
 
-class RobStrideHardware : public hardware_interface::SystemInterface
+class AobaHardware : public hardware_interface::SystemInterface
 {
 public:
   CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
@@ -77,21 +77,21 @@ private:
   double kd_ = 0.5;
 };
 
-}  // namespace robstride_hardware
+}  // namespace aoba_hardware
 ```
 
-## robstride_hardware.cpp
+## aoba_hardware.cpp
 
 ```cpp
-#include "robstride_hardware/robstride_hardware.hpp"
+#include "aoba_hardware/aoba_hardware.hpp"
 #include "robstride_control/can_interface.h"
 #include "robstride_control/protocol.h"
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
 
-namespace robstride_hardware
+namespace aoba_hardware
 {
 
-CallbackReturn RobStrideHardware::on_init(const hardware_interface::HardwareInfo & info)
+CallbackReturn AobaHardware::on_init(const hardware_interface::HardwareInfo & info)
 {
   if (SystemInterface::on_init(info) != CallbackReturn::SUCCESS) {
     return CallbackReturn::ERROR;
@@ -107,18 +107,18 @@ CallbackReturn RobStrideHardware::on_init(const hardware_interface::HardwareInfo
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_configure(
+CallbackReturn AobaHardware::on_configure(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   can_socket_ = init_can(can_interface_.c_str());
   if (can_socket_ < 0) {
-    RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"), "Failed to init CAN");
+    RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"), "Failed to init CAN");
     return CallbackReturn::ERROR;
   }
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_activate(
+CallbackReturn AobaHardware::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   for (size_t i = 0; i < motor_ids_.size(); ++i) {
@@ -127,7 +127,7 @@ CallbackReturn RobStrideHardware::on_activate(
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_deactivate(
+CallbackReturn AobaHardware::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
   for (size_t i = 0; i < motor_ids_.size(); ++i) {
@@ -137,7 +137,7 @@ CallbackReturn RobStrideHardware::on_deactivate(
 }
 
 std::vector<hardware_interface::StateInterface> 
-RobStrideHardware::export_state_interfaces()
+AobaHardware::export_state_interfaces()
 {
   std::vector<hardware_interface::StateInterface> state_interfaces;
   for (size_t i = 0; i < info_.joints.size(); ++i) {
@@ -152,7 +152,7 @@ RobStrideHardware::export_state_interfaces()
 }
 
 std::vector<hardware_interface::CommandInterface> 
-RobStrideHardware::export_command_interfaces()
+AobaHardware::export_command_interfaces()
 {
   std::vector<hardware_interface::CommandInterface> command_interfaces;
   for (size_t i = 0; i < info_.joints.size(); ++i) {
@@ -162,7 +162,7 @@ RobStrideHardware::export_command_interfaces()
   return command_interfaces;
 }
 
-hardware_interface::return_type RobStrideHardware::read(
+hardware_interface::return_type AobaHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   for (size_t i = 0; i < motor_ids_.size(); ++i) {
@@ -174,7 +174,7 @@ hardware_interface::return_type RobStrideHardware::read(
   return hardware_interface::return_type::OK;
 }
 
-hardware_interface::return_type RobStrideHardware::write(
+hardware_interface::return_type AobaHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   for (size_t i = 0; i < motor_ids_.size(); ++i) {
@@ -183,11 +183,11 @@ hardware_interface::return_type RobStrideHardware::write(
   return hardware_interface::return_type::OK;
 }
 
-}  // namespace robstride_hardware
+}  // namespace aoba_hardware
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(
-  robstride_hardware::RobStrideHardware,
+  aoba_hardware::AobaHardware,
   hardware_interface::SystemInterface)
 ```
 
@@ -195,7 +195,7 @@ PLUGINLIB_EXPORT_CLASS(
 
 ```cmake
 cmake_minimum_required(VERSION 3.8)
-project(robstride_hardware)
+project(aoba_hardware)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -211,7 +211,7 @@ find_package(rclcpp_lifecycle REQUIRED)
 set(ROBSTRIDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../RobStride_Control/cpp)
 
 add_library(${PROJECT_NAME} SHARED
-  src/robstride_hardware.cpp
+  src/aoba_hardware.cpp
   ${ROBSTRIDE_DIR}/src/can_interface.cpp
   ${ROBSTRIDE_DIR}/src/protocol.cpp
 )
@@ -226,7 +226,7 @@ ament_target_dependencies(${PROJECT_NAME}
 )
 
 pluginlib_export_plugin_description_file(
-  hardware_interface robstride_hardware_plugin.xml)
+  hardware_interface aoba_hardware_plugin.xml)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include)
@@ -239,12 +239,12 @@ ament_export_dependencies(hardware_interface pluginlib rclcpp rclcpp_lifecycle)
 ament_package()
 ```
 
-## robstride_hardware_plugin.xml
+## aoba_hardware_plugin.xml
 
 ```xml
-<library path="robstride_hardware">
-  <class name="robstride_hardware/RobStrideHardware"
-         type="robstride_hardware::RobStrideHardware"
+<library path="aoba_hardware">
+  <class name="aoba_hardware/AobaHardware"
+         type="aoba_hardware::AobaHardware"
          base_class_type="hardware_interface::SystemInterface">
     <description>RobStride RS02 Hardware Interface for ros2_control</description>
   </class>
@@ -258,7 +258,7 @@ ament_package()
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robstride_rs02">
   <ros2_control name="RobStrideSystem" type="system">
     <hardware>
-      <plugin>robstride_hardware/RobStrideHardware</plugin>
+      <plugin>aoba_hardware/AobaHardware</plugin>
       <param name="can_interface">can0</param>
       <param name="motor_ids">[1]</param>
       <param name="kp">30.0</param>
@@ -300,7 +300,7 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
-    pkg_share = FindPackageShare('robstride_hardware')
+    pkg_share = FindPackageShare('aoba_hardware')
     urdf_file = PathJoinSubstitution([pkg_share, 'urdf', 'robstride_rs02.urdf.xacro'])
     controller_config = PathJoinSubstitution([pkg_share, 'config', 'controllers.yaml'])
     
