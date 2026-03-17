@@ -64,7 +64,7 @@
                 &lt;mxCell id=&quot;arrow-rl-to-gait&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;strokeColor=#00aa00;&quot; parent=&quot;1&quot; source=&quot;node-rl&quot; target=&quot;topic-gait-target&quot; edge=&quot;1&quot;&gt;
                     &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
                 &lt;/mxCell&gt;
-                &lt;mxCell id=&quot;node-hardware&quot; value=&quot;robstride_hardware&amp;lt;br&amp;gt;(ros2_control, 200 Hz, SCHED_FIFO)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
+                &lt;mxCell id=&quot;node-hardware&quot; value=&quot;aoba_hardware&amp;lt;br&amp;gt;(ros2_control, 200 Hz, SCHED_FIFO)&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13&quot; parent=&quot;1&quot; vertex=&quot;1&quot;&gt;
                     &lt;mxGeometry x=&quot;560&quot; y=&quot;620&quot; width=&quot;180&quot; height=&quot;80&quot; as=&quot;geometry&quot;/&gt;
                 &lt;/mxCell&gt;
                 &lt;mxCell id=&quot;arrow-gait-to-hw&quot; value=&quot;&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;&quot; parent=&quot;1&quot; source=&quot;topic-gait-target&quot; target=&quot;node-hardware&quot; edge=&quot;1&quot;&gt;
@@ -271,9 +271,9 @@
     <!-- Arrow: RL to gait_target (green, thick) -->
     <line x1="650" y1="410" x2="650" y2="470" stroke="#00aa00" stroke-width="3" marker-end="url(#arrowhead-green)"/>
 
-    <!-- robstride_hardware node (red) -->
+    <!-- aoba_hardware node (red) -->
     <rect x="560" y="620" width="180" height="80" rx="10" ry="10" fill="#f8cecc" stroke="#b85450" stroke-width="2"/>
-    <text x="650" y="647" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#333">robstride_hardware</text>
+    <text x="650" y="647" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="13" font-weight="bold" fill="#333">aoba_hardware</text>
     <text x="650" y="667" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" fill="#333">(ros2_control, 200 Hz, SCHED_FIFO)</text>
 
     <!-- Arrow: gait_target to hardware -->

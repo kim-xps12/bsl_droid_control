@@ -8,7 +8,7 @@
 
 - ゲームパッドによるテレオペレーション歩行の実現
 - Genesisシミュレーション（simモード）→ 実機制御（controlモード）への段階的移行
-- biped_description, robstride_hardwareパッケージとの統合
+- biped_description, aoba_hardwareパッケージとの統合
 - 200Hzリアルタイム制御と50HzRLポリシー推論の両立
 
 ### 1.2 基盤システムのアーキテクチャ図
@@ -31,7 +31,7 @@
 | パッケージ | ビルド | 役割 | 実装状態 |
 |---|---|---|---|
 | `biped_description` | ament_cmake | URDF定義、RViz可視化 | [実装済み] |
-| `robstride_hardware` | ament_cmake | ros2_control HW Interface (Jetson専用) | [実装済み] |
+| `aoba_hardware` | ament_cmake | ros2_control HW Interface (Jetson専用) | [実装済み] |
 | `biped_msgs` | ament_cmake | カスタムメッセージ定義（SafetyStatus, RLPolicyState） | [実装済み] |
 | `biped_rl_policy` | ament_python | RLポリシー推論（simモード） | [実装済み] |
 | `biped_genesis_sim` | ament_python | Genesis物理シミュレーションブリッジ（環境ノード） | [実装済み] |
@@ -61,10 +61,10 @@ genesis_sim_nodeが物理ステップ・観測ベクトル構築・PD制御を�
 #### controlモード（実機制御）[未実装・計画]
 
 ```
-F710r Gamepad → [joy_node] → /joy → [teleop_twist_joy_node] → /cmd_vel → [biped_rl_policy_node] → /fwd_pos_ctrl/commands → [forward_position_controller] → [robstride_hardware] → CAN → RS02 Motors
+F710r Gamepad → [joy_node] → /joy → [teleop_twist_joy_node] → /cmd_vel → [biped_rl_policy_node] → /fwd_pos_ctrl/commands → [forward_position_controller] → [aoba_hardware] → CAN → RS02 Motors
                                    → /joy → [biped_joy_safety_node] → /emergency_stop
 
-[robstride_hardware] → [joint_state_broadcaster] → /joint_states → [biped_rl_policy_node] (観測構築)
+[aoba_hardware] → [joint_state_broadcaster] → /joint_states → [biped_rl_policy_node] (観測構築)
                                                     /joint_states → [robot_state_publisher] → /tf → [RViz2]
 [imu_driver] → /imu/data → [biped_rl_policy_node] (姿勢観測)
 
@@ -87,7 +87,7 @@ trajectory_replay_nodeがタイマー駆動で事前設計された脚軌道を�
 
 ```
 [trajectory_replay_node] → /joint_states → [robot_state_publisher] → /tf → [RViz2]
-                         → /forward_position_controller/commands → [forward_position_controller] → [robstride_hardware] → CAN → RS02 Motors
+                         → /forward_position_controller/commands → [forward_position_controller] → [aoba_hardware] → CAN → RS02 Motors
                          ← /emergency_stop ← [biped_joy_safety_node]
 ```
 
@@ -140,7 +140,7 @@ simモード（Genesis）では、genesis_sim_nodeが内部でPD制御（kp=35, 
 ### 4.5 sim/controlの2モード
 
 - **simモード（Genesis）** [実装済み]: genesis_sim_nodeが物理シミュレーション・観測ベクトル構築・PD制御を担当し、`/policy_obs`をpublish。biped_rl_policy_nodeは`/policy_obs`を受信して推論し`/policy_actions`を返す純粋な推論ラッパー。ros2_controlは使用しない。
-- **controlモード** [未実装・計画]: biped_rl_policy_nodeが`/forward_position_controller/commands`をpublish → ros2_control → robstride_hardware → CAN → モータ。Jetsonで動作。
+- **controlモード** [未実装・計画]: biped_rl_policy_nodeが`/forward_position_controller/commands`をpublish → ros2_control → aoba_hardware → CAN → モータ。Jetsonで動作。
 
 モード選択はLaunchファイルの選択で行う（`genesis_teleop.launch.py` / 将来の `real_control.launch.py`）。
 
@@ -168,7 +168,7 @@ simモード（Genesis）では、genesis_sim_nodeが内部でPD制御（kp=35, 
 | High-Level Control | 10-50Hz | （Phase 3以降） | ゲームパッドが代替 |
 | Gait Generation | 50Hz | biped_rl_policy_node | RL推論による歩容生成 |
 | State Estimation | 200Hz | genesis_sim_node (sim) / 未実装 (control) | simモードではGenesis内部で完結。controlモードではPhase 3で実装 |
-| RT Control & Safety | 200Hz | genesis_sim_node (sim) / forward_position_controller + robstride_hardware (control) | simモードではGenesisの内部PD制御。controlモードは未実装 |
+| RT Control & Safety | 200Hz | genesis_sim_node (sim) / forward_position_controller + aoba_hardware (control) | simモードではGenesisの内部PD制御。controlモードは未実装 |
 | Hardware | - | RS02 x10, IMU | CAN bus, USB (RS232) |
 
 ## 6. 分散構成との対応
@@ -184,7 +184,7 @@ simモード（Genesis）では、genesis_sim_nodeが内部でPD制御（kp=35, 
 | genesis_sim_node | MacBook | - |
 | biped_safety_node | - | Jetson |
 | forward_position_controller | - | Jetson |
-| robstride_hardware | - | Jetson |
+| aoba_hardware | - | Jetson |
 | joint_state_broadcaster | - | Jetson |
 | imu_driver | - | Jetson |
 | robot_state_publisher | MacBook | 両方 |

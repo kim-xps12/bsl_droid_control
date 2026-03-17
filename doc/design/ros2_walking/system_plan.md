@@ -6,7 +6,7 @@ BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲーム�
 
 実装済み資産:
 - `ros2_ws/src/biped_description/` — URDF/RViz可視化（実装済み）
-- `ros2_ws/src/robstride_hardware/` — ros2_control HW Interface（実装済み、Jetson専用）
+- `ros2_ws/src/aoba_hardware/` — ros2_control HW Interface（実装済み、Jetson専用）
 - `rl_ws/` — Genesis+PPOによるRL学習環境、F710ゲームパッド操縦（実装済み）
 
 ---
@@ -88,7 +88,7 @@ doc/design/ros2_walking/system_plan.md のSession {X} を実行してくださ�
 ```
 ros2_ws/src/
   biped_description/         # [実装済み] URDF, RViz
-  robstride_hardware/        # [実装済み] ros2_control HW Interface (Jetson専用)
+  aoba_hardware/        # [実装済み] ros2_control HW Interface (Jetson専用)
   biped_msgs/                # [実装済み] カスタムメッセージ定義
   biped_rl_policy/           # [実装済み] RLポリシー推論 (Python)
   biped_genesis_sim/         # [実装済み] Genesis物理シミュレーションブリッジ (Python)
@@ -138,7 +138,7 @@ ros2_ws/src/
                           [forward_position_controller] (200Hz)
                                     │
                                     ▼
-                          [robstride_hardware] (200Hz)
+                          [aoba_hardware] (200Hz)
                                     │
                                CAN bus → RS02 x10
 
@@ -186,7 +186,7 @@ ros2_ws/src/
 
 ### 変更対象ファイル
 - `ros2_ws/pixi.toml` — joy, teleop_twist_joy依存追加
-- `ros2_ws/src/robstride_hardware/config/controllers.yaml` — 10関節化
+- `ros2_ws/src/aoba_hardware/config/controllers.yaml` — 10関節化
 - 新規パッケージ6つ（上記）
 
 ---
@@ -303,7 +303,7 @@ F710でスティックを倒すとGenesis上のロボットが物理シミュレ
 controllers.yamlは既に10関節対応済み（Session Bで完了）。
 
 #### 6.4 Launch分離
-- `real_control.launch.py`（Jetson）: robstride_hardware + controllers + imu_driver + rl_policy + safety + joy + teleop
+- `real_control.launch.py`（Jetson）: aoba_hardware + controllers + imu_driver + rl_policy + safety + joy + teleop
 - `real_viz.launch.py`（MacBook）: robot_state_publisher + rviz2（DDSで/joint_statesを受信）
 
 #### 6.5 段階的ハードウェアテスト

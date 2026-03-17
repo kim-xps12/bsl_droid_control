@@ -57,7 +57,7 @@ Phase 3における実機制御の起動ファイルである。Jetson Orin Nano
 | ノード | パッケージ | 役割 |
 |---|---|---|
 | controller_manager | controller_manager | ros2_controlコントローラ管理 |
-| robstride_hardware | robstride_hardware | RS02モータHardware Interface（200Hz） |
+| aoba_hardware | aoba_hardware | RS02モータHardware Interface（200Hz） |
 | forward_position_controller | forward_command_controller | 位置指令のHWインターフェースへの転送 |
 | joint_state_broadcaster | joint_state_broadcaster | 実エンコーダ→/joint_states配信 |
 | imu_driver | （IMUドライバパッケージ） | IMUセンサデータ取得 |
@@ -69,7 +69,7 @@ Phase 3における実機制御の起動ファイルである。Jetson Orin Nano
 
 **動作概要:**
 
-robstride_hardwareがCAN bus経由でRS02モータと200Hz通信を行う。biped_rl_policy_nodeはcontrolモードで動作し、`/cmd_vel`からRLポリシー推論を行って`/forward_position_controller/commands`にFloat64MultiArrayとして出力する。forward_position_controllerがハードウェアPD制御（kp=35, kd=2）で200Hzの位置追従を行う。
+aoba_hardwareがCAN bus経由でRS02モータと200Hz通信を行う。biped_rl_policy_nodeはcontrolモードで動作し、`/cmd_vel`からRLポリシー推論を行って`/forward_position_controller/commands`にFloat64MultiArrayとして出力する。forward_position_controllerがハードウェアPD制御（kp=35, kd=2）で200Hzの位置追従を行う。
 
 biped_safety_nodeは`/joint_states`と`/imu/data`を200Hzで監視し、安全違反検出時に`/emergency_stop`を発行する。
 
@@ -82,7 +82,7 @@ biped_safety_nodeは`/joint_states`と`/imu/data`を200Hzで監視し、安全�
 
 **スケジューリング:**
 
-Jetson上ではリアルタイムスケジューリングを適用する。robstride_hardwareはSCHED_FIFO優先度50、biped_safety_nodeはSCHED_FIFO優先度45で動作する（次期ノード設計の性能要件表に準拠）。
+Jetson上ではリアルタイムスケジューリングを適用する。aoba_hardwareはSCHED_FIFO優先度50、biped_safety_nodeはSCHED_FIFO優先度45で動作する（次期ノード設計の性能要件表に準拠）。
 
 ### 2.3 real_viz.launch.py（Phase 3、MacBook）[未実装・計画]
 
@@ -237,7 +237,7 @@ biped_safety_nodeの安全監視パラメータを定義する。詳細はbiped_
 
 ### 3.5 config/controllers.yaml
 
-ros2_controlのコントローラ設定を定義する。controlモード（Phase 3、実機robstride_hardware経由）で使用する。simモード（Genesis）ではros2_controlを使用しないため、本ファイルは参照されない。
+ros2_controlのコントローラ設定を定義する。controlモード（Phase 3、実機aoba_hardware経由）で使用する。simモード（Genesis）ではros2_controlを使用しないため、本ファイルは参照されない。
 
 **設定内容:**
 
@@ -268,7 +268,7 @@ forward_position_controller:
     interface_name: position
 ```
 
-controller_managerの更新レートは200Hzとし、robstride_hardwareの制御ループ周期と一致させる。forward_position_controllerは10関節全てのposition interfaceを管理する。
+controller_managerの更新レートは200Hzとし、aoba_hardwareの制御ループ周期と一致させる。forward_position_controllerは10関節全てのposition interfaceを管理する。
 
 ---
 
@@ -281,7 +281,7 @@ controller_managerの更新レートは200Hzとし、robstride_hardwareの制御
 | 実装状態 | [実装済み] | [未実装・計画] |
 | 実行環境 | MacBook | Jetson |
 | 物理シミュレーション | Genesis物理エンジン | なし（実機） |
-| ros2_control | 不使用（genesis_sim_node内部PD制御） | robstride_hardware（実機） |
+| ros2_control | 不使用（genesis_sim_node内部PD制御） | aoba_hardware（実機） |
 | RLポリシー入力 | `/policy_obs`（genesis_sim_nodeから受信） | `/cmd_vel` + `/joint_states` + `/imu/data`（自前観測構築） |
 | RLポリシー出力 | `/policy_actions`（genesis_sim_nodeへ送信） | `/forward_position_controller/commands` |
 | センサ入力 | Genesis物理シミュレーション | 実センサ（エンコーダ、IMU） |
@@ -308,7 +308,7 @@ simモードではgenesis_sim_nodeが学習環境（`droid_env_unitree.py`）と
 | teleop_twist_joy | Joy→Twist変換、デッドマンスイッチ | ROS 2標準 |
 | biped_rl_policy | RLポリシー推論 | 実装済み |
 | biped_genesis_sim | Genesis物理シミュレーション | 実装済み（simモード） |
-| robstride_hardware | ros2_control HW Interface | 実装済み、Phase 3のみ |
+| aoba_hardware | ros2_control HW Interface | 実装済み、Phase 3のみ |
 | joy | ゲームパッドドライバ | ROS 2標準 |
 | robot_state_publisher | URDF→TF | ROS 2標準 |
 | rviz2 | 3D可視化 | ROS 2標準 |

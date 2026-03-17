@@ -200,13 +200,13 @@
                         <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe center; width: 218px; height: 1px; padding-top: 625px; margin-left: 136px;">
                             <div style="box-sizing: border-box; font-size: 0; text-align: center; color: #000000; ">
                                 <div style="display: inline-block; font-size: 14px; font-family: &quot;Helvetica&quot;; color: light-dark(#000000, #ffffff); line-height: 1.2; pointer-events: all; font-weight: bold; white-space: normal; word-wrap: normal; ">
-                                    robstride_hardware
+                                    aoba_hardware
                                 </div>
                             </div>
                         </div>
                     </foreignObject>
                     <text x="245" y="629" fill="light-dark(#000000, #ffffff)" font-family="&quot;Helvetica&quot;" font-size="14px" text-anchor="middle" font-weight="bold">
-                        robstride_hardware
+                        aoba_hardware
                     </text>
                 </switch>
             </g>

@@ -318,7 +318,7 @@ Jetson Orin Nano Super上での実行時、biped_safety_nodeはSCHED_FIFO優先�
 
 | ノード | SCHED_FIFO優先度 | 周波数 |
 |---|---|---|
-| robstride_hardware | 50 | 200Hz |
+| aoba_hardware | 50 | 200Hz |
 | biped_safety_node | 45 | 200Hz |
 | state_estimator | 40 | 200Hz |
 | rl_policy等 | SCHED_OTHER | 50-100Hz |

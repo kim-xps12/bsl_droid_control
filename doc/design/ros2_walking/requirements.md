@@ -46,12 +46,12 @@ BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲーム�
 - ros2_controlの`ForwardCommandController`を介して10個のRS02モータを200Hzで位置制御する
 - simモード（Genesisシミュレーション）ではros2_controlは使用せず、genesis_sim_nodeが内部PD制御（kp=35, kd=2）を直接実行する
 - RLポリシー出力（50Hz）をForwardCommandControllerが200Hzで補間しハードウェアPD制御を適用する
-  - ハードウェアPDゲイン: kp=35, kd=2（robstride_hardware設定に準拠）
+  - ハードウェアPDゲイン: kp=35, kd=2（aoba_hardware設定に準拠）
 - 10関節の構成:
   - 左脚: left_hip_yaw, left_hip_roll, left_hip_pitch, left_knee_pitch, left_ankle_pitch
   - 右脚: right_hip_yaw, right_hip_roll, right_hip_pitch, right_knee_pitch, right_ankle_pitch
-- CAN bus（1Mbps）経由でRS02モータと通信（robstride_hardwareが担当）
-- 参照: robstride_hardware技術仕様
+- CAN bus（1Mbps）経由でRS02モータと通信（aoba_hardwareが担当）
+- 参照: aoba_hardware技術仕様
 
 ### FR-04: RViz2リアルタイム可視化（Must）
 
@@ -101,15 +101,15 @@ BSL-Droid（逆関節10自由度二脚ロボット）をLogitech F710rゲーム�
   - ゲームパッド→joy_node: ~5ms（USB polling）
   - joy_node→teleop_twist_joy→cmd_vel: ~2ms（ROS 2 intra-process）
   - cmd_vel→RLポリシー推論→position commands: ~10ms
-  - ForwardCommandController→robstride_hardware→CAN: ~5ms
+  - ForwardCommandController→aoba_hardware→CAN: ~5ms
   - 合計目安: ~22ms（マージン込み40ms以内）
-- 参照: robstride_hardware レイテンシ分析
+- 参照: aoba_hardware レイテンシ分析
 
 ### NFR-03: 安全監視レイテンシ
 
 - 安全監視ノードは200Hzで動作し、1回の処理を1ms以内に完了する
 - 安全違反の検出から緊急停止信号の発行まで5ms以内とする
-- SCHED_FIFO優先度45での実行を想定（robstride_hardwareの50より低く、一般ノードより高い）
+- SCHED_FIFO優先度45での実行を想定（aoba_hardwareの50より低く、一般ノードより高い）
 - 参照: 次期ノード設計 性能要件
 
 ### NFR-04: 動作プラットフォーム

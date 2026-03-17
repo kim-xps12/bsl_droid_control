@@ -69,7 +69,7 @@ RViz可視化と同時に実機への指令を行うモードである。
 
 - vizモードと同一の軌道計算処理を実行する。
 - `/joint_states` に加えて、`/forward_position_controller/commands`（Float64MultiArray）をpublishする。
-- ros2_controlの`ForwardCommandController`経由でrobstride_hardwareのPD制御により関節を駆動する。
+- ros2_controlの`ForwardCommandController`経由でaoba_hardwareのPD制御により関節を駆動する。
 
 ### 3.3 緊急停止
 

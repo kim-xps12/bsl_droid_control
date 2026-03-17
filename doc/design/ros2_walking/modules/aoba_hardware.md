@@ -1,13 +1,13 @@
-# robstride_hardware パッケージ モジュール設計
+# aoba_hardware パッケージ モジュール設計
 
 ## 1. 概要
 
-`robstride_hardware`は、BSL-Droid 二脚ロボットの全 10 関節（左右各 5 軸）を RobStride RS02 モータで駆動するための `ros2_control` Hardware Interface パッケージである。
+`aoba_hardware`は、BSL-Droid 二脚ロボットの全 10 関節（左右各 5 軸）を RobStride RS02 モータで駆動するための `ros2_control` Hardware Interface パッケージである。
 
 | コンポーネント | 実装状態 |
 |---|---|
-| `RobStrideDriver` — SocketCAN + MIT プロトコル | [実装済み] |
-| `RobStrideHardware` — ros2_control SystemInterface | [実装済み] |
+| `AobaDriver` — SocketCAN + MIT プロトコル | [実装済み] |
+| `AobaHardware` — ros2_control SystemInterface | [実装済み] |
 | `can_latency_test` — 単一モータ CAN レイテンシ計測 | [実装済み] |
 | `multi_bus_latency_test` — 多モータ・多バス CAN レイテンシ計測 | [実装済み] |
 
@@ -16,16 +16,16 @@
 ## 2. パッケージ構成
 
 ```
-ros2_ws/src/robstride_hardware/
+ros2_ws/src/aoba_hardware/
   package.xml
   CMakeLists.txt
-  robstride_hardware_plugin.xml       # pluginlib 登録
-  include/robstride_hardware/
-    robstride_driver.hpp              # CAN ドライバ API
-    robstride_hardware.hpp            # SystemInterface ヘッダ
+  aoba_hardware_plugin.xml       # pluginlib 登録
+  include/aoba_hardware/
+    aoba_driver.hpp              # CAN ドライバ API
+    aoba_hardware.hpp            # SystemInterface ヘッダ
   src/
-    robstride_driver.cpp              # SocketCAN + MIT プロトコル実装
-    robstride_hardware.cpp            # ros2_control Hardware Interface 実装
+    aoba_driver.cpp              # SocketCAN + MIT プロトコル実装
+    aoba_hardware.cpp            # ros2_control Hardware Interface 実装
   test/
     can_latency_test.cpp              # 単一モータ CAN レイテンシ計測
     multi_bus_latency_test.cpp        # 多モータ・多バス CAN レイテンシ計測
@@ -38,14 +38,14 @@ ros2_ws/src/robstride_hardware/
     controllers.yaml                  # forward_position_controller（10 関節）
     single_motor_controllers.yaml     # 単一モータ用コントローラ設定
   urdf/
-    robstride_system.urdf.xacro       # 10 関節定義（xacro マクロ）
+    aoba_system.urdf.xacro       # 10 関節定義（xacro マクロ）
     single_motor_test.urdf.xacro      # 単一モータテスト用 URDF
   doc/
     README.md                         # クイックリファレンス
 ```
 
 - ビルドシステム: ament_cmake
-- pluginlib 登録: `robstride_hardware_plugin.xml` で `hardware_interface::SystemInterface` として登録
+- pluginlib 登録: `aoba_hardware_plugin.xml` で `hardware_interface::SystemInterface` として登録
 
 ---
 
@@ -55,7 +55,7 @@ ros2_ws/src/robstride_hardware/
 
 すべての CAN I/O は Controller Manager の RT スレッド内の `write()` で実行される。`read()` は CAN I/O を行わない（前回 `write()` で更新済みの状態を使用する）。
 
-図: [ros2_walking_module_robstride_hardware.drawio.svg](../fig/ros2_walking_module_robstride_hardware.drawio.svg)
+図: [ros2_walking_module_aoba_hardware.drawio.svg](../fig/ros2_walking_module_aoba_hardware.drawio.svg)
 
 ```
 Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
@@ -116,15 +116,15 @@ Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
 
 ## 5. ライフサイクル管理
 
-`RobStrideHardware` は `hardware_interface::SystemInterface` の lifecycle に準拠する。
+`AobaHardware` は `hardware_interface::SystemInterface` の lifecycle に準拠する。
 
 | ライフサイクル | 処理内容 |
 |---|---|
-| `on_init()` | URDF `<ros2_control>` セクションから関節パラメータ（`can_interface`, `motor_id`, `kp`, `kd`）を読み込む。バスごとに `RobStrideDriver` インスタンスを生成 |
-| `on_configure()` | 各 `RobStrideDriver` を CAN バスに接続（`connect()`） |
+| `on_init()` | URDF `<ros2_control>` セクションから関節パラメータ（`can_interface`, `motor_id`, `kp`, `kd`）を読み込む。バスごとに `AobaDriver` インスタンスを生成 |
+| `on_configure()` | 各 `AobaDriver` を CAN バスに接続（`connect()`） |
 | `on_activate()` | (1) `disable_auto_report()` — 自発的フィードバックフレームを無効化 (2) `enable()` — モータ有効化 (3) `set_mode(MIT)` — MIT 制御モード設定 (4) `drain_rx_buffer()` — 起動直後の残留フレームを破棄 (5) zero-torque probe コマンドで通信確認 |
 | `on_deactivate()` | 全モータを `disable()` |
-| `on_cleanup()` | 全 `RobStrideDriver` を `disconnect()` |
+| `on_cleanup()` | 全 `AobaDriver` を `disconnect()` |
 
 ---
 
@@ -176,10 +176,10 @@ Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
 
 ```bash
 # 単一モータテスト起動
-ros2 launch robstride_hardware single_motor_test.launch.py
+ros2 launch aoba_hardware single_motor_test.launch.py
 
 # 位置コマンド送信（別ターミナル）
-ros2 run robstride_hardware single_motor_test_commander.py
+ros2 run aoba_hardware single_motor_test_commander.py
 ```
 
 ### can_latency_test
@@ -188,7 +188,7 @@ ros2 run robstride_hardware single_motor_test_commander.py
 
 ```bash
 # Usage: can_latency_test [interface] [motor_id] [iterations]
-ros2 run robstride_hardware can_latency_test can1 11 1000
+ros2 run aoba_hardware can_latency_test can1 11 1000
 ```
 
 ### multi_bus_latency_test
@@ -198,10 +198,10 @@ ros2 run robstride_hardware can_latency_test can1 11 1000
 ```bash
 # Usage: multi_bus_latency_test <bus:id,...> [<bus:id,...> ...] [--iterations=N]
 # 例: 本番と同等の10モータ構成
-ros2 run robstride_hardware multi_bus_latency_test can1:11,12,13,14,15 can2:21,22,23,24,25
+ros2 run aoba_hardware multi_bus_latency_test can1:11,12,13,14,15 can2:21,22,23,24,25
 
 # 例: 部分構成（2モータ）
-ros2 run robstride_hardware multi_bus_latency_test can1:11,12
+ros2 run aoba_hardware multi_bus_latency_test can1:11,12
 ```
 
 出力統計:
