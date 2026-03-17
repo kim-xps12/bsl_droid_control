@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * @file robstride_driver.cpp
+ * @file aoba_driver.cpp
  * @brief RobStrideモータ CAN通信ドライバの実装
  */
 
-#include "robstride_hardware/robstride_driver.hpp"
+#include "aoba_hardware/aoba_driver.hpp"
 
 #include <linux/can/raw.h>
 #include <net/if.h>
@@ -18,7 +18,7 @@
 #include <cmath>
 #include <cstring>
 
-namespace robstride_driver {
+namespace aoba_driver {
 
 // ============================================================================
 // ユーティリティ関数（バイトパッキング・アンパッキング）
@@ -51,14 +51,14 @@ inline uint16_t unpack_u16_be(const uint8_t* buf) {
 }  // anonymous namespace
 
 // ============================================================================
-// RobStrideDriverの実装
+// AobaDriverの実装
 // ============================================================================
 
-RobStrideDriver::~RobStrideDriver() {
+AobaDriver::~AobaDriver() {
   disconnect();
 }
 
-bool RobStrideDriver::connect(const std::string& interface) {
+bool AobaDriver::connect(const std::string& interface) {
   // 既存の接続があれば切断する
   if (can_socket_ >= 0) {
     disconnect();
@@ -97,7 +97,7 @@ bool RobStrideDriver::connect(const std::string& interface) {
   return true;
 }
 
-void RobStrideDriver::disconnect() {
+void AobaDriver::disconnect() {
   if (can_socket_ >= 0) {
     ::close(can_socket_);
     can_socket_ = -1;
@@ -105,7 +105,7 @@ void RobStrideDriver::disconnect() {
 }
 
 /// CANフレームを送信する
-bool RobStrideDriver::send_frame(uint32_t can_id, const uint8_t* data, uint8_t dlc) {
+bool AobaDriver::send_frame(uint32_t can_id, const uint8_t* data, uint8_t dlc) {
   if (can_socket_ < 0) {
     return false;
   }
@@ -124,7 +124,7 @@ bool RobStrideDriver::send_frame(uint32_t can_id, const uint8_t* data, uint8_t d
 }
 
 /// poll()ベースのタイムアウト付きでCANフレームを1件受信する
-bool RobStrideDriver::read_frame(struct can_frame* frame, int timeout_ms) {
+bool AobaDriver::read_frame(struct can_frame* frame, int timeout_ms) {
   if (can_socket_ < 0 || !frame) {
     return false;
   }
@@ -143,7 +143,7 @@ bool RobStrideDriver::read_frame(struct can_frame* frame, int timeout_ms) {
 }
 
 /// モータを有効化する（拡張IDにENABLEコマンドを格納して送信）
-bool RobStrideDriver::enable(int motor_id) {
+bool AobaDriver::enable(int motor_id) {
   // 拡張ID構成: [28:24]=通信タイプ, [15:8]=ホストID, [7:0]=モータID
   uint32_t ext_id = (protocol::comm_type::ENABLE << 24) | (static_cast<uint32_t>(host_id_) << 8) |
                     static_cast<uint32_t>(motor_id);
@@ -151,26 +151,26 @@ bool RobStrideDriver::enable(int motor_id) {
 }
 
 /// モータを無効化する（拡張IDにDISABLEコマンドを格納して送信）
-bool RobStrideDriver::disable(int motor_id) {
+bool AobaDriver::disable(int motor_id) {
   uint32_t ext_id = (protocol::comm_type::DISABLE << 24) | (static_cast<uint32_t>(host_id_) << 8) |
                     static_cast<uint32_t>(motor_id);
   return send_frame(ext_id, nullptr, 0);
 }
 
-bool RobStrideDriver::set_mode(int motor_id, ControlMode mode) {
+bool AobaDriver::set_mode(int motor_id, ControlMode mode) {
   return write_parameter(motor_id, protocol::param_id::MODE, static_cast<int8_t>(mode));
 }
 
-bool RobStrideDriver::set_velocity_limit(int motor_id, float limit) {
+bool AobaDriver::set_velocity_limit(int motor_id, float limit) {
   return write_parameter(motor_id, protocol::param_id::VELOCITY_LIMIT, limit);
 }
 
-bool RobStrideDriver::set_torque_limit(int motor_id, float limit) {
+bool AobaDriver::set_torque_limit(int motor_id, float limit) {
   return write_parameter(motor_id, protocol::param_id::TORQUE_LIMIT, limit);
 }
 
 /// パラメータ書き込み（float値）: データ部にパラメータIDと値を格納して送信
-bool RobStrideDriver::write_parameter(int motor_id, uint16_t param_id, float value) {
+bool AobaDriver::write_parameter(int motor_id, uint16_t param_id, float value) {
   uint32_t ext_id = (protocol::comm_type::WRITE_PARAMETER << 24) |
                     (static_cast<uint32_t>(host_id_) << 8) | static_cast<uint32_t>(motor_id);
 
@@ -182,7 +182,7 @@ bool RobStrideDriver::write_parameter(int motor_id, uint16_t param_id, float val
 }
 
 /// パラメータ書き込み（int8_t値）: 制御モード設定等に使用
-bool RobStrideDriver::write_parameter(int motor_id, uint16_t param_id, int8_t value) {
+bool AobaDriver::write_parameter(int motor_id, uint16_t param_id, int8_t value) {
   uint32_t ext_id = (protocol::comm_type::WRITE_PARAMETER << 24) |
                     (static_cast<uint32_t>(host_id_) << 8) | static_cast<uint32_t>(motor_id);
 
@@ -194,7 +194,7 @@ bool RobStrideDriver::write_parameter(int motor_id, uint16_t param_id, int8_t va
 }
 
 /// MIT制御コマンドを送信する
-bool RobStrideDriver::send_command(int motor_id, const MitCommand& cmd) {
+bool AobaDriver::send_command(int motor_id, const MitCommand& cmd) {
   // 各値をスケールファクタの有効範囲にクランプする
   double pos_clamped = std::clamp(cmd.position, -scale::POSITION, scale::POSITION);
   double vel_clamped = std::clamp(cmd.velocity, -scale::VELOCITY, scale::VELOCITY);
@@ -226,7 +226,7 @@ bool RobStrideDriver::send_command(int motor_id, const MitCommand& cmd) {
 }
 
 /// モータ状態を読み取る（バッファ内の全フレームを読み、最新のステータスを返す）
-MotorState RobStrideDriver::read_state(int motor_id) {
+MotorState AobaDriver::read_state(int motor_id) {
   MotorState state;
   struct can_frame frame;
 
@@ -274,7 +274,7 @@ MotorState RobStrideDriver::read_state(int motor_id) {
 
 /// OPERATION_STATUSレスポンスを1件読み取る
 /// ステータス以外のフレームはスキップし、残りのバッファをドレインする
-std::pair<int, MotorState> RobStrideDriver::read_one_response(int timeout_ms) {
+std::pair<int, MotorState> AobaDriver::read_one_response(int timeout_ms) {
   struct can_frame frame;
 
   while (read_frame(&frame, timeout_ms)) {
@@ -311,7 +311,7 @@ std::pair<int, MotorState> RobStrideDriver::read_one_response(int timeout_ms) {
 }
 
 /// モータの自動レポート（定期的な非要求フィードバック）を無効化する
-bool RobStrideDriver::disable_auto_report(int motor_id) {
+bool AobaDriver::disable_auto_report(int motor_id) {
   uint32_t ext_id = (protocol::comm_type::DISABLE_AUTO_REPORT << 24) |
                     (static_cast<uint32_t>(host_id_) << 8) | static_cast<uint32_t>(motor_id);
 
@@ -321,11 +321,11 @@ bool RobStrideDriver::disable_auto_report(int motor_id) {
 }
 
 /// 受信バッファ内の全フレームを読み捨てる（古いデータのクリア用）
-void RobStrideDriver::drain_rx_buffer() {
+void AobaDriver::drain_rx_buffer() {
   struct can_frame frame;
   while (read_frame(&frame, /*timeout_ms=*/0)) {
     // 破棄
   }
 }
 
-}  // namespace robstride_driver
+}  // namespace aoba_driver

@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: MIT
 
 /**
- * @file robstride_hardware.cpp
+ * @file aoba_hardware.cpp
  * @brief RobStrideモータ用 ros2_control ハードウェアインターフェースの実装
  *
  * 同期送受信パターン: 全CAN I/Oはwrite()内で実行し、read()は何もしない。
  * 複数CANバス（例: can1, can2）にまたがる複数モータをサポートする。
  */
 
-#include "robstride_hardware/robstride_hardware.hpp"
+#include "aoba_hardware/aoba_hardware.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -18,14 +18,14 @@
 
 #include <hardware_interface/types/hardware_interface_type_values.hpp>
 
-namespace robstride_hardware {
+namespace aoba_hardware {
 
 // ============================================================================
 // ライフサイクルコールバック
 // ============================================================================
 
 /// 初期化: URDFからジョイント設定を読み込み、内部バッファを確保する
-CallbackReturn RobStrideHardware::on_init(
+CallbackReturn AobaHardware::on_init(
     const hardware_interface::HardwareComponentInterfaceParams& params) {
   if (SystemInterface::on_init(params) != CallbackReturn::SUCCESS) {
     return CallbackReturn::ERROR;
@@ -55,7 +55,7 @@ CallbackReturn RobStrideHardware::on_init(
     // ジョイントをCANバス毎にグループ化する
     buses_[jcfg.can_interface].joint_indices.push_back(i);
 
-    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+    RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
                 "Joint[%zu]: name=%s, bus=%s, motor_id=%d, kp=%.1f, kd=%.2f", i, jcfg.name.c_str(),
                 jcfg.can_interface.c_str(), jcfg.motor_id, jcfg.kp, jcfg.kd);
   }
@@ -65,34 +65,33 @@ CallbackReturn RobStrideHardware::on_init(
     bus_timing_[bus_name] = BusTimingStats{};
   }
 
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Initialized: %zu joints on %zu CAN bus(es)",
-              n, buses_.size());
+  RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Initialized: %zu joints on %zu CAN bus(es)", n,
+              buses_.size());
 
   return CallbackReturn::SUCCESS;
 }
 
 /// 設定: 全CANバスへの接続を確立する
-CallbackReturn RobStrideHardware::on_configure(const rclcpp_lifecycle::State& /*previous_state*/) {
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Configuring...");
+CallbackReturn AobaHardware::on_configure(const rclcpp_lifecycle::State& /*previous_state*/) {
+  RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Configuring...");
 
   // 各CANバスに接続する
   for (auto& [bus_name, bus] : buses_) {
     if (!bus.driver.connect(bus_name)) {
-      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
-                   "Failed to connect to CAN interface: %s", bus_name.c_str());
+      RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"), "Failed to connect to CAN interface: %s",
+                   bus_name.c_str());
       return CallbackReturn::ERROR;
     }
-    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-                "Connected to CAN interface: %s (%zu motors)", bus_name.c_str(),
-                bus.joint_indices.size());
+    RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Connected to CAN interface: %s (%zu motors)",
+                bus_name.c_str(), bus.joint_indices.size());
   }
 
   return CallbackReturn::SUCCESS;
 }
 
 /// アクティベート: 各モータの有効化、MITモード設定、通信確認を行う
-CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State& /*previous_state*/) {
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Activating...");
+CallbackReturn AobaHardware::on_activate(const rclcpp_lifecycle::State& /*previous_state*/) {
+  RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Activating...");
 
   // 各モータを1台ずつ初期化する
   // CAN応答の衝突を避けるため、各操作の間にドレインを挟む
@@ -107,7 +106,7 @@ CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State& /*p
 
     // モータを有効化する
     if (!driver.enable(jcfg.motor_id)) {
-      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"), "Failed to enable motor %d on %s",
+      RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"), "Failed to enable motor %d on %s",
                    jcfg.motor_id, jcfg.can_interface.c_str());
       return CallbackReturn::ERROR;
     }
@@ -115,20 +114,19 @@ CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State& /*p
     driver.drain_rx_buffer();
 
     // MIT制御モードを設定する
-    if (!driver.set_mode(jcfg.motor_id, robstride_driver::ControlMode::MIT)) {
-      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
-                   "Failed to set MIT mode for motor %d on %s", jcfg.motor_id,
-                   jcfg.can_interface.c_str());
+    if (!driver.set_mode(jcfg.motor_id, aoba_driver::ControlMode::MIT)) {
+      RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"), "Failed to set MIT mode for motor %d on %s",
+                   jcfg.motor_id, jcfg.can_interface.c_str());
       return CallbackReturn::ERROR;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     driver.drain_rx_buffer();
 
-    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Motor %d on %s: enabled, MIT mode set",
+    RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Motor %d on %s: enabled, MIT mode set",
                 jcfg.motor_id, jcfg.can_interface.c_str());
 
     // プローブ: ゼロトルクのMITコマンドを送信してモータの応答を確認する
-    robstride_driver::MitCommand probe;
+    aoba_driver::MitCommand probe;
     probe.position = 0.0;
     probe.velocity = 0.0;
     probe.kp = 0.0;
@@ -139,11 +137,10 @@ CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State& /*p
     auto [recv_id, state] = driver.read_one_response(50);
     if (recv_id == jcfg.motor_id && state.valid) {
       hw_positions_[i] = state.position;
-      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-                  "Motor %d on %s: probe OK (pos=%.3f rad)", jcfg.motor_id,
-                  jcfg.can_interface.c_str(), state.position);
+      RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Motor %d on %s: probe OK (pos=%.3f rad)",
+                  jcfg.motor_id, jcfg.can_interface.c_str(), state.position);
     } else {
-      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
+      RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"),
                    "Motor %d on %s: no response to probe command. "
                    "Check: motor power, CAN wiring, CAN bitrate (1Mbps), motor ID",
                    jcfg.motor_id, jcfg.can_interface.c_str());
@@ -170,7 +167,7 @@ CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State& /*p
   recv_us_sum_ = 0.0;
   total_missed_sum_ = 0;
 
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+  RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
               "Activated: %zu motors on %zu bus(es), synchronous send/receive mode", joints_.size(),
               buses_.size());
 
@@ -178,15 +175,15 @@ CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State& /*p
 }
 
 /// ディアクティベート: 安全なトルクゼロ状態にしてからモータを無効化する
-CallbackReturn RobStrideHardware::on_deactivate(const rclcpp_lifecycle::State& /*previous_state*/) {
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Deactivating...");
+CallbackReturn AobaHardware::on_deactivate(const rclcpp_lifecycle::State& /*previous_state*/) {
+  RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Deactivating...");
 
   // ゼロトルクコマンド（安全状態）を送信してから各モータを無効化する
   for (size_t i = 0; i < joints_.size(); ++i) {
     const auto& jcfg = joints_[i];
     auto& driver = buses_.at(jcfg.can_interface).driver;
 
-    robstride_driver::MitCommand safe_cmd;
+    aoba_driver::MitCommand safe_cmd;
     safe_cmd.position = hw_positions_[i];
     safe_cmd.velocity = 0.0;
     safe_cmd.kp = 0.0;
@@ -200,16 +197,16 @@ CallbackReturn RobStrideHardware::on_deactivate(const rclcpp_lifecycle::State& /
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     driver.drain_rx_buffer();
 
-    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Motor %d on %s: deactivated",
-                jcfg.motor_id, jcfg.can_interface.c_str());
+    RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Motor %d on %s: deactivated", jcfg.motor_id,
+                jcfg.can_interface.c_str());
   }
 
   return CallbackReturn::SUCCESS;
 }
 
 /// クリーンアップ: 全CANバスの接続を切断する
-CallbackReturn RobStrideHardware::on_cleanup(const rclcpp_lifecycle::State& /*previous_state*/) {
-  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Cleaning up...");
+CallbackReturn AobaHardware::on_cleanup(const rclcpp_lifecycle::State& /*previous_state*/) {
+  RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Cleaning up...");
   for (auto& [_, bus] : buses_) {
     bus.driver.disconnect();
   }
@@ -221,7 +218,7 @@ CallbackReturn RobStrideHardware::on_cleanup(const rclcpp_lifecycle::State& /*pr
 // ============================================================================
 
 /// 状態インターフェースをエクスポートする（位置・速度・トルク）
-std::vector<hardware_interface::StateInterface> RobStrideHardware::export_state_interfaces() {
+std::vector<hardware_interface::StateInterface> AobaHardware::export_state_interfaces() {
   std::vector<hardware_interface::StateInterface> state_interfaces;
   for (size_t i = 0; i < info_.joints.size(); ++i) {
     // 各ジョイントについて位置・速度・トルクの3つのインターフェースを登録する
@@ -236,7 +233,7 @@ std::vector<hardware_interface::StateInterface> RobStrideHardware::export_state_
 }
 
 /// コマンドインターフェースをエクスポートする（位置指令）
-std::vector<hardware_interface::CommandInterface> RobStrideHardware::export_command_interfaces() {
+std::vector<hardware_interface::CommandInterface> AobaHardware::export_command_interfaces() {
   std::vector<hardware_interface::CommandInterface> command_interfaces;
   for (size_t i = 0; i < info_.joints.size(); ++i) {
     command_interfaces.emplace_back(hardware_interface::CommandInterface(
@@ -250,16 +247,16 @@ std::vector<hardware_interface::CommandInterface> RobStrideHardware::export_comm
 // ============================================================================
 
 /// read(): write()で既に更新済みの内部バッファを返すだけ（何もしない）
-hardware_interface::return_type RobStrideHardware::read(const rclcpp::Time& /*time*/,
-                                                        const rclcpp::Duration& /*period*/) {
+hardware_interface::return_type AobaHardware::read(const rclcpp::Time& /*time*/,
+                                                   const rclcpp::Duration& /*period*/) {
   // hw_positions_ / hw_velocities_ / hw_efforts_ は直前のwrite()で
   // 既に更新済みのため、ここでは何もしない
   return hardware_interface::return_type::OK;
 }
 
 /// write(): 全モータへのコマンド送信とレスポンス受信を同期的に行う
-hardware_interface::return_type RobStrideHardware::write(const rclcpp::Time& /*time*/,
-                                                         const rclcpp::Duration& /*period*/) {
+hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/,
+                                                    const rclcpp::Duration& /*period*/) {
   using clock = std::chrono::steady_clock;
   const auto t_start = clock::now();
 
@@ -269,7 +266,7 @@ hardware_interface::return_type RobStrideHardware::write(const rclcpp::Time& /*t
 
     // バス上の全モータにMIT制御コマンドを送信する
     for (size_t ji : bus.joint_indices) {
-      robstride_driver::MitCommand cmd;
+      aoba_driver::MitCommand cmd;
       cmd.position = hw_commands_position_[ji];
       cmd.velocity = 0.0;
       cmd.kp = joints_[ji].kp;
@@ -334,7 +331,7 @@ hardware_interface::return_type RobStrideHardware::write(const rclcpp::Time& /*t
       missed_response_count_[i]++;
       total_missed++;
       if (missed_response_count_[i] == kMissedResponseWarnThreshold) {
-        RCLCPP_WARN(rclcpp::get_logger("RobStrideHardware"),
+        RCLCPP_WARN(rclcpp::get_logger("AobaHardware"),
                     "Motor %d on %s: %d consecutive missed responses", joints_[i].motor_id,
                     joints_[i].can_interface.c_str(), missed_response_count_[i]);
       }
@@ -369,7 +366,7 @@ hardware_interface::return_type RobStrideHardware::write(const rclcpp::Time& /*t
     const double stddev_us = std::sqrt(std::max(0.0, variance));
     const double send_avg = send_us_sum_ / n;
     const double recv_avg = recv_us_sum_ / n;
-    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+    RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
                 "[Timing] write() min=%.0fus avg=%.0fus max=%.0fus stddev=%.1fus | "
                 "send min=%.0f avg=%.0f max=%.0fus | recv min=%.0f avg=%.0f max=%.0fus | "
                 "missed=%d/%d",
@@ -378,14 +375,14 @@ hardware_interface::return_type RobStrideHardware::write(const rclcpp::Time& /*t
                 timing_log_counter_ * static_cast<int>(joints_.size()));
 
     for (const auto& [bus_name, bt] : bus_timing_) {
-      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+      RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
                   "[Timing]   %s: send=%.0fus, recv=%.0fus, ok=%d/%d", bus_name.c_str(), bt.send_us,
                   bt.receive_us, bt.received, bt.expected);
     }
 
     // モータ状態スナップショット（ジョイント毎）
     for (size_t i = 0; i < joints_.size(); ++i) {
-      RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+      RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
                   "[State] %s (id=%d): cmd=%.4f rad | pos=%.4f rad, vel=%.4f rad/s, effort=%.4f Nm",
                   joints_[i].name.c_str(), joints_[i].motor_id, hw_commands_position_[i],
                   hw_positions_[i], hw_velocities_[i], hw_efforts_[i]);
@@ -409,7 +406,7 @@ hardware_interface::return_type RobStrideHardware::write(const rclcpp::Time& /*t
   return hardware_interface::return_type::OK;
 }
 
-}  // namespace robstride_hardware
+}  // namespace aoba_hardware
 
 #include "pluginlib/class_list_macros.hpp"
-PLUGINLIB_EXPORT_CLASS(robstride_hardware::RobStrideHardware, hardware_interface::SystemInterface)
+PLUGINLIB_EXPORT_CLASS(aoba_hardware::AobaHardware, hardware_interface::SystemInterface)

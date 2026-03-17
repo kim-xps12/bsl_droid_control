@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(robstride_hardware)
+project(aoba_hardware)
 
 # CMP0167: FindBoost removed in CMake 3.30+.
 # realtime_tools (dependency of hardware_interface) still triggers FindBoost.
@@ -21,8 +21,8 @@ find_package(rclcpp_lifecycle REQUIRED)
 
 # 共有ライブラリを作成（driver + hardware interface）
 add_library(${PROJECT_NAME} SHARED
-  src/robstride_driver.cpp
-  src/robstride_hardware.cpp
+  src/aoba_driver.cpp
+  src/aoba_hardware.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -36,7 +36,7 @@ ament_target_dependencies(${PROJECT_NAME}
 
 # Plugin export（ros2_control用）
 pluginlib_export_plugin_description_file(
-  hardware_interface robstride_hardware_plugin.xml)
+  hardware_interface aoba_hardware_plugin.xml)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 install(DIRECTORY include/ DESTINATION include)
@@ -53,7 +53,7 @@ install(PROGRAMS
 # Standalone CAN latency test (no ROS 2 dependency)
 add_executable(can_latency_test
   test/can_latency_test.cpp
-  src/robstride_driver.cpp
+  src/aoba_driver.cpp
 )
 target_include_directories(can_latency_test PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -64,7 +64,7 @@ install(TARGETS can_latency_test DESTINATION lib/${PROJECT_NAME})
 # Multi-bus CAN latency test (no ROS 2 dependency)
 add_executable(multi_bus_latency_test
   test/multi_bus_latency_test.cpp
-  src/robstride_driver.cpp
+  src/aoba_driver.cpp
 )
 target_include_directories(multi_bus_latency_test PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

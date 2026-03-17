@@ -27,7 +27,7 @@
 #include <sstream>
 #include <thread>
 #include <vector>
-#include "robstride_hardware/robstride_driver.hpp"
+#include "aoba_hardware/aoba_driver.hpp"
 
 namespace {
 volatile sig_atomic_t g_running = 1;
@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
   std::signal(SIGTERM, signal_handler);
 
   // 各バスのドライバに接続する
-  std::vector<robstride_driver::RobStrideDriver> drivers(bus_configs.size());
+  std::vector<aoba_driver::AobaDriver> drivers(bus_configs.size());
   for (size_t b = 0; b < bus_configs.size(); ++b) {
     if (!drivers[b].connect(bus_configs[b].interface)) {
       std::cerr << "Error: Failed to connect to " << bus_configs[b].interface << std::endl;
@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
 
   for (size_t b = 0; b < bus_configs.size(); ++b) {
     for (int id : bus_configs[b].motor_ids) {
-      drivers[b].set_mode(id, robstride_driver::ControlMode::MIT);
+      drivers[b].set_mode(id, aoba_driver::ControlMode::MIT);
     }
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
   // プローブ（ゼロトルク）で通信を確認する
   std::cout << "Probing motors..." << std::endl;
   {
-    robstride_driver::MitCommand probe;
+    aoba_driver::MitCommand probe;
     probe.position = 0.0;
     probe.velocity = 0.0;
     probe.kp = 0.0;
@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
   using clock = std::chrono::steady_clock;
 
   // 安全コマンド: kp=0, kd=0.5, torque_ff=0（トルク出力なし）
-  robstride_driver::MitCommand cmd;
+  aoba_driver::MitCommand cmd;
   cmd.position = 0.0;
   cmd.velocity = 0.0;
   cmd.kp = 0.0;

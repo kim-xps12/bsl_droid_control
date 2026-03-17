@@ -13,4 +13,4 @@ Checks: >
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic
-HeaderFilterRegex: 'robstride_hardware/.*\.hpp$'
+HeaderFilterRegex: 'aoba_hardware/.*\.hpp$'

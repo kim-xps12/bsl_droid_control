@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="robstride_single_motor_test">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="aoba_single_motor_test">
 
   <!-- ================================================================== -->
   <!-- Single motor test configuration                                    -->
@@ -32,9 +32,9 @@
   </joint>
 
   <!-- ros2_control: single motor on can0 -->
-  <ros2_control name="robstride_system" type="system">
+  <ros2_control name="aoba_system" type="system">
     <hardware>
-      <plugin>robstride_hardware/RobStrideHardware</plugin>
+      <plugin>aoba_hardware/AobaHardware</plugin>
     </hardware>
 
     <joint name="test_joint">

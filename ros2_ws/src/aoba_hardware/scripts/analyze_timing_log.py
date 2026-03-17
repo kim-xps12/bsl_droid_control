@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-analyze_timing_log.py — robstride_hardware 通信ログ統計分析
+analyze_timing_log.py — aoba_hardware 通信ログ統計分析
 
 ros2_control_node のタイミングログを解析し、CAN 通信タイミングとモータ状態の統計を出力する。
 launch ファイルから自動起動される（stdin 経由）。手動実行も可能:
@@ -173,7 +173,7 @@ def _print_report(
 ) -> None:
     print()
     print('=' * 58)
-    print('  robstride_hardware 通信ログ統計レポート')
+    print('  aoba_hardware 通信ログ統計レポート')
     print('=' * 58)
 
     if not windows:

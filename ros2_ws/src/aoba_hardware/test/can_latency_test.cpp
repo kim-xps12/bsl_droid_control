@@ -8,7 +8,7 @@
  * 単一モータ(ID=127)に対してコマンド送信→レスポンス受信の往復時間を計測
  *
  * Build:
- *   g++ -std=c++17 -O2 -I../include can_latency_test.cpp ../src/robstride_driver.cpp -o
+ *   g++ -std=c++17 -O2 -I../include can_latency_test.cpp ../src/aoba_driver.cpp -o
  * can_latency_test
  *
  * Usage:
@@ -23,7 +23,7 @@
 #include <numeric>
 #include <thread>
 #include <vector>
-#include "robstride_hardware/robstride_driver.hpp"
+#include "aoba_hardware/aoba_driver.hpp"
 
 namespace {
 volatile sig_atomic_t g_running = 1;
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
   std::signal(SIGTERM, signal_handler);
 
   // ドライバ接続
-  robstride_driver::RobStrideDriver driver;
+  aoba_driver::AobaDriver driver;
   if (!driver.connect(can_interface)) {
     std::cerr << "Error: Failed to connect to " << can_interface << std::endl;
     return 1;
@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
   }
 
   // MITモード設定
-  if (!driver.set_mode(motor_id, robstride_driver::ControlMode::MIT)) {
+  if (!driver.set_mode(motor_id, aoba_driver::ControlMode::MIT)) {
     std::cerr << "Error: Failed to send set_mode command" << std::endl;
     return 1;
   }
@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
   // モータ通信確認: プローブコマンド送信
   std::cout << "Verifying motor communication..." << std::endl;
   {
-    robstride_driver::MitCommand probe;
+    aoba_driver::MitCommand probe;
     probe.position = 0.0;
     probe.velocity = 0.0;
     probe.kp = 0.0;
@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
   int success_count = 0;
   int timeout_count = 0;
 
-  robstride_driver::MitCommand cmd;
+  aoba_driver::MitCommand cmd;
   cmd.position = 0.0;  // 現在位置維持
   cmd.velocity = 0.0;
   cmd.kp = 0.0;  // kp=0でトルク出さない（安全）

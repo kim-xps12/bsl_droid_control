@@ -1,6 +1,6 @@
-# robstride_hardware クイックリファレンス
+# aoba_hardware クイックリファレンス
 
-詳細設計は `doc/design/ros2_walking/modules/robstride_hardware.md` を参照。
+詳細設計は `doc/design/ros2_walking/modules/aoba_hardware.md` を参照。
 
 ## CAN バス・モータ ID マッピング
 
