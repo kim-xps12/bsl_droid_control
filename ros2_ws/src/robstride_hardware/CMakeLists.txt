@@ -81,7 +81,9 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 
   # cpplint: #pragma once を許容するフィルタ付きで手動実行
+  # find_package が自動フックを登録するため、登録後に除去して二重登録を防ぐ
   find_package(ament_cmake_cpplint REQUIRED)
+  list(FILTER AMENT_EXTENSIONS_ament_lint_auto EXCLUDE REGEX "ament_cmake_cpplint")
   ament_cpplint(FILTERS "-build/header_guard" MAX_LINE_LENGTH 100)
 endif()
 
