@@ -12,3 +12,9 @@
 [submodule "ref/RobStride_Control"]
 	path = ref/RobStride_Control
 	url = https://github.com/Seeed-Projects/RobStride_Control.git
+[submodule "ref/Open_Duck_Mini"]
+	path = ref/Open_Duck_Mini
+	url = git@github.com:apirrone/Open_Duck_Mini.git
+[submodule "ref/Open_Duck_Playground"]
+	path = ref/Open_Duck_Playground
+	url = git@github.com:apirrone/Open_Duck_Playground.git
