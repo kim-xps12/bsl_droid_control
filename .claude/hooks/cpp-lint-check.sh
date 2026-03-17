@@ -34,8 +34,8 @@ case "$FILE_PATH" in
     *) exit 0 ;;
 esac
 
-# robstride_hardware以下のファイルのみ対象
-if [[ ! "$FILE_PATH" == *"ros2_ws/src/robstride_hardware/"* ]]; then
+# aoba_hardware以下のファイルのみ対象
+if [[ ! "$FILE_PATH" == *"ros2_ws/src/aoba_hardware/"* ]]; then
     exit 0
 fi
 
