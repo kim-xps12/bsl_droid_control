@@ -145,13 +145,13 @@ Coding Agentはビルド時に発生する**すべての警告**に対処する�
 
 ## コード品質ルール【必須】
 
-このリポジトリではPythonコードの品質を担保するため、以下のツールを使用する。Coding Agentは必ずこれらのルールに従うこと。
+このリポジトリではPythonおよびC++コードの品質を担保するため、以下のツールを使用する。Coding Agentは必ずこれらのルールに従うこと。
 
-### 自動チェック（Claude Code Hooks）
+### Python 自動チェック（Claude Code Hooks）
 
 `.claude/settings.json`で設定されたhooksにより、Edit/Writeツール実行後に自動でruffとmypyが実行される。Coding Agentはフィードバックされたエラーを修正すること。
 
-### 手動チェックコマンド
+### Python 手動チェックコマンド
 
 ```bash
 cd rl_ws
@@ -169,7 +169,7 @@ uv run ruff format biped_walking/ scripts/ assets/export_urdf.py check_training_
 uv run mypy biped_walking/ scripts/ assets/export_urdf.py check_training_logs.py
 ```
 
-### コーディング規約
+### Python コーディング規約
 
 | 項目 | ルール |
 |------|--------|
@@ -186,11 +186,48 @@ uv run mypy biped_walking/ scripts/ assets/export_urdf.py check_training_logs.py
 - `N806`: 行列を表す大文字変数名（例: `R`, `J`, `M`）
 - `B008`: Pydantic等でのdefault引数での関数呼び出し
 
-### 設定ファイル
+### Python 設定ファイル
 
 - `rl_ws/pyproject.toml`: ruff, mypyの設定
 - `.claude/settings.json`: Claude Code hooksの設定
-- `.claude/hooks/lint-check.sh`: 自動チェックスクリプト
+- `.claude/hooks/lint-check.sh`: Python自動チェックスクリプト
+
+### C++ 自動チェック（Claude Code Hooks）
+
+`.claude/settings.json`で設定されたhooksにより、`ros2_ws/src/robstride_hardware/` 以下のC++ファイル（`.cpp`, `.hpp`）のEdit/Write後に自動でclang-formatとcpplintが実行される。Coding Agentはフィードバックされたエラーを修正すること。
+
+### C++ 手動チェックコマンド
+
+```bash
+cd ros2_ws
+
+# clang-format: フォーマット適用
+pixi run format-cpp
+
+# clang-format: フォーマットチェック（差分表示のみ）
+pixi run check-format-cpp
+
+# cpplint: スタイルチェック
+pixi run lint-cpp
+```
+
+### C++ コーディング規約
+
+| 項目 | ルール |
+|------|--------|
+| スタイル | Google C++ Style Guide準拠（ROS 2カスタマイズ） |
+| 行長 | 100文字以内 |
+| インデント | 2スペース |
+| ヘッダガード | `#pragma once` を使用 |
+| include順序 | 自ヘッダ → C system → C++ system → 外部ライブラリ → プロジェクト |
+| 命名規則 | snake_case（関数・変数）、PascalCase（クラス・構造体） |
+| ライセンスヘッダ | 全ファイル先頭に `// Copyright (c) 2024-2025, Yutaro KIMURA (B-SKY Lab)` + SPDX |
+
+### C++ 設定ファイル
+
+- `ros2_ws/src/robstride_hardware/.clang-format`: clang-formatの設定
+- `ros2_ws/src/robstride_hardware/.clang-tidy`: clang-tidyの設定（Jetson上での手動実行用）
+- `.claude/hooks/cpp-lint-check.sh`: C++自動チェックスクリプト
 
 ## ドキュメント類の作成ルール
 - 文書は`markdown`形式のドキュメントとして作成すること
