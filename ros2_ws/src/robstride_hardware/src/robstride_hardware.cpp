@@ -1,32 +1,37 @@
+// Copyright (c) 2024-2025, Yutaro KIMURA (B-SKY Lab)
+// SPDX-License-Identifier: MIT
+
 /**
  * @file robstride_hardware.cpp
- * @brief ros2_control Hardware Interface implementation for RobStride motors
+ * @brief RobStrideモータ用 ros2_control ハードウェアインターフェースの実装
  *
- * Synchronous send/receive: all CAN I/O in write(), read() is a no-op.
- * Supports multiple motors across multiple CAN buses (e.g. can1, can2).
+ * 同期送受信パターン: 全CAN I/Oはwrite()内で実行し、read()は何もしない。
+ * 複数CANバス（例: can1, can2）にまたがる複数モータをサポートする。
  */
 
 #include "robstride_hardware/robstride_hardware.hpp"
-#include <hardware_interface/types/hardware_interface_type_values.hpp>
+
+#include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <algorithm>
 #include <thread>
 
-namespace robstride_hardware
-{
+#include <hardware_interface/types/hardware_interface_type_values.hpp>
+
+namespace robstride_hardware {
 
 // ============================================================================
-// Lifecycle callbacks
+// ライフサイクルコールバック
 // ============================================================================
 
+/// 初期化: URDFからジョイント設定を読み込み、内部バッファを確保する
 CallbackReturn RobStrideHardware::on_init(
-  const hardware_interface::HardwareComponentInterfaceParams & params)
-{
+    const hardware_interface::HardwareComponentInterfaceParams& params) {
   if (SystemInterface::on_init(params) != CallbackReturn::SUCCESS) {
     return CallbackReturn::ERROR;
   }
 
+  // ジョイント数に応じてバッファを事前確保する
   const size_t n = info_.joints.size();
   joints_.resize(n);
   hw_positions_.resize(n, 0.0);
@@ -36,101 +41,93 @@ CallbackReturn RobStrideHardware::on_init(
   response_received_.resize(n, false);
   missed_response_count_.resize(n, 0);
 
+  // URDFのjointパラメータからジョイント設定を読み込む
   for (size_t i = 0; i < n; ++i) {
-    auto & jcfg = joints_[i];
-    const auto & params = info_.joints[i].parameters;
+    auto& jcfg = joints_[i];
+    const auto& params = info_.joints[i].parameters;
 
     jcfg.name = info_.joints[i].name;
-    jcfg.can_interface = params.count("can_interface")
-      ? params.at("can_interface") : "can0";
-    jcfg.motor_id = params.count("motor_id")
-      ? std::stoi(params.at("motor_id")) : 11;
-    jcfg.kp = params.count("kp")
-      ? std::stod(params.at("kp")) : 30.0;
-    jcfg.kd = params.count("kd")
-      ? std::stod(params.at("kd")) : 1.0;
+    jcfg.can_interface = params.count("can_interface") ? params.at("can_interface") : "can0";
+    jcfg.motor_id = params.count("motor_id") ? std::stoi(params.at("motor_id")) : 11;
+    jcfg.kp = params.count("kp") ? std::stod(params.at("kp")) : 30.0;
+    jcfg.kd = params.count("kd") ? std::stod(params.at("kd")) : 1.0;
 
-    // Group joints by CAN bus
+    // ジョイントをCANバス毎にグループ化する
     buses_[jcfg.can_interface].joint_indices.push_back(i);
 
-    RCLCPP_INFO(
-      rclcpp::get_logger("RobStrideHardware"),
-      "Joint[%zu]: name=%s, bus=%s, motor_id=%d, kp=%.1f, kd=%.2f",
-      i, jcfg.name.c_str(), jcfg.can_interface.c_str(),
-      jcfg.motor_id, jcfg.kp, jcfg.kd);
+    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
+                "Joint[%zu]: name=%s, bus=%s, motor_id=%d, kp=%.1f, kd=%.2f", i, jcfg.name.c_str(),
+                jcfg.can_interface.c_str(), jcfg.motor_id, jcfg.kp, jcfg.kd);
   }
 
-  // Pre-allocate bus timing map
-  for (const auto & [bus_name, _] : buses_) {
+  // バス毎のタイミングマップを事前確保する
+  for (const auto& [bus_name, _] : buses_) {
     bus_timing_[bus_name] = BusTimingStats{};
   }
 
-  RCLCPP_INFO(
-    rclcpp::get_logger("RobStrideHardware"),
-    "Initialized: %zu joints on %zu CAN bus(es)",
-    n, buses_.size());
+  RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Initialized: %zu joints on %zu CAN bus(es)",
+              n, buses_.size());
 
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_configure(
-  const rclcpp_lifecycle::State & /*previous_state*/)
-{
+/// 設定: 全CANバスへの接続を確立する
+CallbackReturn RobStrideHardware::on_configure(const rclcpp_lifecycle::State& /*previous_state*/) {
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Configuring...");
 
-  for (auto & [bus_name, bus] : buses_) {
+  // 各CANバスに接続する
+  for (auto& [bus_name, bus] : buses_) {
     if (!bus.driver.connect(bus_name)) {
       RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
-        "Failed to connect to CAN interface: %s", bus_name.c_str());
+                   "Failed to connect to CAN interface: %s", bus_name.c_str());
       return CallbackReturn::ERROR;
     }
     RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-      "Connected to CAN interface: %s (%zu motors)",
-      bus_name.c_str(), bus.joint_indices.size());
+                "Connected to CAN interface: %s (%zu motors)", bus_name.c_str(),
+                bus.joint_indices.size());
   }
 
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_activate(
-  const rclcpp_lifecycle::State & /*previous_state*/)
-{
+/// アクティベート: 各モータの有効化、MITモード設定、通信確認を行う
+CallbackReturn RobStrideHardware::on_activate(const rclcpp_lifecycle::State& /*previous_state*/) {
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Activating...");
 
-  // Enable each motor, set MIT mode, and probe — one at a time with
-  // drain between each motor to avoid CAN response collisions.
+  // 各モータを1台ずつ初期化する
+  // CAN応答の衝突を避けるため、各操作の間にドレインを挟む
   for (size_t i = 0; i < joints_.size(); ++i) {
-    const auto & jcfg = joints_[i];
-    auto & driver = buses_.at(jcfg.can_interface).driver;
+    const auto& jcfg = joints_[i];
+    auto& driver = buses_.at(jcfg.can_interface).driver;
 
-    // Disable auto-report (comm type 24) to prevent unsolicited CAN frames
+    // 自動レポートを無効化する（非要求フレームの送信を停止）
     driver.disable_auto_report(jcfg.motor_id);
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     driver.drain_rx_buffer();
 
+    // モータを有効化する
     if (!driver.enable(jcfg.motor_id)) {
-      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
-        "Failed to enable motor %d on %s",
-        jcfg.motor_id, jcfg.can_interface.c_str());
+      RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"), "Failed to enable motor %d on %s",
+                   jcfg.motor_id, jcfg.can_interface.c_str());
       return CallbackReturn::ERROR;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     driver.drain_rx_buffer();
 
+    // MIT制御モードを設定する
     if (!driver.set_mode(jcfg.motor_id, robstride_driver::ControlMode::MIT)) {
       RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
-        "Failed to set MIT mode for motor %d on %s",
-        jcfg.motor_id, jcfg.can_interface.c_str());
+                   "Failed to set MIT mode for motor %d on %s", jcfg.motor_id,
+                   jcfg.can_interface.c_str());
       return CallbackReturn::ERROR;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     driver.drain_rx_buffer();
 
-    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-      "Motor %d on %s: enabled, MIT mode set",
-      jcfg.motor_id, jcfg.can_interface.c_str());
+    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Motor %d on %s: enabled, MIT mode set",
+                jcfg.motor_id, jcfg.can_interface.c_str());
 
-    // Probe: send zero-torque MIT command and verify motor responds
+    // プローブ: ゼロトルクのMITコマンドを送信してモータの応答を確認する
     robstride_driver::MitCommand probe;
     probe.position = 0.0;
     probe.velocity = 0.0;
@@ -143,23 +140,23 @@ CallbackReturn RobStrideHardware::on_activate(
     if (recv_id == jcfg.motor_id && state.valid) {
       hw_positions_[i] = state.position;
       RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-        "Motor %d on %s: probe OK (pos=%.3f rad)",
-        jcfg.motor_id, jcfg.can_interface.c_str(), state.position);
+                  "Motor %d on %s: probe OK (pos=%.3f rad)", jcfg.motor_id,
+                  jcfg.can_interface.c_str(), state.position);
     } else {
       RCLCPP_ERROR(rclcpp::get_logger("RobStrideHardware"),
-        "Motor %d on %s: no response to probe command. "
-        "Check: motor power, CAN wiring, CAN bitrate (1Mbps), motor ID",
-        jcfg.motor_id, jcfg.can_interface.c_str());
+                   "Motor %d on %s: no response to probe command. "
+                   "Check: motor power, CAN wiring, CAN bitrate (1Mbps), motor ID",
+                   jcfg.motor_id, jcfg.can_interface.c_str());
       return CallbackReturn::ERROR;
     }
   }
 
-  // Initialize commands to current positions
+  // コマンドの初期値を現在位置に設定する（急な動作を防止）
   for (size_t i = 0; i < hw_commands_position_.size(); ++i) {
     hw_commands_position_[i] = hw_positions_[i];
   }
 
-  // Reset timing statistics
+  // タイミング統計をリセットする
   timing_log_counter_ = 0;
   total_us_min_ = 1e9;
   total_us_max_ = 0.0;
@@ -174,21 +171,20 @@ CallbackReturn RobStrideHardware::on_activate(
   total_missed_sum_ = 0;
 
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-    "Activated: %zu motors on %zu bus(es), synchronous send/receive mode",
-    joints_.size(), buses_.size());
+              "Activated: %zu motors on %zu bus(es), synchronous send/receive mode", joints_.size(),
+              buses_.size());
 
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_deactivate(
-  const rclcpp_lifecycle::State & /*previous_state*/)
-{
+/// ディアクティベート: 安全なトルクゼロ状態にしてからモータを無効化する
+CallbackReturn RobStrideHardware::on_deactivate(const rclcpp_lifecycle::State& /*previous_state*/) {
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Deactivating...");
 
-  // Send zero-torque command (safe state) and disable each motor
+  // ゼロトルクコマンド（安全状態）を送信してから各モータを無効化する
   for (size_t i = 0; i < joints_.size(); ++i) {
-    const auto & jcfg = joints_[i];
-    auto & driver = buses_.at(jcfg.can_interface).driver;
+    const auto& jcfg = joints_[i];
+    auto& driver = buses_.at(jcfg.can_interface).driver;
 
     robstride_driver::MitCommand safe_cmd;
     safe_cmd.position = hw_positions_[i];
@@ -204,78 +200,74 @@ CallbackReturn RobStrideHardware::on_deactivate(
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     driver.drain_rx_buffer();
 
-    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-      "Motor %d on %s: deactivated", jcfg.motor_id, jcfg.can_interface.c_str());
+    RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Motor %d on %s: deactivated",
+                jcfg.motor_id, jcfg.can_interface.c_str());
   }
 
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn RobStrideHardware::on_cleanup(
-  const rclcpp_lifecycle::State & /*previous_state*/)
-{
+/// クリーンアップ: 全CANバスの接続を切断する
+CallbackReturn RobStrideHardware::on_cleanup(const rclcpp_lifecycle::State& /*previous_state*/) {
   RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"), "Cleaning up...");
-  for (auto & [_, bus] : buses_) {
+  for (auto& [_, bus] : buses_) {
     bus.driver.disconnect();
   }
   return CallbackReturn::SUCCESS;
 }
 
 // ============================================================================
-// Interface export
+// インターフェースのエクスポート
 // ============================================================================
 
-std::vector<hardware_interface::StateInterface> RobStrideHardware::export_state_interfaces()
-{
+/// 状態インターフェースをエクスポートする（位置・速度・トルク）
+std::vector<hardware_interface::StateInterface> RobStrideHardware::export_state_interfaces() {
   std::vector<hardware_interface::StateInterface> state_interfaces;
   for (size_t i = 0; i < info_.joints.size(); ++i) {
-    state_interfaces.emplace_back(
-      hardware_interface::StateInterface(
+    // 各ジョイントについて位置・速度・トルクの3つのインターフェースを登録する
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_POSITION, &hw_positions_[i]));
-    state_interfaces.emplace_back(
-      hardware_interface::StateInterface(
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_VELOCITY, &hw_velocities_[i]));
-    state_interfaces.emplace_back(
-      hardware_interface::StateInterface(
+    state_interfaces.emplace_back(hardware_interface::StateInterface(
         info_.joints[i].name, hardware_interface::HW_IF_EFFORT, &hw_efforts_[i]));
   }
   return state_interfaces;
 }
 
-std::vector<hardware_interface::CommandInterface> RobStrideHardware::export_command_interfaces()
-{
+/// コマンドインターフェースをエクスポートする（位置指令）
+std::vector<hardware_interface::CommandInterface> RobStrideHardware::export_command_interfaces() {
   std::vector<hardware_interface::CommandInterface> command_interfaces;
   for (size_t i = 0; i < info_.joints.size(); ++i) {
-    command_interfaces.emplace_back(
-      hardware_interface::CommandInterface(
-        info_.joints[i].name, hardware_interface::HW_IF_POSITION,
-        &hw_commands_position_[i]));
+    command_interfaces.emplace_back(hardware_interface::CommandInterface(
+        info_.joints[i].name, hardware_interface::HW_IF_POSITION, &hw_commands_position_[i]));
   }
   return command_interfaces;
 }
 
 // ============================================================================
-// RT control loop (called at 200Hz by Controller Manager)
+// リアルタイム制御ループ（Controller Managerから200Hzで呼び出される）
 // ============================================================================
 
-hardware_interface::return_type RobStrideHardware::read(
-  const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
-{
-  // hw_positions_ / hw_velocities_ / hw_efforts_ were already updated
-  // by the previous write() call. Nothing to do here.
+/// read(): write()で既に更新済みの内部バッファを返すだけ（何もしない）
+hardware_interface::return_type RobStrideHardware::read(const rclcpp::Time& /*time*/,
+                                                        const rclcpp::Duration& /*period*/) {
+  // hw_positions_ / hw_velocities_ / hw_efforts_ は直前のwrite()で
+  // 既に更新済みのため、ここでは何もしない
   return hardware_interface::return_type::OK;
 }
 
-hardware_interface::return_type RobStrideHardware::write(
-  const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
-{
+/// write(): 全モータへのコマンド送信とレスポンス受信を同期的に行う
+hardware_interface::return_type RobStrideHardware::write(const rclcpp::Time& /*time*/,
+                                                         const rclcpp::Duration& /*period*/) {
   using clock = std::chrono::steady_clock;
   const auto t_start = clock::now();
 
-  // === Phase 1: Burst-send commands to all buses ===
-  for (auto & [bus_name, bus] : buses_) {
+  // === フェーズ1: 全バスへコマンドをバースト送信する ===
+  for (auto& [bus_name, bus] : buses_) {
     const auto t_bus_send_start = clock::now();
 
+    // バス上の全モータにMIT制御コマンドを送信する
     for (size_t ji : bus.joint_indices) {
       robstride_driver::MitCommand cmd;
       cmd.position = hw_commands_position_[ji];
@@ -286,29 +278,30 @@ hardware_interface::return_type RobStrideHardware::write(
       bus.driver.send_command(joints_[ji].motor_id, cmd);
     }
 
-    bus_timing_[bus_name].send_us = std::chrono::duration<double, std::micro>(
-      clock::now() - t_bus_send_start).count();
+    bus_timing_[bus_name].send_us =
+        std::chrono::duration<double, std::micro>(clock::now() - t_bus_send_start).count();
   }
 
   const auto t_send_done = clock::now();
 
-  // === Phase 2: Read responses from all buses (ID matching) ===
+  // === フェーズ2: 全バスからレスポンスを受信する（モータIDマッチング） ===
   std::fill(response_received_.begin(), response_received_.end(), false);
   int total_received = 0;
   int total_missed = 0;
 
-  for (auto & [bus_name, bus] : buses_) {
+  for (auto& [bus_name, bus] : buses_) {
     const auto t_bus_recv_start = clock::now();
     int remaining = static_cast<int>(bus.joint_indices.size());
     int bus_received = 0;
-    int timeout_ms = 3;  // Wait for all burst responses (~1.5ms for 5 motors)
+    int timeout_ms = 3;  // 全バーストレスポンスを待機（5モータで約1.5ms）
 
     while (remaining > 0) {
       auto [motor_id, state] = bus.driver.read_one_response(timeout_ms);
       if (motor_id < 0) {
-        break;  // Timeout
+        break;  // タイムアウト
       }
 
+      // 受信したモータIDと一致するジョイントを探して状態を更新する
       for (size_t ji : bus.joint_indices) {
         if (joints_[ji].motor_id == motor_id && !response_received_[ji]) {
           hw_positions_[ji] = state.position;
@@ -322,12 +315,12 @@ hardware_interface::return_type RobStrideHardware::write(
         }
       }
 
-      timeout_ms = 1;  // Shorter timeout for subsequent reads
+      timeout_ms = 1;  // 2件目以降は短いタイムアウトで読み取る
     }
 
-    auto & bt = bus_timing_[bus_name];
-    bt.receive_us = std::chrono::duration<double, std::micro>(
-      clock::now() - t_bus_recv_start).count();
+    auto& bt = bus_timing_[bus_name];
+    bt.receive_us =
+        std::chrono::duration<double, std::micro>(clock::now() - t_bus_recv_start).count();
     bt.received = bus_received;
     bt.expected = static_cast<int>(bus.joint_indices.size());
     total_received += bus_received;
@@ -335,27 +328,24 @@ hardware_interface::return_type RobStrideHardware::write(
 
   const auto t_recv_done = clock::now();
 
-  // === Phase 3: Handle missed responses ===
+  // === フェーズ3: レスポンス欠落を処理する ===
   for (size_t i = 0; i < joints_.size(); ++i) {
     if (!response_received_[i]) {
       missed_response_count_[i]++;
       total_missed++;
       if (missed_response_count_[i] == kMissedResponseWarnThreshold) {
         RCLCPP_WARN(rclcpp::get_logger("RobStrideHardware"),
-          "Motor %d on %s: %d consecutive missed responses",
-          joints_[i].motor_id, joints_[i].can_interface.c_str(),
-          missed_response_count_[i]);
+                    "Motor %d on %s: %d consecutive missed responses", joints_[i].motor_id,
+                    joints_[i].can_interface.c_str(), missed_response_count_[i]);
       }
     }
   }
 
-  // === Timing diagnostics ===
-  last_timing_.send_us = std::chrono::duration<double, std::micro>(
-    t_send_done - t_start).count();
-  last_timing_.receive_us = std::chrono::duration<double, std::micro>(
-    t_recv_done - t_send_done).count();
-  last_timing_.total_us = std::chrono::duration<double, std::micro>(
-    t_recv_done - t_start).count();
+  // === タイミング診断 ===
+  last_timing_.send_us = std::chrono::duration<double, std::micro>(t_send_done - t_start).count();
+  last_timing_.receive_us =
+      std::chrono::duration<double, std::micro>(t_recv_done - t_send_done).count();
+  last_timing_.total_us = std::chrono::duration<double, std::micro>(t_recv_done - t_start).count();
   last_timing_.responses_received = total_received;
   last_timing_.responses_expected = static_cast<int>(joints_.size());
 
@@ -380,32 +370,28 @@ hardware_interface::return_type RobStrideHardware::write(
     const double send_avg = send_us_sum_ / n;
     const double recv_avg = recv_us_sum_ / n;
     RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-      "[Timing] write() min=%.0fus avg=%.0fus max=%.0fus stddev=%.1fus | "
-      "send min=%.0f avg=%.0f max=%.0fus | recv min=%.0f avg=%.0f max=%.0fus | "
-      "missed=%d/%d",
-      total_us_min_, avg_us, total_us_max_, stddev_us,
-      send_us_min_, send_avg, send_us_max_,
-      recv_us_min_, recv_avg, recv_us_max_,
-      total_missed_sum_,
-      timing_log_counter_ * static_cast<int>(joints_.size()));
+                "[Timing] write() min=%.0fus avg=%.0fus max=%.0fus stddev=%.1fus | "
+                "send min=%.0f avg=%.0f max=%.0fus | recv min=%.0f avg=%.0f max=%.0fus | "
+                "missed=%d/%d",
+                total_us_min_, avg_us, total_us_max_, stddev_us, send_us_min_, send_avg,
+                send_us_max_, recv_us_min_, recv_avg, recv_us_max_, total_missed_sum_,
+                timing_log_counter_ * static_cast<int>(joints_.size()));
 
-    for (const auto & [bus_name, bt] : bus_timing_) {
+    for (const auto& [bus_name, bt] : bus_timing_) {
       RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-        "[Timing]   %s: send=%.0fus, recv=%.0fus, ok=%d/%d",
-        bus_name.c_str(), bt.send_us, bt.receive_us,
-        bt.received, bt.expected);
+                  "[Timing]   %s: send=%.0fus, recv=%.0fus, ok=%d/%d", bus_name.c_str(), bt.send_us,
+                  bt.receive_us, bt.received, bt.expected);
     }
 
-    // Motor state snapshot (per-joint)
+    // モータ状態スナップショット（ジョイント毎）
     for (size_t i = 0; i < joints_.size(); ++i) {
       RCLCPP_INFO(rclcpp::get_logger("RobStrideHardware"),
-        "[State] %s (id=%d): cmd=%.4f rad | pos=%.4f rad, vel=%.4f rad/s, effort=%.4f Nm",
-        joints_[i].name.c_str(), joints_[i].motor_id,
-        hw_commands_position_[i],
-        hw_positions_[i], hw_velocities_[i], hw_efforts_[i]);
+                  "[State] %s (id=%d): cmd=%.4f rad | pos=%.4f rad, vel=%.4f rad/s, effort=%.4f Nm",
+                  joints_[i].name.c_str(), joints_[i].motor_id, hw_commands_position_[i],
+                  hw_positions_[i], hw_velocities_[i], hw_efforts_[i]);
     }
 
-    // Reset aggregates
+    // 集約統計をリセットする
     timing_log_counter_ = 0;
     total_us_min_ = 1e9;
     total_us_sum_ = 0.0;
@@ -426,6 +412,4 @@ hardware_interface::return_type RobStrideHardware::write(
 }  // namespace robstride_hardware
 
 #include "pluginlib/class_list_macros.hpp"
-PLUGINLIB_EXPORT_CLASS(
-  robstride_hardware::RobStrideHardware,
-  hardware_interface::SystemInterface)
+PLUGINLIB_EXPORT_CLASS(robstride_hardware::RobStrideHardware, hardware_interface::SystemInterface)

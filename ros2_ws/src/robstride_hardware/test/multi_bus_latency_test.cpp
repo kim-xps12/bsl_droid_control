@@ -1,3 +1,6 @@
+// Copyright (c) 2024-2025, Yutaro KIMURA (B-SKY Lab)
+// SPDX-License-Identifier: MIT
+
 /**
  * @file multi_bus_latency_test.cpp
  * @brief 多モータ・多バス CAN レイテンシ計測テスト
@@ -14,44 +17,46 @@
  *   multi_bus_latency_test can1:11,12 --iterations=2000
  */
 
-#include "robstride_hardware/robstride_driver.hpp"
-#include <iostream>
-#include <sstream>
-#include <chrono>
-#include <thread>
-#include <vector>
-#include <numeric>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <csignal>
+#include <iostream>
 #include <map>
+#include <numeric>
+#include <sstream>
+#include <thread>
+#include <vector>
+#include "robstride_hardware/robstride_driver.hpp"
 
 namespace {
-  volatile sig_atomic_t g_running = 1;
+volatile sig_atomic_t g_running = 1;
 
-  void signal_handler(int) {
-    g_running = 0;
-  }
+void signal_handler(int) {
+  g_running = 0;
 }
+}  // namespace
 
+/// バス設定（インターフェース名とモータIDのリスト）
 struct BusConfig {
-  std::string interface;
-  std::vector<int> motor_ids;
+  std::string interface;       // CANインターフェース名（例: "can1"）
+  std::vector<int> motor_ids;  // そのバス上のモータIDリスト
 };
 
+/// バス毎の計測統計
 struct BusStats {
-  std::string interface;
-  std::vector<double> send_us;
-  std::vector<double> recv_us;
-  int ok = 0;
-  int expected = 0;
+  std::string interface;        // CANインターフェース名
+  std::vector<double> send_us;  // 各サイクルの送信時間 [us]
+  std::vector<double> recv_us;  // 各サイクルの受信時間 [us]
+  int ok = 0;                   // 受信成功数
+  int expected = 0;             // 期待される受信数
 };
 
-// Parse "can1:11,12,13" into BusConfig
-static bool parse_bus_arg(const std::string& arg, BusConfig& out)
-{
+/// コマンドライン引数 "can1:11,12,13" をパースしてBusConfigに変換する
+static bool parse_bus_arg(const std::string& arg, BusConfig& out) {
   auto colon = arg.find(':');
-  if (colon == std::string::npos) return false;
+  if (colon == std::string::npos)
+    return false;
   out.interface = arg.substr(0, colon);
   std::string ids_str = arg.substr(colon + 1);
   std::stringstream ss(ids_str);
@@ -64,17 +69,17 @@ static bool parse_bus_arg(const std::string& arg, BusConfig& out)
   return !out.motor_ids.empty();
 }
 
-static double percentile(std::vector<double>& sorted_vec, double p)
-{
-  if (sorted_vec.empty()) return 0.0;
+static double percentile(std::vector<double>& sorted_vec, double p) {
+  if (sorted_vec.empty())
+    return 0.0;
   size_t idx = static_cast<size_t>(sorted_vec.size() * p);
-  if (idx >= sorted_vec.size()) idx = sorted_vec.size() - 1;
+  if (idx >= sorted_vec.size())
+    idx = sorted_vec.size() - 1;
   return sorted_vec[idx];
 }
 
-int main(int argc, char** argv)
-{
-  // Parse arguments
+int main(int argc, char** argv) {
+  // コマンドライン引数をパースする
   std::vector<BusConfig> bus_configs;
   int iterations = 1000;
 
@@ -88,7 +93,8 @@ int main(int argc, char** argv)
         bus_configs.push_back(cfg);
       } else {
         std::cerr << "Error: invalid argument '" << arg << "'" << std::endl;
-        std::cerr << "Usage: multi_bus_latency_test <bus:id,...> [...] [--iterations=N]" << std::endl;
+        std::cerr << "Usage: multi_bus_latency_test <bus:id,...> [...] [--iterations=N]"
+                  << std::endl;
         return 1;
       }
     }
@@ -96,16 +102,18 @@ int main(int argc, char** argv)
 
   if (bus_configs.empty()) {
     std::cerr << "Usage: multi_bus_latency_test <bus:id,...> [...] [--iterations=N]" << std::endl;
-    std::cerr << "Example: multi_bus_latency_test can1:11,12,13,14,15 can2:21,22,23,24,25" << std::endl;
+    std::cerr << "Example: multi_bus_latency_test can1:11,12,13,14,15 can2:21,22,23,24,25"
+              << std::endl;
     return 1;
   }
 
-  // Print configuration
+  // テスト設定を表示する
   std::cout << "=== Multi-Bus CAN Latency Test ===" << std::endl;
   int total_motors = 0;
   for (const auto& cfg : bus_configs) {
     std::cout << "Bus: " << cfg.interface << "  Motors:";
-    for (int id : cfg.motor_ids) std::cout << " " << id;
+    for (int id : cfg.motor_ids)
+      std::cout << " " << id;
     std::cout << std::endl;
     total_motors += static_cast<int>(cfg.motor_ids.size());
   }
@@ -113,11 +121,11 @@ int main(int argc, char** argv)
   std::cout << "Iterations: " << iterations << std::endl;
   std::cout << std::endl;
 
-  // Signal handler setup
+  // シグナルハンドラ設定
   std::signal(SIGINT, signal_handler);
   std::signal(SIGTERM, signal_handler);
 
-  // Connect drivers
+  // 各バスのドライバに接続する
   std::vector<robstride_driver::RobStrideDriver> drivers(bus_configs.size());
   for (size_t b = 0; b < bus_configs.size(); ++b) {
     if (!drivers[b].connect(bus_configs[b].interface)) {
@@ -127,7 +135,7 @@ int main(int argc, char** argv)
     std::cout << "Connected to " << bus_configs[b].interface << std::endl;
   }
 
-  // Enable motors (disable auto-report → enable → set MIT mode)
+  // モータ初期化（自動レポート無効化 → 有効化 → MITモード設定）
   std::cout << "Initializing motors..." << std::endl;
   for (size_t b = 0; b < bus_configs.size(); ++b) {
     for (int id : bus_configs[b].motor_ids) {
@@ -139,8 +147,8 @@ int main(int argc, char** argv)
   for (size_t b = 0; b < bus_configs.size(); ++b) {
     for (int id : bus_configs[b].motor_ids) {
       if (!drivers[b].enable(id)) {
-        std::cerr << "Warning: Failed to send enable to motor " << id
-                  << " on " << bus_configs[b].interface << std::endl;
+        std::cerr << "Warning: Failed to send enable to motor " << id << " on "
+                  << bus_configs[b].interface << std::endl;
       }
     }
   }
@@ -153,12 +161,12 @@ int main(int argc, char** argv)
   }
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  // Drain stale frames
+  // 古いフレームをドレインする
   for (size_t b = 0; b < bus_configs.size(); ++b) {
     drivers[b].drain_rx_buffer();
   }
 
-  // Probe (zero-torque) to verify communication
+  // プローブ（ゼロトルク）で通信を確認する
   std::cout << "Probing motors..." << std::endl;
   {
     robstride_driver::MitCommand probe;
@@ -178,8 +186,7 @@ int main(int argc, char** argv)
       for (int k = 0; k < static_cast<int>(bus_configs[b].motor_ids.size()); ++k) {
         auto [recv_id, state] = drivers[b].read_one_response(10);
         if (recv_id >= 0 && state.valid) {
-          std::cout << "  " << bus_configs[b].interface
-                    << " motor " << recv_id
+          std::cout << "  " << bus_configs[b].interface << " motor " << recv_id
                     << ": pos=" << state.position << " rad" << std::endl;
         }
       }
@@ -188,7 +195,7 @@ int main(int argc, char** argv)
 
   std::cout << std::endl << "Starting latency measurement..." << std::endl << std::endl;
 
-  // Pre-allocate measurement vectors
+  // 計測用ベクタを事前確保する
   std::vector<double> cycle_us;
   cycle_us.reserve(iterations);
 
@@ -203,7 +210,7 @@ int main(int argc, char** argv)
   int total_missed = 0;
   using clock = std::chrono::steady_clock;
 
-  // Safety command: kp=0, kd=0.5, torque_ff=0 (no torque output)
+  // 安全コマンド: kp=0, kd=0.5, torque_ff=0（トルク出力なし）
   robstride_driver::MitCommand cmd;
   cmd.position = 0.0;
   cmd.velocity = 0.0;
@@ -214,7 +221,7 @@ int main(int argc, char** argv)
   for (int iter = 0; iter < iterations && g_running; ++iter) {
     auto t_cycle_start = clock::now();
 
-    // Phase 1: Burst-send commands to all buses
+    // フェーズ1: 全バスへコマンドをバースト送信する
     for (size_t b = 0; b < bus_configs.size(); ++b) {
       auto t_send_start = clock::now();
       for (int id : bus_configs[b].motor_ids) {
@@ -222,10 +229,10 @@ int main(int argc, char** argv)
       }
       auto t_send_end = clock::now();
       bus_stats[b].send_us.push_back(
-        std::chrono::duration<double, std::micro>(t_send_end - t_send_start).count());
+          std::chrono::duration<double, std::micro>(t_send_end - t_send_start).count());
     }
 
-    // Phase 2: Burst-receive responses from all buses
+    // フェーズ2: 全バスからレスポンスをバースト受信する
     for (size_t b = 0; b < bus_configs.size(); ++b) {
       auto t_recv_start = clock::now();
       int received = 0;
@@ -238,27 +245,27 @@ int main(int argc, char** argv)
       }
       auto t_recv_end = clock::now();
       bus_stats[b].recv_us.push_back(
-        std::chrono::duration<double, std::micro>(t_recv_end - t_recv_start).count());
+          std::chrono::duration<double, std::micro>(t_recv_end - t_recv_start).count());
       bus_stats[b].ok += received;
       total_missed += (expected - received);
     }
 
     auto t_cycle_end = clock::now();
     cycle_us.push_back(
-      std::chrono::duration<double, std::micro>(t_cycle_end - t_cycle_start).count());
+        std::chrono::duration<double, std::micro>(t_cycle_end - t_cycle_start).count());
 
-    // Progress report every 100 iterations
+    // 100イテレーション毎に進捗を表示する
     if ((iter + 1) % 100 == 0) {
       double last = cycle_us.back();
       std::cout << "  [" << (iter + 1) << "/" << iterations << "] "
                 << "cycle=" << last << "us" << std::endl;
     }
 
-    // 200Hz interval (5ms sleep)
+    // 200Hz相当の間隔（5msスリープ）
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
 
-  // Graceful shutdown
+  // 安全にシャットダウンする
   std::cout << std::endl << "Disabling motors..." << std::endl;
   for (size_t b = 0; b < bus_configs.size(); ++b) {
     for (int id : bus_configs[b].motor_ids) {
@@ -267,7 +274,7 @@ int main(int argc, char** argv)
     drivers[b].disconnect();
   }
 
-  // Statistics
+  // 統計計算
   if (cycle_us.empty()) {
     std::cerr << "No measurements recorded!" << std::endl;
     return 1;
@@ -277,14 +284,15 @@ int main(int argc, char** argv)
   double sum = std::accumulate(cycle_us.begin(), cycle_us.end(), 0.0);
   double mean = sum / cycle_us.size();
   double sq_sum = 0.0;
-  for (double v : cycle_us) sq_sum += (v - mean) * (v - mean);
+  for (double v : cycle_us)
+    sq_sum += (v - mean) * (v - mean);
   double stddev = std::sqrt(sq_sum / cycle_us.size());
 
   std::cout << std::endl;
   std::cout << "=== Results ===" << std::endl;
   std::cout << "Cycles measured: " << cycle_us.size() << "/" << iterations << std::endl;
-  std::cout << "Total missed responses: " << total_missed
-            << "/" << (total_motors * static_cast<int>(cycle_us.size())) << std::endl;
+  std::cout << "Total missed responses: " << total_missed << "/"
+            << (total_motors * static_cast<int>(cycle_us.size())) << std::endl;
   std::cout << std::endl;
 
   std::cout << "--- Cycle Latency [us] ---" << std::endl;
@@ -299,7 +307,8 @@ int main(int argc, char** argv)
   std::cout << "--- Per-Bus Breakdown ---" << std::endl;
   for (size_t b = 0; b < bus_configs.size(); ++b) {
     auto& bs = bus_stats[b];
-    if (bs.send_us.empty()) continue;
+    if (bs.send_us.empty())
+      continue;
 
     double send_sum = std::accumulate(bs.send_us.begin(), bs.send_us.end(), 0.0);
     double recv_sum = std::accumulate(bs.recv_us.begin(), bs.recv_us.end(), 0.0);
@@ -308,15 +317,14 @@ int main(int argc, char** argv)
     std::sort(bs.recv_us.begin(), bs.recv_us.end());
     double recv_max = bs.recv_us.back();
 
-    std::cout << "  " << bs.interface
-              << ":  send_avg=" << send_avg << "us"
+    std::cout << "  " << bs.interface << ":  send_avg=" << send_avg << "us"
               << "  recv_avg=" << recv_avg << "us"
               << "  recv_max=" << recv_max << "us"
               << "  ok=" << bs.ok << "/" << bs.expected << std::endl;
   }
   std::cout << std::endl;
 
-  // 200Hz feasibility judgement
+  // 200Hz制御可否判定
   double p99 = percentile(cycle_us, 0.99);
   if (p99 < 5000.0) {
     std::cout << "OK  200Hz control is feasible (P99=" << p99 << "us < 5ms)" << std::endl;
