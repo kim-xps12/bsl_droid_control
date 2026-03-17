@@ -10,10 +10,10 @@ ros2_controlのController Managerを起動し，Forward Position Controllerで
 
 起動例:
   # デフォルト（0 rad, 0.5 rad/s, 10秒ホールド）
-  ros2 launch robstride_hardware single_motor_test.launch.py
+  ros2 launch aoba_hardware single_motor_test.launch.py
 
   # パラメータ指定
-  ros2 launch robstride_hardware single_motor_test.launch.py \
+  ros2 launch aoba_hardware single_motor_test.launch.py \
     target_position:=1.57 max_velocity:=0.3 hold_duration:=15.0
 """
 import os
@@ -45,8 +45,8 @@ SPAWNER_DELAY_SEC = 1.0
 
 # analyze_timing_log.py のインストールパス
 _ANALYZE_SCRIPT = os.path.join(
-    get_package_prefix('robstride_hardware'),
-    'lib', 'robstride_hardware', 'analyze_timing_log.py'
+    get_package_prefix('aoba_hardware'),
+    'lib', 'aoba_hardware', 'analyze_timing_log.py'
 )
 
 
@@ -71,7 +71,7 @@ def generate_launch_description():
         PathJoinSubstitution([FindExecutable(name='xacro')]),
         ' ',
         PathJoinSubstitution([
-            FindPackageShare('robstride_hardware'),
+            FindPackageShare('aoba_hardware'),
             'urdf',
             'single_motor_test.urdf.xacro'
         ])
@@ -85,7 +85,7 @@ def generate_launch_description():
     # 2. コントローラー設定ファイル (single_motor用)
     # ============================================================
     controller_config = PathJoinSubstitution([
-        FindPackageShare('robstride_hardware'),
+        FindPackageShare('aoba_hardware'),
         'config',
         'single_motor_controllers.yaml'
     ])
@@ -134,7 +134,7 @@ def generate_launch_description():
     # 7. Test Commander Node
     # ============================================================
     test_commander = Node(
-        package='robstride_hardware',
+        package='aoba_hardware',
         executable='single_motor_test_commander.py',
         name='single_motor_test_commander',
         parameters=[{

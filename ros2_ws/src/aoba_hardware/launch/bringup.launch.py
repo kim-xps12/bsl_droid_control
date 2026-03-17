@@ -28,9 +28,9 @@ def generate_launch_description():
         PathJoinSubstitution([FindExecutable(name='xacro')]),
         ' ',
         PathJoinSubstitution([
-            FindPackageShare('robstride_hardware'),
+            FindPackageShare('aoba_hardware'),
             'urdf',
-            'robstride_system.urdf.xacro'  # モーター設定 (CAN, motor_id, kp, kd)
+            'aoba_system.urdf.xacro'  # モーター設定 (CAN, motor_id, kp, kd)
         ])
     ])
     
@@ -44,7 +44,7 @@ def generate_launch_description():
     # ============================================================
     # update_rate (200Hz), コントローラー種類を定義
     controller_config = PathJoinSubstitution([
-        FindPackageShare('robstride_hardware'),
+        FindPackageShare('aoba_hardware'),
         'config',
         'controllers.yaml'  # joint_state_broadcaster, forward_position_controller
     ])
@@ -53,7 +53,7 @@ def generate_launch_description():
     # 3. Controller Manager (中核ノード)
     # ============================================================
     # ros2_control_nodeは以下を実行:
-    # - URDFからHardware Interface (RobStrideHardware) をロード
+    # - URDFからHardware Interface (AobaHardware) をロード
     # - 200Hzでread()/write()を呼び出すリアルタイムループ
     # - コントローラーのライフサイクル管理
     control_node = Node(

@@ -8,14 +8,14 @@ Multi Motor Zero Test Launch File
 
 起動例:
   # 2モーター on can1
-  ros2 launch robstride_hardware multi_motor_zero_test.launch.py motors:='can1:11,12'
+  ros2 launch aoba_hardware multi_motor_zero_test.launch.py motors:='can1:11,12'
 
   # 4モーター on 2 buses
-  ros2 launch robstride_hardware multi_motor_zero_test.launch.py \\
+  ros2 launch aoba_hardware multi_motor_zero_test.launch.py \\
     motors:='can1:11,12 can2:21,22' hold_duration:=15.0
 
   # 全10モーター
-  ros2 launch robstride_hardware multi_motor_zero_test.launch.py \\
+  ros2 launch aoba_hardware multi_motor_zero_test.launch.py \\
     motors:='can1:11,12,13,14,15 can2:21,22,23,24,25'
 """
 import os
@@ -42,8 +42,8 @@ SPAWNER_DELAY_SEC = 1.0
 
 # analyze_timing_log.py のインストールパス
 _ANALYZE_SCRIPT = os.path.join(
-    get_package_prefix('robstride_hardware'),
-    'lib', 'robstride_hardware', 'analyze_timing_log.py',
+    get_package_prefix('aoba_hardware'),
+    'lib', 'aoba_hardware', 'analyze_timing_log.py',
 )
 
 
@@ -105,7 +105,7 @@ def _generate_urdf(motors: list[tuple[str, int]], kp: float, kd: float) -> str:
 """
 
     return f"""<?xml version="1.0"?>
-<robot name="robstride_multi_motor_test">
+<robot name="aoba_multi_motor_test">
 
   <link name="base_link">
     <visual>
@@ -115,9 +115,9 @@ def _generate_urdf(motors: list[tuple[str, int]], kp: float, kd: float) -> str:
     </visual>
   </link>
 {joints_xml}
-  <ros2_control name="robstride_system" type="system">
+  <ros2_control name="aoba_system" type="system">
     <hardware>
-      <plugin>robstride_hardware/RobStrideHardware</plugin>
+      <plugin>aoba_hardware/AobaHardware</plugin>
     </hardware>
 {ros2_control_joints}
   </ros2_control>
@@ -204,7 +204,7 @@ def _launch_setup(context: LaunchContext) -> list:
     )
 
     test_commander = Node(
-        package='robstride_hardware',
+        package='aoba_hardware',
         executable='multi_motor_zero_commander.py',
         name='multi_motor_zero_commander',
         parameters=[{
