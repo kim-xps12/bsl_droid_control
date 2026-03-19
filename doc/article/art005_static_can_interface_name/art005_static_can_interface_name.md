@@ -49,7 +49,7 @@ ip link show type can
 10: can1: <NOARP,UP,LOWER_UP,ECHO> mtu 16 ...     ← USB-CANアダプタ（gs_usb）
 ```
 
-ドライバを確認して，対象がUSB接続であることを裏付けます．
+ドライバを表示して，対象がUSB接続であることを確認します．
 
 ```bash
 ls -la /sys/class/net/can1/device/driver
@@ -68,7 +68,7 @@ ATTRS{idProduct}=="606f"
 ATTRS{idVendor}=="1d50"
 ATTRS{manufacturer}=="canable.io"
 ATTRS{product}=="canable2 gs_usb"
-ATTRS{serial}=="0020005B3133501120313355"
+ATTRS{serial}=="000011112222333344445555"
 ```
 
 ここで重要なのは以下の3つです．
@@ -77,7 +77,7 @@ ATTRS{serial}=="0020005B3133501120313355"
 |------|-----|------|
 | `idVendor` | `1d50` | USBベンダーID |
 | `idProduct` | `606f` | USBプロダクトID |
-| `serial` | `0020005B3133501120313355` | 個体固有のシリアル番号 |
+| `serial` | `000011112222333344445555` | 個体固有のシリアル番号 |
 
 `serial`はアダプタの個体ごとに異なるため，これをudevルールの識別子として使用します．
 
@@ -87,17 +87,17 @@ ATTRS{serial}=="0020005B3133501120313355"
 
 ```bash
 sudo bash -c 'cat > /etc/udev/rules.d/90-can-usb.rules << EOF
-SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="0020005B3133501120313355", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="606f", NAME="can2"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="000011112222333344445555", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="606f", NAME="can2"
 EOF'
 ```
 
-このルールは「シリアル番号が`0020005B3133501120313355`であるUSB-CANアダプタが接続されたら，インタフェース名を`can2`に設定する」という意味です．
+このルールは「シリアル番号が`000011112222333344445555`であるUSB-CANアダプタが接続されたら，インタフェース名を`can2`に設定する」という意味です．
 
 複数のアダプタを固定したい場合は，同じファイルに行を追加します．
 
 ```
 # /etc/udev/rules.d/90-can-usb.rules
-SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="0020005B3133501120313355", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="606f", NAME="can2"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="000011112222333344445555", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="606f", NAME="can2"
 SUBSYSTEM=="net", ACTION=="add", ATTRS{serial}=="XXXXXXXXXXXXXXXXXXXX", ATTRS{idVendor}=="1d50", ATTRS{idProduct}=="606f", NAME="can3"
 ```
 
