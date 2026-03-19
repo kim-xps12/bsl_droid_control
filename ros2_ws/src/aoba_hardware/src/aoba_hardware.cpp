@@ -167,6 +167,11 @@ CallbackReturn AobaHardware::on_activate(const rclcpp_lifecycle::State& /*previo
   recv_us_sum_ = 0.0;
   total_missed_sum_ = 0;
 
+  // 非RTログスレッドを起動する
+  log_thread_stop_.store(false, std::memory_order_relaxed);
+  snapshot_ready_.store(false, std::memory_order_relaxed);
+  log_thread_ = std::thread(&AobaHardware::diagnostic_log_thread_func, this);
+
   RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
               "Activated: %zu motors on %zu bus(es), synchronous send/receive mode", joints_.size(),
               buses_.size());
@@ -177,6 +182,12 @@ CallbackReturn AobaHardware::on_activate(const rclcpp_lifecycle::State& /*previo
 /// ディアクティベート: 安全なトルクゼロ状態にしてからモータを無効化する
 CallbackReturn AobaHardware::on_deactivate(const rclcpp_lifecycle::State& /*previous_state*/) {
   RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Deactivating...");
+
+  // 非RTログスレッドを停止する
+  log_thread_stop_.store(true, std::memory_order_relaxed);
+  if (log_thread_.joinable()) {
+    log_thread_.join();
+  }
 
   // ゼロトルクコマンド（安全状態）を送信してから各モータを無効化する
   for (size_t i = 0; i < joints_.size(); ++i) {
@@ -326,14 +337,22 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
   const auto t_recv_done = clock::now();
 
   // === フェーズ3: レスポンス欠落を処理する ===
+  // ミスレスポンス警告をスナップショットに蓄積するためのカウンタ
+  int warn_count = 0;
   for (size_t i = 0; i < joints_.size(); ++i) {
     if (!response_received_[i]) {
       missed_response_count_[i]++;
       total_missed++;
-      if (missed_response_count_[i] == kMissedResponseWarnThreshold) {
-        RCLCPP_WARN(rclcpp::get_logger("AobaHardware"),
-                    "Motor %d on %s: %d consecutive missed responses", joints_[i].motor_id,
-                    joints_[i].can_interface.c_str(), missed_response_count_[i]);
+      if (missed_response_count_[i] == kMissedResponseWarnThreshold &&
+          warn_count < DiagnosticSnapshot::kMaxWarnSlots) {
+        // 警告データをスナップショットバッファに記録（ログ出力は非RTスレッドで行う）
+        auto& w = diag_snapshot_.missed_warns[warn_count];
+        w.motor_id = joints_[i].motor_id;
+        std::strncpy(w.can_interface, joints_[i].can_interface.c_str(),
+                     sizeof(w.can_interface) - 1);
+        w.can_interface[sizeof(w.can_interface) - 1] = '\0';
+        w.count = missed_response_count_[i];
+        warn_count++;
       }
     }
   }
@@ -359,33 +378,66 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
   total_missed_sum_ += total_missed;
   timing_log_counter_++;
 
+  // スナップショットにミスレスポンス警告数を記録（毎サイクル更新）
+  diag_snapshot_.num_missed_warns = warn_count;
+
   if (timing_log_counter_ >= kTimingLogInterval) {
-    const double n = static_cast<double>(timing_log_counter_);
-    const double avg_us = total_us_sum_ / n;
-    const double variance = (total_us_sum_sq_ / n) - (avg_us * avg_us);
-    const double stddev_us = std::sqrt(std::max(0.0, variance));
-    const double send_avg = send_us_sum_ / n;
-    const double recv_avg = recv_us_sum_ / n;
-    RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
-                "[Timing] write() min=%.0fus avg=%.0fus max=%.0fus stddev=%.1fus | "
-                "send min=%.0f avg=%.0f max=%.0fus | recv min=%.0f avg=%.0f max=%.0fus | "
-                "missed=%d/%d",
-                total_us_min_, avg_us, total_us_max_, stddev_us, send_us_min_, send_avg,
-                send_us_max_, recv_us_min_, recv_avg, recv_us_max_, total_missed_sum_,
-                timing_log_counter_ * static_cast<int>(joints_.size()));
+    // ログスレッドが前回のスナップショットを消費済みの場合のみ書き込む
+    // 未消費の場合はこのインターバルのログをドロップする（RT安全性優先）
+    if (!snapshot_ready_.load(std::memory_order_acquire)) {
+      const double n = static_cast<double>(timing_log_counter_);
+      const double avg_us = total_us_sum_ / n;
+      const double variance = (total_us_sum_sq_ / n) - (avg_us * avg_us);
+      const double stddev_us = std::sqrt(std::max(0.0, variance));
+      const double send_avg = send_us_sum_ / n;
+      const double recv_avg = recv_us_sum_ / n;
 
-    for (const auto& [bus_name, bt] : bus_timing_) {
-      RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
-                  "[Timing]   %s: send=%.0fus, recv=%.0fus, ok=%d/%d", bus_name.c_str(), bt.send_us,
-                  bt.receive_us, bt.received, bt.expected);
-    }
+      // スナップショットにタイミング統計をコピーする
+      diag_snapshot_.total_us_min = total_us_min_;
+      diag_snapshot_.total_us_max = total_us_max_;
+      diag_snapshot_.total_us_avg = avg_us;
+      diag_snapshot_.total_us_stddev = stddev_us;
+      diag_snapshot_.send_us_min = send_us_min_;
+      diag_snapshot_.send_us_max = send_us_max_;
+      diag_snapshot_.send_us_avg = send_avg;
+      diag_snapshot_.recv_us_min = recv_us_min_;
+      diag_snapshot_.recv_us_max = recv_us_max_;
+      diag_snapshot_.recv_us_avg = recv_avg;
+      diag_snapshot_.total_missed_sum = total_missed_sum_;
+      diag_snapshot_.total_cycles = timing_log_counter_;
+      diag_snapshot_.num_joints = static_cast<int>(joints_.size());
 
-    // モータ状態スナップショット（ジョイント毎）
-    for (size_t i = 0; i < joints_.size(); ++i) {
-      RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
-                  "[State] %s (id=%d): cmd=%.4f rad | pos=%.4f rad, vel=%.4f rad/s, effort=%.4f Nm",
-                  joints_[i].name.c_str(), joints_[i].motor_id, hw_commands_position_[i],
-                  hw_positions_[i], hw_velocities_[i], hw_efforts_[i]);
+      // バス毎タイミングをコピーする
+      int bus_idx = 0;
+      for (const auto& [bus_name, bt] : bus_timing_) {
+        if (bus_idx >= DiagnosticSnapshot::kMaxBuses)
+          break;
+        auto& bs = diag_snapshot_.buses[bus_idx];
+        std::strncpy(bs.name, bus_name.c_str(), sizeof(bs.name) - 1);
+        bs.name[sizeof(bs.name) - 1] = '\0';
+        bs.send_us = bt.send_us;
+        bs.receive_us = bt.receive_us;
+        bs.received = bt.received;
+        bs.expected = bt.expected;
+        bus_idx++;
+      }
+      diag_snapshot_.num_buses = bus_idx;
+
+      // モータ状態スナップショットをコピーする
+      for (size_t i = 0; i < joints_.size() && static_cast<int>(i) < DiagnosticSnapshot::kMaxJoints;
+           ++i) {
+        auto& js = diag_snapshot_.joints[i];
+        std::strncpy(js.name, joints_[i].name.c_str(), sizeof(js.name) - 1);
+        js.name[sizeof(js.name) - 1] = '\0';
+        js.motor_id = joints_[i].motor_id;
+        js.cmd_pos = hw_commands_position_[i];
+        js.pos = hw_positions_[i];
+        js.vel = hw_velocities_[i];
+        js.effort = hw_efforts_[i];
+      }
+
+      // スナップショット準備完了を通知する（release順序でデータの可視性を保証）
+      snapshot_ready_.store(true, std::memory_order_release);
     }
 
     // 集約統計をリセットする
@@ -404,6 +456,61 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
   }
 
   return hardware_interface::return_type::OK;
+}
+
+// ============================================================================
+// 非RT診断ログスレッド
+// ============================================================================
+
+/// 診断ログ出力スレッド: RTスレッドが準備したスナップショットを非RTコンテキストで出力する
+void AobaHardware::diagnostic_log_thread_func() {
+  auto logger = rclcpp::get_logger("AobaHardware");
+
+  while (!log_thread_stop_.load(std::memory_order_relaxed)) {
+    // スナップショットが準備されるまで待機する
+    if (snapshot_ready_.load(std::memory_order_acquire)) {
+      // スナップショットのローカルコピーを取得する（RTスレッドの書き込みブロックを最小化）
+      const DiagnosticSnapshot snap = diag_snapshot_;
+
+      // スナップショット消費完了を通知する（RTスレッドが次回書き込み可能になる）
+      snapshot_ready_.store(false, std::memory_order_release);
+
+      // ミスレスポンス警告を出力する
+      for (int i = 0; i < snap.num_missed_warns; ++i) {
+        const auto& w = snap.missed_warns[i];
+        RCLCPP_WARN(logger, "Motor %d on %s: %d consecutive missed responses", w.motor_id,
+                    w.can_interface, w.count);
+      }
+
+      // タイミングサマリを出力する
+      RCLCPP_INFO(logger,
+                  "[Timing] write() min=%.0fus avg=%.0fus max=%.0fus stddev=%.1fus | "
+                  "send min=%.0f avg=%.0f max=%.0fus | recv min=%.0f avg=%.0f max=%.0fus | "
+                  "missed=%d/%d",
+                  snap.total_us_min, snap.total_us_avg, snap.total_us_max, snap.total_us_stddev,
+                  snap.send_us_min, snap.send_us_avg, snap.send_us_max, snap.recv_us_min,
+                  snap.recv_us_avg, snap.recv_us_max, snap.total_missed_sum,
+                  snap.total_cycles * snap.num_joints);
+
+      // バス毎タイミングを出力する
+      for (int i = 0; i < snap.num_buses; ++i) {
+        const auto& bs = snap.buses[i];
+        RCLCPP_INFO(logger, "[Timing]   %s: send=%.0fus, recv=%.0fus, ok=%d/%d", bs.name,
+                    bs.send_us, bs.receive_us, bs.received, bs.expected);
+      }
+
+      // モータ状態スナップショットを出力する
+      for (int i = 0; i < snap.num_joints; ++i) {
+        const auto& js = snap.joints[i];
+        RCLCPP_INFO(logger,
+                    "[State] %s (id=%d): cmd=%.4f rad | pos=%.4f rad, vel=%.4f rad/s, "
+                    "effort=%.4f Nm",
+                    js.name, js.motor_id, js.cmd_pos, js.pos, js.vel, js.effort);
+      }
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
 }
 
 }  // namespace aoba_hardware

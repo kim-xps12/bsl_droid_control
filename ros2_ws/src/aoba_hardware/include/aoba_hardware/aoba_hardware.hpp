@@ -12,8 +12,11 @@
 
 #pragma once
 
+#include <atomic>
 #include <chrono>
+#include <cstring>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -61,6 +64,58 @@ struct WriteTimingStats {
   double total_us = 0.0;       ///< write()の合計時間 [us]
   int responses_received = 0;  // 受信したレスポンス数
   int responses_expected = 0;  // 期待されるレスポンス数
+};
+
+/// 非RTログスレッドへ渡す診断スナップショット（固定サイズPOD、動的メモリ割当なし）
+struct DiagnosticSnapshot {
+  // タイミング集約統計
+  double total_us_min = 0.0;
+  double total_us_max = 0.0;
+  double total_us_avg = 0.0;
+  double total_us_stddev = 0.0;
+  double send_us_min = 0.0;
+  double send_us_max = 0.0;
+  double send_us_avg = 0.0;
+  double recv_us_min = 0.0;
+  double recv_us_max = 0.0;
+  double recv_us_avg = 0.0;
+  int total_missed_sum = 0;
+  int total_cycles = 0;
+  int num_joints = 0;
+
+  // バス毎タイミング（固定配列）
+  static constexpr int kMaxBuses = 4;
+  struct BusSnapshot {
+    char name[16] = {};
+    double send_us = 0.0;
+    double receive_us = 0.0;
+    int received = 0;
+    int expected = 0;
+  };
+  BusSnapshot buses[kMaxBuses] = {};
+  int num_buses = 0;
+
+  // モータ状態スナップショット（固定配列）
+  static constexpr int kMaxJoints = 16;
+  struct JointSnapshot {
+    char name[32] = {};
+    int motor_id = 0;
+    double cmd_pos = 0.0;
+    double pos = 0.0;
+    double vel = 0.0;
+    double effort = 0.0;
+  };
+  JointSnapshot joints[kMaxJoints] = {};
+
+  // ミスレスポンス警告スロット
+  static constexpr int kMaxWarnSlots = 16;
+  struct MissedWarn {
+    int motor_id = 0;
+    char can_interface[16] = {};
+    int count = 0;
+  };
+  MissedWarn missed_warns[kMaxWarnSlots] = {};
+  int num_missed_warns = 0;
 };
 
 /**
@@ -117,7 +172,7 @@ private:
   WriteTimingStats last_timing_;                                // 直近サイクルのタイミング
   std::unordered_map<std::string, BusTimingStats> bus_timing_;  // バス毎のタイミング
 
-  // 集約統計（kTimingLogIntervalサイクル毎にログ出力）
+  // 集約統計（kTimingLogIntervalサイクル毎にスナップショット送出）
   int timing_log_counter_ = 0;
   static constexpr int kTimingLogInterval = 200;  // 200Hzで1秒相当
   double total_us_min_ = 1e9;                     // write()合計時間の最小値
@@ -131,6 +186,15 @@ private:
   double recv_us_max_ = 0.0;                      // 受信時間の最大値
   double recv_us_sum_ = 0.0;                      // 受信時間の累積和
   int total_missed_sum_ = 0;                      // レスポンス欠落の累積数
+
+  // === 非RTログスレッド（SPSC atomic flagパターン） ===
+  DiagnosticSnapshot diag_snapshot_;          // RTスレッドが書き込むスナップショット
+  std::atomic<bool> snapshot_ready_{false};   // スナップショット準備完了フラグ
+  std::atomic<bool> log_thread_stop_{false};  // ログスレッド終了要求フラグ
+  std::thread log_thread_;                    // 診断ログ出力スレッド
+
+  /// ログスレッドのメインループ（非RTコンテキストで実行）
+  void diagnostic_log_thread_func();
 };
 
 }  // namespace aoba_hardware
