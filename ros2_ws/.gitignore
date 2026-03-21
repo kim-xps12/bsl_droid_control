@@ -6,3 +6,11 @@
 build/
 log/
 install/
+
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Generated TF graph files
+frames_*.gv
+frames_*.pdf

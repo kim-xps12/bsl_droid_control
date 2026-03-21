@@ -39,7 +39,7 @@ ros2_controlの設計上、以下の理由でコントローラーはHardware In
 
 **結論**: 
 - ✅ **MacBook**: Slider GUI（ROSトピックでpublish）
-- ✅ **Jetson**: ros2_control全体（Controller Manager + forward_position_controller + RobStrideHardware）
+- ✅ **Jetson**: ros2_control全体（Controller Manager + forward_position_controller + AobaHardware）
 
 ## 制御フロー
 
@@ -49,10 +49,10 @@ ros2_controlの設計上、以下の理由でコントローラーはHardware In
 1. スライダーGUI: ユーザー操作で目標角度を設定
 2. `Float64MultiArray`として `/forward_position_controller/commands` へ50Hz publish
 3. `forward_position_controller`: command_interfaceへ書き込み
-4. `RobStrideHardware::write()`: MIT Modeフレーム生成、CAN送信
+4. `AobaHardware::write()`: MIT Modeフレーム生成、CAN送信
 
 ### 受信側（状態）
-1. `RobStrideHardware::read()`: CAN受信、位置/速度/トルク取得
+1. `AobaHardware::read()`: CAN受信、位置/速度/トルク取得
 2. state_interfaceへ書き込み
 3. `joint_state_broadcaster`: `/joint_states`へpublish
 4. `robot_state_publisher`: TF計算、配信
@@ -64,8 +64,8 @@ ros2_controlの設計上、以下の理由でコントローラーはHardware In
 |---------|------|
 | `biped_teleop/biped_teleop/joint_slider_gui.py` | PyQt5スライダーGUI |
 | `biped_teleop/launch/slider_control.launch.py` | 統合launchファイル |
-| `robstride_hardware/urdf/robstride_system.urdf.xacro` | ros2_control設定 |
-| `robstride_hardware/config/controllers.yaml` | コントローラー設定 |
+| `aoba_hardware/urdf/aoba_system.urdf.xacro` | ros2_control設定 |
+| `aoba_hardware/config/controllers.yaml` | コントローラー設定 |
 
 ## パラメータ
 
@@ -103,10 +103,10 @@ export ROS_DOMAIN_ID=0  # 任意の値（0-101）
 cd ~/Projects/bsl_droid_ros2/ros2_ws
 
 # 4. ビルド
-pixi run colcon build --packages-select robstride_hardware
+pixi run colcon build --packages-select aoba_hardware
 
 # 5. ros2_control起動（GUIなし）
-pixi run ros2 launch robstride_hardware bringup.launch.py
+pixi run ros2 launch aoba_hardware bringup.launch.py
 ```
 
 ### 【MacBook側】スライダーGUI起動
@@ -218,4 +218,4 @@ ping 192.168.1.200  # Jetson → MacBook
 
 - [doc/distributed_architecture.md](../doc/distributed_architecture.md) - 分散システム設計
 - [doc/next_nodes_design.md](../doc/next_nodes_design.md) - ノード設計
-- [robstride_hardware/doc/](../ros2_ws/src/robstride_hardware/doc/) - ハードウェアIF詳細
+- [aoba_hardware/doc/](../ros2_ws/src/aoba_hardware/doc/) - ハードウェアIF詳細

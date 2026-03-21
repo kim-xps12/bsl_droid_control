@@ -16,7 +16,7 @@ V3は穏やかな高さペナルティと膝正角度維持により、交互歩
 
 ### 実機パラメータの根拠
 
-RobStride RS-02の仕様（出典: `ros2_ws/src/robstride_hardware/include/robstride_hardware/robstride_driver.hpp`）:
+RobStride RS-02の仕様（出典: `ros2_ws/src/aoba_hardware/include/aoba_hardware/aoba_driver.hpp`）:
 
 ```cpp
 namespace scale {
@@ -52,7 +52,7 @@ def _reward_dof_vel_limits(self):
     - ETH Zurich Legged Gym:
       https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/envs/base/legged_robot.py
     - RobStride RS-02仕様:
-      ros2_ws/src/robstride_hardware/include/robstride_hardware/robstride_driver.hpp
+      ros2_ws/src/aoba_hardware/include/aoba_hardware/aoba_driver.hpp
 
     【実装】
     - dof_vel_limits: 実機の最大速度（44 rad/s）
@@ -375,9 +375,9 @@ V19では以下を実装する：
   - `_reward_dof_vel_limits()`の実装を参考
   - ソフトリミット係数（0.9）の選定根拠
 
-- **RobStride Hardware**: `ros2_ws/src/robstride_hardware/`
+- **RobStride Hardware**: `ros2_ws/src/aoba_hardware/`
   - 実機パラメータの出典
-  - `robstride_driver.hpp`のスケールファクター定義
+  - `aoba_driver.hpp`のスケールファクター定義
 
 ### 関連ドキュメント
 

@@ -30,7 +30,7 @@ bsl_droid_control/
 │   └── src/
 │       ├── biped_description/      # URDF/可視化/GUI
 │       ├── biped_gait_control/     # 歩容生成サンプル
-│       ├── robstride_hardware/     # ros2_control用インターフェース（Jetson専用・開発中）
+│       ├── aoba_hardware/     # ros2_control用インターフェース（Jetson専用・開発中）
 │       └── pub_sub_cpp|python/     # ROS 2チュートリアル
 ├── rl_ws/                          # 強化学習環境（uv管理）
 │   ├── biped_walking/              # 二脚ロボット環境・訓練スクリプト
@@ -118,7 +118,7 @@ self.publisher = self.create_publisher(
 )
 ```
 
-### ros2_control（robstride_hardware）
+### ros2_control（aoba_hardware）
 
 - Hardware Interfaceの`read()`/`write()`が例外をスローしないか
 - 状態インターフェースと指令インターフェースの整合性

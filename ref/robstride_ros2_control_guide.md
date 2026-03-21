@@ -18,14 +18,14 @@ RobStride RS02モーターをros2_controlフレームワークで制御するた
 └───────────────────────────┬─────────────────────────────────┘
                             │ Hardware Interface API
 ┌───────────────────────────▼─────────────────────────────────┐
-│         RobStrideHardware (SystemInterface)                  │
+│         AobaHardware (SystemInterface)                  │
 │  - read(): モーター状態読み取り                             │
 │  - write(): コマンド送信                                     │
 │  - Lifecycle管理 (configure/activate/deactivate)            │
 └───────────────────────────┬─────────────────────────────────┘
                             │ Driver API
 ┌───────────────────────────▼─────────────────────────────────┐
-│              RobStrideDriver (ROS非依存)                     │
+│              AobaDriver (ROS非依存)                     │
 │  - CAN通信管理 (SocketCAN)                                  │
 │  - MITプロトコル実装                                         │
 │  - enable/disable/set_mode                                   │
@@ -47,17 +47,17 @@ RobStride RS02モーターをros2_controlフレームワークで制御するた
 
 ## 実装コンポーネント
 
-### 1. RobStrideDriver (ドライバークラス)
+### 1. AobaDriver (ドライバークラス)
 
-**パス:** `ros2_ws/src/robstride_hardware/`
-- `include/robstride_hardware/robstride_driver.hpp`
-- `src/robstride_driver.cpp`
+**パス:** `ros2_ws/src/aoba_hardware/`
+- `include/aoba_hardware/aoba_driver.hpp`
+- `src/aoba_driver.cpp`
 
 **役割:** ROS 2非依存のCAN通信・プロトコル層
 
 **主要機能:**
 ```cpp
-class RobStrideDriver {
+class AobaDriver {
   // 接続管理
   bool connect(const std::string& interface);
   void disconnect();
@@ -82,11 +82,11 @@ class RobStrideDriver {
   - 制御ループの遅延を最小化（古いデータを捨てて最新値のみ使用）
 - **MITモード対応**: Position, Velocity, Kp, Kd, Torque feedforwardをサポート
 
-### 2. RobStrideHardware (Hardware Interface)
+### 2. AobaHardware (Hardware Interface)
 
-**パス:** `ros2_ws/src/robstride_hardware/`
-- `include/robstride_hardware/robstride_hardware.hpp`
-- `src/robstride_hardware.cpp`
+**パス:** `ros2_ws/src/aoba_hardware/`
+- `include/aoba_hardware/aoba_hardware.hpp`
+- `src/aoba_hardware.cpp`
 
 **役割:** ros2_control標準インターフェース実装
 
@@ -178,12 +178,12 @@ hardware_interface::return_type write(Time, Duration) {
 
 ### URDF (Robot Description)
 
-**パス:** `ros2_ws/src/robstride_hardware/urdf/robstride_system.urdf.xacro`
+**パス:** `ros2_ws/src/aoba_hardware/urdf/aoba_system.urdf.xacro`
 
 ```xml
-<ros2_control name="robstride_system" type="system">
+<ros2_control name="aoba_system" type="system">
   <hardware>
-    <plugin>robstride_hardware/RobStrideHardware</plugin>
+    <plugin>aoba_hardware/AobaHardware</plugin>
     <param name="can_interface">can1</param>
     <param name="motor_id">127</param>
     <param name="kp">30.0</param>
@@ -204,7 +204,7 @@ hardware_interface::return_type write(Time, Duration) {
 
 ### Controller Configuration
 
-**パス:** `ros2_ws/src/robstride_hardware/config/controllers.yaml`
+**パス:** `ros2_ws/src/aoba_hardware/config/controllers.yaml`
 
 ```yaml
 controller_manager:
@@ -226,7 +226,7 @@ forward_position_controller:
 
 ### Launch File
 
-**パス:** `ros2_ws/src/robstride_hardware/launch/test_control.launch.py`
+**パス:** `ros2_ws/src/aoba_hardware/launch/test_control.launch.py`
 
 ```python
 def generate_launch_description():
@@ -275,7 +275,7 @@ ip -d link show can1
 
 ```bash
 cd ~/bsl_droid_ros2/ros2_ws
-pixi run colcon build --packages-select robstride_hardware
+pixi run colcon build --packages-select aoba_hardware
 source install/setup.bash
 ```
 
@@ -283,23 +283,23 @@ source install/setup.bash
 
 ```bash
 # Controller Manager + Hardware Interface起動
-pixi run ros2 launch robstride_hardware test_control.launch.py
+pixi run ros2 launch aoba_hardware test_control.launch.py
 ```
 
 **期待される出力:**
 ```
-[RobStrideHardware]: Initialized: can=can1, motor_id=127, kp=30.0, kd=1.0
-[RobStrideHardware]: Connected to CAN interface: can1
-[RobStrideHardware]: Activating...
-[RobStrideHardware]: Motor 127 activated in MIT mode
+[AobaHardware]: Initialized: can=can1, motor_id=127, kp=30.0, kd=1.0
+[AobaHardware]: Connected to CAN interface: can1
+[AobaHardware]: Activating...
+[AobaHardware]: Motor 127 activated in MIT mode
 
 # 1秒ごとに統計が出力される
-[RobStrideHardware]: [READ] exec: 10.4 μs, period: 4999.3 μs, freq: 200.0 Hz | pos: 0.000, vel: 0.000, valid: 0
-[RobStrideHardware]: [WRITE] exec: 18.6 μs, period: 5000.6 μs, freq: 200.0 Hz | cmd_pos: 0.000
+[AobaHardware]: [READ] exec: 10.4 μs, period: 4999.3 μs, freq: 200.0 Hz | pos: 0.000, vel: 0.000, valid: 0
+[AobaHardware]: [WRITE] exec: 18.6 μs, period: 5000.6 μs, freq: 200.0 Hz | cmd_pos: 0.000
 ```
 
 ```bash
-pixi run ros2 launch robstride_hardware test_sinusoidal_motion.launch.py
+pixi run ros2 launch aoba_hardware test_sinusoidal_motion.launch.py
 ```
 
 ### 4. コマンド送信
@@ -461,7 +461,7 @@ sudo setcap cap_sys_nice+ep /path/to/ros2_control_node
 - **本プロジェクトのドキュメント**:
   - [ros2_control マニュアル](ros2_control_manual.md)
   - [アーキテクチャ図](arch_ros2_control.md)
-  - [実装リファレンス](robstride_hardware_impl.md)
+  - [実装リファレンス](aoba_hardware_impl.md)
 
 ## 制限事項
 

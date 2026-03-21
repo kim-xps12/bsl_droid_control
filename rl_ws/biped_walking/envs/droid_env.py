@@ -1214,7 +1214,7 @@ class DroidEnv:
         - ETH Zurich Legged Gym:
           https://github.com/leggedrobotics/legged_gym/blob/master/legged_gym/envs/base/legged_robot.py
         - RobStride RS-02仕様:
-          ros2_ws/src/robstride_hardware/include/robstride_hardware/robstride_driver.hpp
+          ros2_ws/src/aoba_hardware/include/aoba_hardware/aoba_driver.hpp
           constexpr double VELOCITY = 44.0; // ±44 rad/s
 
         【実装】

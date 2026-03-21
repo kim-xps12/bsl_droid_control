@@ -1,117 +1,48 @@
-# biped_gait_control パッケージ
-
-逆関節（鳥脚型）二脚ロボット用の歩容パターン生成パッケージ
+# biped_gait_control ドキュメント
 
 ## 概要
 
-このパッケージは `ref/example_gait.py` のサンプル歩容モーションをROS 2のベストプラクティスに従って移植したものです。50Hzで関節角度を生成し、`/joint_states` トピックにパブリッシュします。
+このパッケージは、事前設計された脚軌道を再生する `trajectory_replay` ノードを提供します。
 
-## パッケージ構成
+現行の既定寸法は `thigh_length=0.11 m`, `shank_length=0.12 m` で、`bsl_droid_simplified_v2` 系モデルに合わせています。
 
-```
-biped_gait_control/
-├── biped_gait_control/          # Pythonモジュール
-│   ├── __init__.py
-│   ├── gait_pattern_generator.py   # メインROS 2ノード
-│   ├── kinematics.py               # 運動学計算
-│   └── trajectory.py               # 軌道生成
-├── config/                      # パラメータ設定ファイル
-│   ├── gait_params.yaml            # デフォルト設定
-│   ├── gait_params_slow.yaml       # 低速歩行用
-│   └── gait_params_fast.yaml       # 高速歩行用
-├── launch/                      # Launchファイル
-│   ├── gait_control.launch.py           # ノード単体起動
-│   ├── gait_control_with_config.launch.py  # YAML設定使用
-│   └── gait_visualization.launch.py     # RViz可視化付き
-├── doc/                         # ドキュメント
-│   ├── README.md                   # 本ドキュメント
-│   ├── technical_specification.md  # 技術仕様
-│   └── architecture.drawio         # アーキテクチャ図
-├── test/                        # テスト
-├── package.xml
-├── setup.py
-└── setup.cfg
-```
+## ノード
 
-## クイックスタート
+### trajectory_replay
 
-### ビルド
+- `source_type` に応じて軌道ソースを切替（Strategy Pattern で `compute()` を差し替え）
+- 出力は常に `joint_limits.py` でクランプ
+- `viz` モードでは `/joint_states` を publish
+- `control` モードでは加えて `/forward_position_controller/commands` を publish
+- 実機制御そのものは起動しないため、`control` モード時は別途 `aoba_hardware` 側の bringup が必要
 
-```bash
-cd ros2_ws
-pixi run colcon build --packages-select biped_gait_control
-source install/setup.bash
-```
+### トピック
 
-### 起動方法
+| トピック | 送信元 | 用途 |
+|---|---|---|
+| `/joint_states` | `trajectory_replay` | 可視化用 |
+| `/forward_position_controller/commands` | `trajectory_replay` (`control` 時) | ros2_control 位置指令 |
+| `/emergency_stop` | 外部入力 | `trajectory_replay` の停止トリガ |
 
-#### 1. RViz可視化付きで起動（推奨）
+## 軌道ソース
 
-```bash
-pixi run ros2 launch biped_gait_control gait_visualization.launch.py
-```
+| `source_type` | 実装 | 用途 |
+|---|---|---|
+| `foot` | `foot_trajectory_source.py` | 足軌道 + IK |
+| `oscillation` | `single_joint_oscillation_source.py` | 単関節検証 |
+| `waypoint` | `waypoint_playback_source.py` | ウェイポイント補間 |
 
-#### 2. ノード単体で起動
+## 設定ファイル
 
-```bash
-# RViz + robot_state_publisher を別途起動
-pixi run ros2 launch biped_description display_rviz_only.launch.py
+| ファイル | 用途 |
+|---|---|
+| `replay_foot.yaml` | 足軌道リプレイ |
+| `replay_oscillation.yaml` | 単関節振動 |
+| `replay_waypoint.yaml` | ウェイポイント再生 |
 
-# 別ターミナルで歩容生成ノードを起動
-pixi run ros2 launch biped_gait_control gait_control.launch.py
-```
+## 制限事項
 
-#### 3. パラメータをカスタマイズして起動
+- `trajectory_replay` はトルク制御や速度制御を行わない
+- 実機と可視化の統合検証は `aoba_hardware` 側の単関節デモを超えていない
 
-```bash
-# コマンドライン引数で指定
-pixi run ros2 launch biped_gait_control gait_visualization.launch.py \
-    step_frequency:=1.0 \
-    step_height:=0.05 \
-    step_length:=0.10
-
-# YAMLファイルで指定
-pixi run ros2 launch biped_gait_control gait_control_with_config.launch.py \
-    config_file:=/path/to/custom_params.yaml
-```
-
-## ノード詳細
-
-### gait_pattern_generator
-
-歩容パターンを生成し、関節角度をパブリッシュするメインノード
-
-#### パブリッシュトピック
-
-| トピック | メッセージ型 | 説明 |
-|---------|------------|------|
-| `/joint_states` | sensor_msgs/JointState | 関節角度（robot_state_publisher用） |
-| `/joint_trajectory` | trajectory_msgs/JointTrajectory | 軌道コントローラ用 |
-| `/foot_markers` | visualization_msgs/MarkerArray | 足先位置可視化用 |
-
-#### パラメータ
-
-| パラメータ | 型 | デフォルト | 説明 |
-|-----------|-----|----------|------|
-| `publish_rate` | double | 50.0 | パブリッシュレート [Hz] |
-| `step_height` | double | 0.04 | 足上げ高さ [m] |
-| `step_length` | double | 0.08 | ストライド長 [m] |
-| `step_frequency` | double | 0.5 | 歩行周波数 [Hz] |
-| `leg_extension_ratio` | double | 0.90 | 脚伸展率（0.0-1.0） |
-| `thigh_length` | double | 0.18 | 大腿部長さ [m] |
-| `shank_length` | double | 0.20 | 下腿部長さ [m] |
-| `enabled` | bool | true | 歩行パターン生成の有効/無効 |
-
-## 関連ドキュメント
-
-- [技術仕様書](technical_specification.md) - 運動学・軌道生成の詳細
-- [アーキテクチャ図](architecture.drawio) - システム構成図
-
-## 依存パッケージ
-
-- `rclpy`
-- `std_msgs`
-- `sensor_msgs`
-- `trajectory_msgs`
-- `visualization_msgs`
-- `numpy`
+起動コマンドはプロジェクトルートの `README.md` を参照してください。

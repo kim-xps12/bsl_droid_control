@@ -13,8 +13,10 @@ pixiでROS 2環境を管理している．
 ```bash
 cd ros2_ws
 pixi install
-pixi run colcon build --symlink-install
+pixi run build
 ```
+
+> **注意**: `pixi run build` は `pixi.toml` の `[tasks]` で定義されたビルドコマンドを実行する。`--cmake-args -DPython3_EXECUTABLE=$CONDA_PREFIX/bin/python3` はタスク定義に含まれているため、手動で指定する必要はない。pyenvなど他のPython環境がある場合でもpixi環境のPythonが自動的に使用される。
 
 ### 強化学習環境（rl_ws）
 
@@ -48,11 +50,19 @@ cd ros2_ws
 # URDF可視化（カスタムGUI付き）
 pixi run ros2 launch biped_description display_custom.launch.py
 
-# 歩容生成 + RViz可視化
-pixi run ros2 launch biped_gait_control gait_visualization.launch.py
-
 # 外部から /joint_states を供給する場合（競合回避）
 pixi run ros2 launch biped_description display_rviz_only.launch.py
+
+# 軌道リプレイ（足軌道 / 単関節振動 / ウェイポイント補間）
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py config_file:=replay_oscillation.yaml
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py config_file:=replay_waypoint.yaml
+
+# RL歩行テレオペ（Genesis物理シミュレーション + ゲームパッド）
+pixi run ros2 launch biped_bringup genesis_teleop.launch.py
+
+# 実機制御（Jetson専用）
+pixi run ros2 launch aoba_hardware bringup.launch.py
 ```
 
 ### 注意事項
@@ -116,15 +126,32 @@ python biped_walking/...               # uvなしでは依存関係が解決さ�
 - macOSでのthread affinity警告は無視可
 - KDL root link inertia警告は可視化に影響なし
 
+## ビルド警告の取り扱い【必須】
+
+Coding Agentはビルド時に発生する**すべての警告**に対処する義務がある．「ツールチェーン起因」「実害なし」等の理由で警告を無視することは許されない．
+
+### 原則
+
+1. **プロジェクト側で修正可能な警告**: 直ちにソースコードや設定ファイルを修正して解消すること
+2. **ツールチェーン・外部依存起因で直接修正不可能な警告**: CMakeやビルドスクリプトの設定で警告を抑制する対策を講じること（例: `set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON)`, 環境変数の設定等）
+3. **対策が不明な場合**: 調査を行い、対策案をユーザに提示すること．「無視してよい」という結論は出さない
+
+### 具体的な既知ケース
+
+| 警告 | 対処 |
+|------|------|
+| `cmake_minimum_required` deprecation | `VERSION 3.14` 以上を指定 |
+| `install_name_tool: warning: changes being made to the file will invalidate the code signature` | macOS + conda-forge環境固有．ビルドツールチェーン起因で直接修正不可だが、`MACOSX_RPATH`設定やcodesign再署名スクリプトの導入を検討すること |
+
 ## コード品質ルール【必須】
 
-このリポジトリではPythonコードの品質を担保するため、以下のツールを使用する。Coding Agentは必ずこれらのルールに従うこと。
+このリポジトリではPythonおよびC++コードの品質を担保するため、以下のツールを使用する。Coding Agentは必ずこれらのルールに従うこと。
 
-### 自動チェック（Claude Code Hooks）
+### Python 自動チェック（Claude Code Hooks）
 
 `.claude/settings.json`で設定されたhooksにより、Edit/Writeツール実行後に自動でruffとmypyが実行される。Coding Agentはフィードバックされたエラーを修正すること。
 
-### 手動チェックコマンド
+### Python 手動チェックコマンド
 
 ```bash
 cd rl_ws
@@ -142,7 +169,7 @@ uv run ruff format biped_walking/ scripts/ assets/export_urdf.py check_training_
 uv run mypy biped_walking/ scripts/ assets/export_urdf.py check_training_logs.py
 ```
 
-### コーディング規約
+### Python コーディング規約
 
 | 項目 | ルール |
 |------|--------|
@@ -159,11 +186,48 @@ uv run mypy biped_walking/ scripts/ assets/export_urdf.py check_training_logs.py
 - `N806`: 行列を表す大文字変数名（例: `R`, `J`, `M`）
 - `B008`: Pydantic等でのdefault引数での関数呼び出し
 
-### 設定ファイル
+### Python 設定ファイル
 
 - `rl_ws/pyproject.toml`: ruff, mypyの設定
 - `.claude/settings.json`: Claude Code hooksの設定
-- `.claude/hooks/lint-check.sh`: 自動チェックスクリプト
+- `.claude/hooks/lint-check.sh`: Python自動チェックスクリプト
+
+### C++ 自動チェック（Claude Code Hooks）
+
+`.claude/settings.json`で設定されたhooksにより、`ros2_ws/src/aoba_hardware/` 以下のC++ファイル（`.cpp`, `.hpp`）のEdit/Write後に自動でclang-formatとcpplintが実行される。Coding Agentはフィードバックされたエラーを修正すること。
+
+### C++ 手動チェックコマンド
+
+```bash
+cd ros2_ws
+
+# clang-format: フォーマット適用
+pixi run format-cpp
+
+# clang-format: フォーマットチェック（差分表示のみ）
+pixi run check-format-cpp
+
+# cpplint: スタイルチェック
+pixi run lint-cpp
+```
+
+### C++ コーディング規約
+
+| 項目 | ルール |
+|------|--------|
+| スタイル | Google C++ Style Guide準拠（ROS 2カスタマイズ） |
+| 行長 | 100文字以内 |
+| インデント | 2スペース |
+| ヘッダガード | `#pragma once` を使用 |
+| include順序 | 自ヘッダ → C system → C++ system → 外部ライブラリ → プロジェクト |
+| 命名規則 | snake_case（関数・変数）、PascalCase（クラス・構造体） |
+| ライセンスヘッダ | 全ファイル先頭に `// Copyright (c) 2024-2025, Yutaro KIMURA (B-SKY Lab)` + SPDX |
+
+### C++ 設定ファイル
+
+- `ros2_ws/src/aoba_hardware/.clang-format`: clang-formatの設定
+- `ros2_ws/src/aoba_hardware/.clang-tidy`: clang-tidyの設定（Jetson上での手動実行用）
+- `.claude/hooks/cpp-lint-check.sh`: C++自動チェックスクリプト
 
 ## ドキュメント類の作成ルール
 - 文書は`markdown`形式のドキュメントとして作成すること

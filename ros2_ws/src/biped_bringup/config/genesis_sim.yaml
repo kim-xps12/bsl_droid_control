@@ -1,0 +1,68 @@
+# Genesis simulator parameters matching RL training environment
+# Reference: rl_ws/biped_walking/train/droid_train_omni_v21.py
+genesis_sim_node:
+  ros__parameters:
+    urdf_path: ""  # Override at launch time
+    dt: 0.02       # 50Hz control frequency (matches training)
+    substeps: 2
+    kp: 35.0
+    kd: 2.0
+    # Per-joint PD gain overrides (parallel lists: names[i] -> values[i])
+    kp_override_names:
+      - left_knee_pitch_joint
+      - right_knee_pitch_joint
+    kp_override_values:
+      - 50.0   # V9: knee応答性強化
+      - 50.0
+    kd_override_names:
+      - left_ankle_pitch_joint
+      - right_ankle_pitch_joint
+    kd_override_values:
+      - 8.0    # V16: ankle振動抑制
+      - 8.0
+    base_init_pos:
+      - 0.0
+      - 0.0
+      - 0.35
+    base_init_quat:
+      - 1.0
+      - 0.0
+      - 0.0
+      - 0.0
+    show_viewer: true
+    joint_names:
+      - left_hip_yaw_joint
+      - left_hip_roll_joint
+      - left_hip_pitch_joint
+      - left_knee_pitch_joint
+      - left_ankle_pitch_joint
+      - right_hip_yaw_joint
+      - right_hip_roll_joint
+      - right_hip_pitch_joint
+      - right_knee_pitch_joint
+      - right_ankle_pitch_joint
+    # Default standing pose (hip 60°, knee -100°, ankle 45°)
+    default_dof_pos:
+      - 0.0      # left_hip_yaw
+      - 0.0      # left_hip_roll
+      - 1.047    # left_hip_pitch (60°)
+      - -1.745   # left_knee_pitch (-100°)
+      - 0.785    # left_ankle_pitch (45°)
+      - 0.0      # right_hip_yaw
+      - 0.0      # right_hip_roll
+      - 1.047    # right_hip_pitch (60°)
+      - -1.745   # right_knee_pitch (-100°)
+      - 0.785    # right_ankle_pitch (45°)
+    # Observation construction parameters (from training config)
+    action_scale: 0.25
+    gait_frequency: 1.5
+    obs_scales.lin_vel: 2.0
+    obs_scales.ang_vel: 0.25
+    obs_scales.dof_pos: 1.0
+    obs_scales.dof_vel: 0.05
+    commands_scale:
+      - 2.0    # lin_vel_x
+      - 2.0    # lin_vel_y
+      - 0.25   # ang_vel_yaw
+    # Hip roll PDターゲットクランプ（訓練環境と一致: droid_env_unitree.py V13+）
+    hip_roll_inward_limit: -0.05  # [rad] V19: 脚の内向き回転制限

@@ -207,7 +207,7 @@
           &lt;mxGeometry x=&quot;120&quot; y=&quot;670&quot; width=&quot;320&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
         &lt;/mxCell&gt;
 
-        &lt;mxCell id=&quot;cmd-jetson&quot; value=&quot;Jetson側:&amp;#xa;&amp;#xa;# コード更新 &amp;amp; ビルド&amp;#xa;cd ~/ros2_ws &amp;amp;&amp;amp; git pull &amp;amp;&amp;amp; colcon build&amp;#xa;&amp;#xa;# ロボット起動&amp;#xa;ros2 launch robstride_hardware robstride_control.launch.py&amp;#xa;&amp;#xa;# 全システム起動&amp;#xa;ros2 launch biped_bringup robot_bringup.launch.py&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=11;strokeColor=#fbc02d&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+        &lt;mxCell id=&quot;cmd-jetson&quot; value=&quot;Jetson側:&amp;#xa;&amp;#xa;# コード更新 &amp;amp; ビルド&amp;#xa;cd ~/ros2_ws &amp;amp;&amp;amp; git pull &amp;amp;&amp;amp; colcon build&amp;#xa;&amp;#xa;# ロボット起動&amp;#xa;ros2 launch aoba_hardware robstride_control.launch.py&amp;#xa;&amp;#xa;# 全システム起動&amp;#xa;ros2 launch biped_bringup robot_bringup.launch.py&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#fff9c4;align=left;verticalAlign=top;whiteSpace=wrap;rounded=1;fontSize=11;strokeColor=#fbc02d&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
           &lt;mxGeometry x=&quot;460&quot; y=&quot;670&quot; width=&quot;380&quot; height=&quot;100&quot; as=&quot;geometry&quot; /&gt;
         &lt;/mxCell&gt;
 
@@ -397,7 +397,7 @@
     <text x="470" y="706" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333"># コード更新 &amp; ビルド</text>
     <text x="470" y="720" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333">cd ~/ros2_ws &amp;&amp; git pull &amp;&amp; colcon build</text>
     <text x="470" y="738" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333"># ロボット起動</text>
-    <text x="470" y="752" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333">ros2 launch robstride_hardware ...</text>
+    <text x="470" y="752" text-anchor="start" font-family="Courier, monospace" font-size="10" fill="#333">ros2 launch aoba_hardware ...</text>
 
     <!-- Debug commands -->
     <rect x="860" y="670" width="230" height="100" rx="10" ry="10" fill="#e8f5e9" stroke="#4caf50" stroke-width="1"/>

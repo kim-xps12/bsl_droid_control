@@ -1,0 +1,47 @@
+# RL policy inference node parameters
+# Reference: doc/design/ros2_walking/system_plan.md Step 4
+
+biped_rl_policy_node:
+  ros__parameters:
+    mode: viz  # viz / sim / control
+    model_path: ""  # Set at launch time
+    policy_rate: 50.0  # [Hz] inference rate
+
+    action_scale: 0.25
+    gait_frequency: 1.5  # [Hz] gait phase update frequency
+
+    obs_scales:
+      lin_vel: 2.0
+      ang_vel: 0.25
+      dof_pos: 1.0
+      dof_vel: 0.05
+
+    commands_scale: [2.0, 2.0, 0.25]  # [lin_vel_x, lin_vel_y, ang_vel_yaw]
+
+    # Default joint positions [rad]
+    # hip_pitch=60deg, knee=-100deg, ankle=45deg (droid_train_omni_v21.py)
+    # Order: L_hip_yaw, L_hip_roll, L_hip_pitch, L_knee, L_ankle,
+    #        R_hip_yaw, R_hip_roll, R_hip_pitch, R_knee, R_ankle
+    default_dof_pos:
+      - 0.0       # left_hip_yaw
+      - 0.0       # left_hip_roll
+      - 1.047     # left_hip_pitch (60 deg)
+      - -1.745    # left_knee_pitch (-100 deg)
+      - 0.785     # left_ankle_pitch (45 deg)
+      - 0.0       # right_hip_yaw
+      - 0.0       # right_hip_roll
+      - 1.047     # right_hip_pitch (60 deg)
+      - -1.745    # right_knee_pitch (-100 deg)
+      - 0.785     # right_ankle_pitch (45 deg)
+
+    joint_names:
+      - left_hip_yaw_joint
+      - left_hip_roll_joint
+      - left_hip_pitch_joint
+      - left_knee_pitch_joint
+      - left_ankle_pitch_joint
+      - right_hip_yaw_joint
+      - right_hip_roll_joint
+      - right_hip_pitch_joint
+      - right_knee_pitch_joint
+      - right_ankle_pitch_joint

@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="aoba_robot">
+
+  <!-- ================================================================== -->
+  <!-- Xacro macro for a RobStride motor joint (ros2_control definition)  -->
+  <!-- ================================================================== -->
+  <xacro:macro name="aoba_joint" params="name can_interface motor_id kp kd">
+    <joint name="${name}">
+      <param name="can_interface">${can_interface}</param>
+      <param name="motor_id">${motor_id}</param>
+      <param name="kp">${kp}</param>
+      <param name="kd">${kd}</param>
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- ================================================================== -->
+  <!-- Minimal robot description (dummy links for standalone testing)     -->
+  <!-- For the full model, use biped_description/urdf instead.            -->
+  <!-- ================================================================== -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- Dummy link and fixed joint so URDF is valid with no movable joints -->
+  <link name="dummy_link"/>
+  <joint name="dummy_fixed" type="fixed">
+    <parent link="base_link"/>
+    <child link="dummy_link"/>
+  </joint>
+
+  <!-- ================================================================== -->
+  <!-- ros2_control configuration: 10 joints on 2 CAN buses              -->
+  <!-- ================================================================== -->
+  <ros2_control name="aoba_system" type="system">
+    <hardware>
+      <plugin>aoba_hardware/AobaHardware</plugin>
+    </hardware>
+
+    <!-- Left leg (CAN1) -->
+    <xacro:aoba_joint name="left_hip_yaw_joint"     can_interface="can1" motor_id="11" kp="30.0" kd="1.0"/>
+    <xacro:aoba_joint name="left_hip_roll_joint"    can_interface="can1" motor_id="12" kp="30.0" kd="1.0"/>
+    <xacro:aoba_joint name="left_hip_pitch_joint"   can_interface="can1" motor_id="13" kp="30.0" kd="1.0"/>
+    <xacro:aoba_joint name="left_knee_pitch_joint"  can_interface="can1" motor_id="14" kp="30.0" kd="1.0"/>
+    <xacro:aoba_joint name="left_ankle_pitch_joint" can_interface="can1" motor_id="15" kp="30.0" kd="1.0"/>
+
+    <!-- Right leg (CAN2) -->
+    <xacro:aoba_joint name="right_hip_yaw_joint"     can_interface="can2" motor_id="21" kp="30.0" kd="1.0"/>
+    <xacro:aoba_joint name="right_hip_roll_joint"    can_interface="can2" motor_id="22" kp="30.0" kd="1.0"/>
+    <xacro:aoba_joint name="right_hip_pitch_joint"   can_interface="can2" motor_id="23" kp="30.0" kd="1.0"/>
+    <xacro:aoba_joint name="right_knee_pitch_joint"  can_interface="can2" motor_id="24" kp="30.0" kd="1.0"/>
+    <xacro:aoba_joint name="right_ankle_pitch_joint" can_interface="can2" motor_id="25" kp="30.0" kd="1.0"/>
+  </ros2_control>
+
+</robot>

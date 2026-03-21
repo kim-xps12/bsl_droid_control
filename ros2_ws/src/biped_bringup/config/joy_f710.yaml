@@ -1,0 +1,25 @@
+# Logitech F710r gamepad configuration (DirectInput mode)
+# Axis/button mapping based on biped_eval_gamepad.py
+
+joy_node:
+  ros__parameters:
+    deadzone: 0.08
+
+teleop_twist_joy_node:
+  ros__parameters:
+    axis_linear:
+      x: 1  # Left stick Y-axis -> forward/backward
+      y: 0  # Left stick X-axis -> lateral
+    axis_angular:
+      yaw: 2  # Right stick X-axis -> yaw rotation
+    scale_linear:
+      x: -0.5  # [m/s] Negative for sign inversion
+      y: -0.3  # [m/s] Negative for sign inversion
+    scale_angular:
+      yaw: -1.0  # [rad/s] Negative for sign inversion
+    enable_button: 4  # LB button (deadman switch, SR-04)
+
+biped_joy_safety_node:
+  ros__parameters:
+    emergency_stop_buttons: [9, 10]  # L3+R3 simultaneous press (FR-05)
+    joy_timeout: 0.5  # Gamepad disconnect detection timeout [s] (FR-07)

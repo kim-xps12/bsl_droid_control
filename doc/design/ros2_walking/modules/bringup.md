@@ -4,106 +4,51 @@
 
 `biped_bringup`は、BSL-Droid歩行制御システム全体の起動と設定を統括するament_cmakeパッケージである。本パッケージは実行可能ノードを含まず、launchファイルと設定ファイルのみで構成される。
 
-各実行環境（MacBook単体での可視化、Jetsonでの実機制御、MacBook+Jetsonの分散構成）に応じたlaunchファイルを提供し、関連する全パッケージのノードを適切なパラメータで統合起動する。
+各実行環境（Genesisシミュレーション、Jetsonでの実機制御、MacBook+Jetsonの分散構成）に応じたlaunchファイルを提供し、関連する全パッケージのノードを適切なパラメータで統合起動する。
 
 ---
 
-## 2. ディレクトリ構造
+## 2. Launchファイル
 
-```
-biped_bringup/
-├── CMakeLists.txt
-├── package.xml
-├── launch/
-│   ├── viz_teleop.launch.py
-│   ├── sim_teleop.launch.py
-│   ├── real_control.launch.py
-│   └── real_viz.launch.py
-├── config/
-│   ├── joy_f710.yaml
-│   ├── rl_policy.yaml
-│   ├── safety_limits.yaml
-│   ├── controllers.yaml
-│   └── walking.rviz
-└── doc/
-```
+### 2.1 genesis_teleop.launch.py（Genesisシミュレーション、MacBook）[実装済み]
 
-CMakeLists.txtでは`launch/`と`config/`ディレクトリをinstall先に含める。ament_cmakeパッケージとしてビルドし、`find_package(ament_cmake REQUIRED)`のみを必須依存とする。
-
----
-
-## 3. Launchファイル
-
-### 3.1 viz_teleop.launch.py（簡易確認用、MacBook）
-
-ノード起動確認・トピック疎通確認用の簡易起動ファイルである。MacBook単体で動作し、ros2_controlは使用しない。物理シミュレーションを行わないため、歩行品質の検証には使用しない。歩行検証にはsim_teleop.launch.pyを使用すること。
+Genesis物理シミュレーションによる歩行検証の起動ファイルである。MacBook単体で動作する。genesis_sim_nodeが物理シミュレーション・観測ベクトル構築・PD制御を担当し、biped_rl_policy_nodeが純粋な推論ラッパーとしてイベント駆動で動作する。ros2_controlは使用しない。
 
 **起動ノード:**
 
 | ノード | パッケージ | 役割 |
 |---|---|---|
+| robot_state_publisher | robot_state_publisher | URDF→TF変換（xacro URDF使用） |
+| genesis_sim_node | biped_genesis_sim | Genesis環境ノード（物理ステップ + 観測構築 + PD制御） |
 | joy_node | joy | F710rゲームパッドの入力取得 |
 | teleop_twist_joy_node | teleop_twist_joy | Joy→Twist変換、デッドマンスイッチ処理 |
-| biped_joy_safety_node | biped_teleop | 緊急停止ボタン監視、ゲームパッド切断検出 |
-| biped_rl_policy_node | biped_rl_policy | RLポリシー推論（mode=viz） |
-| robot_state_publisher | robot_state_publisher | URDF→TF変換 |
-| rviz2 | rviz2 | 3D可視化 |
+| biped_joy_safety_node | biped_safety | 緊急停止ボタン監視、ゲームパッド切断検出 |
+| biped_rl_policy_node | biped_rl_policy | RLポリシー推論（mode=sim、イベント駆動） |
 
-**動作概要:**
+**Launch引数:**
 
-ゲームパッドの入力をjoy_nodeが`/joy`トピックとしてpublishし、teleop_twist_joy_nodeが`/cmd_vel`に変換する。biped_joy_safety_nodeは同じ`/joy`を購読し、緊急停止ボタンの監視とゲームパッド切断検出を行う。biped_rl_policy_nodeはvizモードで動作し、`/cmd_vel`からRLポリシー推論を行って`/joint_states`を直接publishする。robot_state_publisherが`/joint_states`から`/tf`を生成し、rviz2がロボットモデルを可視化する。
-
-vizモードではIMUデータとしてモック値（base_ang_vel=[0,0,0]、projected_gravity=[0,0,-1]等）を使用する。RLポリシーは閉ループ制御器であるため、モックセンサでは正しい歩容が生成されない。このlaunchファイルはノード間のトピック接続が正しいことの確認にのみ使用する。
-
-**パラメータ読込:**
-
-- joy_f710.yaml → joy_node, teleop_twist_joy_node, biped_joy_safety_node
-- rl_policy.yaml → biped_rl_policy_node（mode=vizをオーバーライド）
-- walking.rviz → rviz2
-
-### 3.2 sim_teleop.launch.py（Phase 1、MacBook）
-
-Phase 1におけるGazeboシミュレーション歩行検証の起動ファイルである。MacBook単体で動作し、Gazebo Harmonicのgz_ros2_controlプラグインによりros2_controlをシミュレーション上で使用する。これにより、実機（Phase 3）と同一のトピック構成・コントローラ設定で歩行を検証できる。
-
-**起動ノード:**
-
-| ノード | パッケージ | 役割 |
+| 引数 | デフォルト | 説明 |
 |---|---|---|
-| gz_sim | ros_gz_sim | Gazebo Harmonicシミュレータ |
-| controller_manager | controller_manager | ros2_controlコントローラ管理（gz_ros2_control経由） |
-| forward_position_controller | forward_command_controller | 位置指令のシミュレータへの転送 |
-| joint_state_broadcaster | joint_state_broadcaster | シミュレータ関節状態→/joint_states配信 |
-| joy_node | joy | F710rゲームパッドの入力取得 |
-| teleop_twist_joy_node | teleop_twist_joy | Joy→Twist変換、デッドマンスイッチ処理 |
-| biped_joy_safety_node | biped_teleop | 緊急停止ボタン監視、ゲームパッド切断検出 |
-| biped_rl_policy_node | biped_rl_policy | RLポリシー推論（mode=sim） |
-| robot_state_publisher | robot_state_publisher | URDF→TF変換 |
-| rviz2 | rviz2 | 3D可視化 |
+| `model_path` | `""` | 学習済みモデルファイルのパス（.pt） |
+| `show_viewer` | `true` | Genesisビューアの表示 |
+| `genesis_urdf` | `rl_ws/assets/bsl_droid_simplified_v2.urdf` | Genesis用プレーンURDFのパス |
 
 **動作概要:**
 
-Gazebo Harmonicが物理シミュレーションを実行し、gz_ros2_controlプラグインがros2_controlのコントローラをシミュレータに接続する。biped_rl_policy_nodeはsimモードで動作し、`/cmd_vel`からRLポリシー推論を行って`/forward_position_controller/commands`にFloat64MultiArrayとして出力する。forward_position_controllerがGazeboのposition interfaceに指令を転送する。
+genesis_sim_nodeがGenesis物理エンジンを初期化し、URDFからロボットモデルをロードする。genesis_sim_nodeとbiped_rl_policy_nodeは同期イベント駆動ループを構成する: genesis_sim_nodeが物理ステップ実行後に50次元の観測ベクトルを`/policy_obs`としてpublish → biped_rl_policy_nodeが受信して推論し10次元のアクションを`/policy_actions`としてpublish → genesis_sim_nodeが受信してPD制御で関節を駆動 → 次の物理ステップ → ...
 
-GazeboのIMUセンサプラグインが`/imu/data`を配信し、joint_state_broadcasterがシミュレータの関節状態を`/joint_states`として配信する。biped_rl_policy_nodeはこれらの物理フィードバックを用いて観測ベクトルを構築するため、閉ループ制御による歩容生成が正しく機能する。
+genesis_sim_nodeは`/clock`をpublishし、他の全ノードは`use_sim_time:=true`でシミュレーション時刻に同期する。genesis_sim_nodeはクロックソースであるため`use_sim_time:=false`で動作する。
 
-全ノードに`use_sim_time:=true`を設定し、Gazeboのシミュレーション時刻に同期する。
+起動は段階的に行う: t=0でrobot_state_publisherとgenesis_sim_node、t=3sでbiped_rl_policy_node、joy_node、teleop_twist_joy_node、biped_joy_safety_nodeを起動する。Genesis初期化に数秒を要するため、ポリシーノードの起動を遅延させる。
+
+genesis_sim_nodeはプレーンURDF（xacroではなく）を使用する。robot_state_publisherはxacro URDFを使用してTFツリーを構築する。
 
 **パラメータ読込:**
 
 - joy_f710.yaml → joy_node, teleop_twist_joy_node, biped_joy_safety_node
-- rl_policy.yaml → biped_rl_policy_node（mode=simをオーバーライド）
-- controllers.yaml → controller_manager（実機と同一設定）
-- walking.rviz → rviz2
+- genesis_sim.yaml → genesis_sim_node
 
-**URDF/Gazebo設定:**
-
-biped_descriptionのURDF/xacroに以下のGazeboプラグインを追加する:
-
-- `gz_ros2_control`プラグイン: ros2_controlのHardware Interfaceをシミュレータに接続
-- IMUセンサプラグイン: `base_link`にIMUセンサを配置し`/imu/data`を配信
-- 接触センサプラグイン（任意）: 足裏の接地状態検出
-
-### 3.3 real_control.launch.py（Phase 3、Jetson）
+### 2.2 real_control.launch.py（Phase 3、Jetson）[未実装・計画]
 
 Phase 3における実機制御の起動ファイルである。Jetson Orin Nano Super上で動作し、ros2_controlを介してRS02モータを制御する。
 
@@ -112,7 +57,7 @@ Phase 3における実機制御の起動ファイルである。Jetson Orin Nano
 | ノード | パッケージ | 役割 |
 |---|---|---|
 | controller_manager | controller_manager | ros2_controlコントローラ管理 |
-| robstride_hardware | robstride_hardware | RS02モータHardware Interface（200Hz） |
+| aoba_hardware | aoba_hardware | RS02モータHardware Interface（200Hz） |
 | forward_position_controller | forward_command_controller | 位置指令のHWインターフェースへの転送 |
 | joint_state_broadcaster | joint_state_broadcaster | 実エンコーダ→/joint_states配信 |
 | imu_driver | （IMUドライバパッケージ） | IMUセンサデータ取得 |
@@ -120,11 +65,11 @@ Phase 3における実機制御の起動ファイルである。Jetson Orin Nano
 | biped_safety_node | biped_safety | 200Hz安全監視 |
 | joy_node | joy | F710rゲームパッド入力 |
 | teleop_twist_joy_node | teleop_twist_joy | Joy→Twist変換、デッドマンスイッチ処理 |
-| biped_joy_safety_node | biped_teleop | 緊急停止ボタン監視、ゲームパッド切断検出 |
+| biped_joy_safety_node | biped_safety | 緊急停止ボタン監視、ゲームパッド切断検出 |
 
 **動作概要:**
 
-robstride_hardwareがCAN bus経由でRS02モータと200Hz通信を行う。biped_rl_policy_nodeはcontrolモードで動作し、`/cmd_vel`からRLポリシー推論を行って`/forward_position_controller/commands`にFloat64MultiArrayとして出力する。forward_position_controllerがハードウェアPD制御（kp=35, kd=2）で200Hzの位置追従を行う。
+aoba_hardwareがCAN bus経由でRS02モータと200Hz通信を行う。biped_rl_policy_nodeはcontrolモードで動作し、`/cmd_vel`からRLポリシー推論を行って`/forward_position_controller/commands`にFloat64MultiArrayとして出力する。forward_position_controllerがハードウェアPD制御（kp=35, kd=2）で200Hzの位置追従を行う。
 
 biped_safety_nodeは`/joint_states`と`/imu/data`を200Hzで監視し、安全違反検出時に`/emergency_stop`を発行する。
 
@@ -137,9 +82,9 @@ biped_safety_nodeは`/joint_states`と`/imu/data`を200Hzで監視し、安全�
 
 **スケジューリング:**
 
-Jetson上ではリアルタイムスケジューリングを適用する。robstride_hardwareはSCHED_FIFO優先度50、biped_safety_nodeはSCHED_FIFO優先度45で動作する（次期ノード設計の性能要件表に準拠）。
+Jetson上ではリアルタイムスケジューリングを適用する。aoba_hardwareはSCHED_FIFO優先度50、biped_safety_nodeはSCHED_FIFO優先度45で動作する（次期ノード設計の性能要件表に準拠）。
 
-### 3.4 real_viz.launch.py（Phase 3、MacBook）
+### 2.3 real_viz.launch.py（Phase 3、MacBook）[未実装・計画]
 
 Phase 3においてMacBookからJetsonの実機状態を可視化するための起動ファイルである。Jetson上の`real_control.launch.py`と併用する。
 
@@ -160,11 +105,17 @@ MacBookとJetsonは同一のROS_DOMAIN_ID（デフォルト42）で通信する�
 
 - walking.rviz → rviz2
 
+### 2.4 trajectory_replay.launch.py（軌道リプレイ、MacBook / Jetson）[実装済み]
+
+`biped_gait_control`パッケージが提供する軌道リプレイ専用の起動ファイルである。事前設計された脚軌道を再生し、RViz2上の3Dモデルと実機の動きの一致を確認する用途に使用する。
+
+本launchファイルは`biped_bringup`パッケージではなく`biped_gait_control`パッケージに所属する。詳細は[biped_gait_controlモジュール設計書](./gait_control.md)を参照。
+
 ---
 
-## 4. 設定ファイル
+## 3. 設定ファイル
 
-### 4.1 config/joy_f710.yaml
+### 3.1 config/joy_f710.yaml
 
 Logitech F710rゲームパッド（DirectInputモード）の軸・ボタンマッピングを定義する。joy_node、teleop_twist_joy_node、biped_joy_safety_node の3ノードに対するパラメータを含む。
 
@@ -190,33 +141,82 @@ Logitech F710rゲームパッド（DirectInputモード）の軸・ボタンマ�
 
 | パラメータ | 値 | 説明 |
 |---|---|---|
-| emergency_stop_button | 7 | STARTボタン（緊急停止、FR-05） |
+| emergency_stop_buttons | [9, 10] | L3+R3同時押し込み（緊急停止、FR-05） |
 | joy_timeout | 0.5 | ゲームパッド切断検出のタイムアウト [秒]（FR-07） |
 
 軸マッピングは`rl_ws/biped_walking/biped_eval_gamepad.py`のマッピングに準拠する（要件FR-01）。`scale_*` パラメータを負値にすることで、joy_nodeが報告する符号（スティック上/左が負値）をロボット座標系（前進/左移動が正）に変換する。速度上限のデフォルト値はRL学習時の`commands_scale`に合わせて設定する。
 
-### 4.2 config/rl_policy.yaml
+### 3.2 config/rl_policy.yaml
 
-RLポリシー推論ノードのパラメータを定義する。
+RLポリシーノードのデフォルトパラメータを定義する。simモードではgenesis_sim.yamlが観測構築パラメータを提供する。
 
 **主要パラメータ:**
 
 | パラメータ | 値 | 説明 |
 |---|---|---|
 | model_path | （実行時指定） | 学習済みモデルファイルのパス |
-| config_path | （実行時指定） | cfgs.pklファイルのパス |
 | obs_scales.dof_pos | 1.0 | 関節偏差の観測スケール |
 | obs_scales.dof_vel | 0.05 | 関節速度の観測スケール |
 | action_scale | 0.25 | アクション→関節位置変換のスケール |
 | default_dof_pos | [0.0, 0.0, 1.047, -1.745, 0.785, 0.0, 0.0, 1.047, -1.745, 0.785] | 各関節のデフォルト位置 [rad] |
-| gait_frequency | （学習時設定に準拠） | 歩容位相の周波数 [Hz] |
-| mode | viz | 動作モード（viz/sim/control） |
+| gait_frequency | 1.5 | 歩容位相の周波数 [Hz] |
+| mode | sim | 動作モード（sim/control） |
 
 `default_dof_pos`の値はhip_pitch=60度、knee_pitch=-100度、ankle_pitch=45度に対応する（`droid_train_omni_v21.py`の設定に準拠）。hip_yawとhip_rollのデフォルトは0.0である。関節順序はALL_JOINTS（left_hip_yaw, left_hip_roll, left_hip_pitch, left_knee_pitch, left_ankle_pitch, right_hip_yaw, right_hip_roll, right_hip_pitch, right_knee_pitch, right_ankle_pitch）に従う。
 
-### 4.3 config/safety_limits.yaml
+### 3.3 config/genesis_sim.yaml
+
+Genesis物理シミュレーションノードのパラメータを定義する。RL学習環境（`droid_train_omni_v21.py`）の設定を忠実に再現する。
+
+**物理パラメータ:**
+
+| パラメータ | 値 | 説明 |
+|---|---|---|
+| dt | 0.02 | 制御周期 [s]（50Hz、学習時と一致） |
+| substeps | 2 | 物理サブステップ数 |
+| kp | 35.0 | PD制御の位置ゲイン（デフォルト） |
+| kd | 2.0 | PD制御の速度ゲイン（デフォルト） |
+
+**関節別PDゲインオーバーライド:**
+
+| 関節 | kp | kd | 備考 |
+|---|---|---|---|
+| left/right_knee_pitch_joint | 50.0 | (デフォルト) | 膝の応答性強化 |
+| left/right_ankle_pitch_joint | (デフォルト) | 8.0 | 足首の振動抑制 |
+
+**初期状態:**
+
+| パラメータ | 値 | 説明 |
+|---|---|---|
+| base_init_pos | [0.0, 0.0, 0.35] | 初期ベース位置 [m] |
+| base_init_quat | [1.0, 0.0, 0.0, 0.0] | 初期ベース姿勢（クォータニオン） |
+| show_viewer | true | Genesisビューアの表示 |
+
+**観測構築パラメータ（学習環境と同一）:**
+
+| パラメータ | 値 | 説明 |
+|---|---|---|
+| action_scale | 0.25 | アクション→関節位置変換のスケール [rad] |
+| gait_frequency | 1.5 | 歩容位相の周波数 [Hz] |
+| obs_scales.lin_vel | 2.0 | ベース線速度のスケーリング |
+| obs_scales.ang_vel | 0.25 | ベース角速度のスケーリング |
+| obs_scales.dof_pos | 1.0 | 関節偏差のスケーリング |
+| obs_scales.dof_vel | 0.05 | 関節速度のスケーリング |
+| commands_scale | [2.0, 2.0, 0.25] | 速度指令のスケーリング [lin_vel_x, lin_vel_y, ang_vel_yaw] |
+
+**追加パラメータ:**
+
+| パラメータ | 値 | 説明 |
+|---|---|---|
+| hip_roll_inward_limit | -0.05 | hip roll PDターゲットクランプ [rad]。脚の内向き回転を制限（学習環境と一致） |
+| feet_names | [left_foot_link, right_foot_link] | 接触検出用の足リンク名 |
+| contact_threshold | 0.05 | 接触検出のZ高さ閾値 [m] |
+
+### 3.4 config/safety_limits.yaml
 
 biped_safety_nodeの安全監視パラメータを定義する。詳細はbiped_safetyモジュール設計を参照。
+
+> **注意:** biped_safety_nodeは現在スタブ実装であり、これらのパラメータは将来の実装で使用される。
 
 **主要パラメータ:**
 
@@ -235,9 +235,9 @@ biped_safety_nodeの安全監視パラメータを定義する。詳細はbiped_
 
 関節リミットはbiped_description URDFの定義値と一致させる。URDFからの自動取得も可能であるが、本設定ファイルでの明示指定を優先する。
 
-### 4.4 config/controllers.yaml
+### 3.5 config/controllers.yaml
 
-ros2_controlのコントローラ設定を定義する。simモード（Phase 1、Gazebo gz_ros2_control経由）およびcontrolモード（Phase 3、実機robstride_hardware経由）で共通して使用する。
+ros2_controlのコントローラ設定を定義する。controlモード（Phase 3、実機aoba_hardware経由）で使用する。simモード（Genesis）ではros2_controlを使用しないため、本ファイルは参照されない。
 
 **設定内容:**
 
@@ -268,65 +268,50 @@ forward_position_controller:
     interface_name: position
 ```
 
-controller_managerの更新レートは200Hzとし、robstride_hardwareの制御ループ周期と一致させる。forward_position_controllerは10関節全てのposition interfaceを管理する。
-
-### 4.5 config/walking.rviz
-
-RViz2の表示設定ファイルである。以下の表示要素を含む。
-
-- RobotModel: biped_description URDFに基づくロボットモデル表示
-- TF: 座標フレームの表示（base_link、各関節フレーム、足先フレーム）
-- JointState: 関節状態のオーバーレイ表示（任意）
-- Grid: 地面グリッド
-
-カメラの初期視点はロボット全体が見える位置に設定する。
+controller_managerの更新レートは200Hzとし、aoba_hardwareの制御ループ周期と一致させる。forward_position_controllerは10関節全てのposition interfaceを管理する。
 
 ---
 
-## 5. モード切替の設計思想
+## 4. モード切替の設計思想
 
-本パッケージのlaunchファイルは、統一関節インターフェースの設計思想に基づき、viz/sim/controlの3モードを明確に分離している。
+本パッケージのlaunchファイルは、統一関節インターフェースの設計思想に基づき、sim/controlの2モードを明確に分離している。
 
-| 項目 | vizモード (viz_teleop.launch.py) | simモード (sim_teleop.launch.py) | controlモード (real_control.launch.py) |
-|---|---|---|---|
-| 実行環境 | MacBook | MacBook | Jetson |
-| ros2_control | 不使用 | gz_ros2_control（Gazebo経由） | robstride_hardware（実機） |
-| RLポリシー出力先 | /joint_states（直接publish） | /forward_position_controller/commands | /forward_position_controller/commands |
-| センサ入力 | モック値 | Gazeboシミュレーション（IMU、接触、関節状態） | 実センサ（エンコーダ、IMU） |
-| 安全監視 | なし | 関節リミットのみ | 全チェック有効 |
-| 用途 | ノード起動確認・トピック疎通確認 | 歩行品質検証（物理フィードバックあり） | 実機制御 |
+| 項目 | simモード (genesis_teleop.launch.py) | controlモード (real_control.launch.py) |
+|---|---|---|
+| 実装状態 | [実装済み] | [未実装・計画] |
+| 実行環境 | MacBook | Jetson |
+| 物理シミュレーション | Genesis物理エンジン | なし（実機） |
+| ros2_control | 不使用（genesis_sim_node内部PD制御） | aoba_hardware（実機） |
+| RLポリシー入力 | `/policy_obs`（genesis_sim_nodeから受信） | `/cmd_vel` + `/joint_states` + `/imu/data`（自前観測構築） |
+| RLポリシー出力 | `/policy_actions`（genesis_sim_nodeへ送信） | `/forward_position_controller/commands` |
+| センサ入力 | Genesis物理シミュレーション | 実センサ（エンコーダ、IMU） |
+| 安全監視 | なし | 全チェック有効 |
+| 用途 | 歩行品質検証（物理フィードバックあり） | 実機制御 |
 
-RLポリシーは閉ループ制御器であり、物理フィードバックなしでは歩容を正しく生成できない。そのため歩行検証にはsimモード（Gazeboシミュレーション）を使用する。vizモードはノード起動確認のみに使用し、歩行品質の検証には使用しない。
-
-simモードとcontrolモードはトピック構成が同一（`/forward_position_controller/commands`出力、`/joint_states`・`/imu/data`入力）であり、センサデータのソースがGazeboから実ハードウェアに変わるのみである。これにより、sim→realの移行が最小限のコード変更で完結する。
-
-Gazebo Harmonicのgz_ros2_controlプラグインにより、MacBook上でもros2_controlが利用可能である（robostack-jazzyの`ros-jazzy-gz-ros2-control`パッケージ）。モード切替はlaunch引数ではなく、起動するlaunchファイルそのものを選択することで行う。
+simモードではgenesis_sim_nodeが学習環境（`droid_env_unitree.py`）と同一の物理エンジン・観測構築ロジックを使用するため、sim-to-sim gapが存在しない。モード切替は起動するlaunchファイルそのものを選択することで行う（`genesis_teleop.launch.py` / 将来の `real_control.launch.py`）。
 
 ---
 
-## 6. 依存パッケージ
+## 5. 依存パッケージ
 
-### 6.1 ビルド依存
+### 5.1 ビルド依存
 
 - ament_cmake
 
-### 6.2 実行時依存
+### 5.2 実行時依存
 
 | パッケージ | 用途 | 備考 |
 |---|---|---|
 | biped_description | URDF、robot_state_publisher | 実装済み |
-| biped_msgs | SafetyStatus等カスタムメッセージ | 新規パッケージ |
-| biped_teleop | ゲームパッド安全機能（緊急停止・切断検出） | 新規パッケージ |
+| biped_msgs | SafetyStatus等カスタムメッセージ | 実装済み |
+| biped_safety | 安全監視（緊急停止・ゲームパッド切断検出・将来: 関節・姿勢監視） | 実装済み（joy_safety） / スタブ（safety_node） |
 | teleop_twist_joy | Joy→Twist変換、デッドマンスイッチ | ROS 2標準 |
-| biped_rl_policy | RLポリシー推論 | 新規パッケージ |
-| biped_safety | 安全監視 | 新規パッケージ |
-| robstride_hardware | ros2_control HW Interface | 実装済み、Phase 3のみ |
+| biped_rl_policy | RLポリシー推論 | 実装済み |
+| biped_genesis_sim | Genesis物理シミュレーション | 実装済み（simモード） |
+| aoba_hardware | ros2_control HW Interface | 実装済み、Phase 3のみ |
 | joy | ゲームパッドドライバ | ROS 2標準 |
 | robot_state_publisher | URDF→TF | ROS 2標準 |
 | rviz2 | 3D可視化 | ROS 2標準 |
-| ros_gz_sim | Gazebo Harmonicシミュレータ起動 | simモード（Phase 1） |
-| ros_gz_bridge | Gazebo↔ROS 2トピックブリッジ | simモード（Phase 1） |
-| gz_ros2_control | Gazebo用ros2_controlプラグイン | simモード（Phase 1） |
-| controller_manager | ros2_controlコントローラ管理 | simモード + Phase 3 |
-| forward_command_controller | 位置指令コントローラ | simモード + Phase 3 |
-| joint_state_broadcaster | 関節状態配信 | simモード + Phase 3 |
+| controller_manager | ros2_controlコントローラ管理 | Phase 3のみ |
+| forward_command_controller | 位置指令コントローラ | Phase 3のみ |
+| joint_state_broadcaster | 関節状態配信 | Phase 3のみ |

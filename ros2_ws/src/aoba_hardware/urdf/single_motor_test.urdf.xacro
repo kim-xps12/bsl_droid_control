@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="aoba_single_motor_test">
+
+  <!-- ================================================================== -->
+  <!-- Single motor test configuration                                    -->
+  <!-- CAN: can1, Motor ID: 127                                           -->
+  <!-- ================================================================== -->
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="test_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.03" length="0.05"/>
+      </geometry>
+      <origin xyz="0 0 0.075" rpy="0 0 0"/>
+    </visual>
+  </link>
+
+  <joint name="test_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="test_link"/>
+    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-12.566" upper="12.566" effort="17.0" velocity="44.0"/>
+  </joint>
+
+  <!-- ros2_control: single motor on can1 -->
+  <ros2_control name="aoba_system" type="system">
+    <hardware>
+      <plugin>aoba_hardware/AobaHardware</plugin>
+    </hardware>
+
+    <joint name="test_joint">
+      <param name="can_interface">can1</param>
+      <param name="motor_id">127</param>
+      <param name="kp">30.0</param>
+      <param name="kd">1.0</param>
+      <command_interface name="position"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </ros2_control>
+
+</robot>

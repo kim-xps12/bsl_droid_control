@@ -18,7 +18,7 @@ V3の報酬設計をベースに、RobStride RS-02モータの実機パラメー
 | reward: dof_vel_limits| 設定なし   | -0.3        | 速度制限超過ペナルティ          |
 
 【実機パラメータの根拠】
-RobStride RS-02仕様（ros2_ws/src/robstride_hardware/include/robstride_hardware/robstride_driver.hpp）:
+RobStride RS-02仕様（ros2_ws/src/aoba_hardware/include/aoba_hardware/aoba_driver.hpp）:
 - Max Velocity: ±44 rad/s
 - Max Torque: ±17 Nm
 

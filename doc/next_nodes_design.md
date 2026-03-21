@@ -2,11 +2,11 @@
 
 ## 1. はじめに
 
-本文書は、強化学習による歩容生成を最終目標とした二脚ロボット制御システムにおいて、既存の`robstride_hardware`ノード（リアルタイムハードウェア制御層）の次に実装すべきノード群の設計を定義する。
+本文書は、強化学習による歩容生成を最終目標とした二脚ロボット制御システムにおいて、既存の`aoba_hardware`ノード（リアルタイムハードウェア制御層）の次に実装すべきノード群の設計を定義する。
 
 ### 1.1 現状の実装
 
-- **robstride_hardware**: ros2_control Hardware Interfaceとして実装
+- **aoba_hardware**: ros2_control Hardware Interfaceとして実装
   - 200Hz制御ループでCAN通信を介してRobStride QDDアクチュエータを制御
   - SCHED_FIFO優先度50でリアルタイム動作
   - `read()` → `update()` → `write()` サイクル
@@ -49,7 +49,7 @@
 ┌──────────────────────┐  ┌────────────────────┐
 │  Safety Monitor      │  │ RT Control Layer   │
 │  (200 Hz)            │→│ (200 Hz)           │
-│  - Fall Detection    │  │ robstride_hardware │
+│  - Fall Detection    │  │ aoba_hardware │
 │  - Limit Checks      │  │ (ros2_control)     │
 └──────────────────────┘  └────────────────────┘
                                     ↓ CAN Commands
@@ -340,7 +340,7 @@ string message
 
 | Node | Frequency | Max Latency | Thread Priority |
 |------|-----------|-------------|-----------------|
-| robstride_hardware | 200 Hz | 1 ms | SCHED_FIFO 50 |
+| aoba_hardware | 200 Hz | 1 ms | SCHED_FIFO 50 |
 | state_estimator | 200 Hz | 1 ms | SCHED_FIFO 40 |
 | safety_monitor | 200 Hz | 1 ms | SCHED_FIFO 45 |
 | rl_policy | 50-100 Hz | 10 ms | SCHED_OTHER |
@@ -350,7 +350,7 @@ string message
 
 Jetson Orin (6コア) の例:
 - Core 0: OS + 非リアルタイムプロセス
-- Core 1: robstride_hardware (200 Hz)
+- Core 1: aoba_hardware (200 Hz)
 - Core 2: state_estimator + safety_monitor (200 Hz)
 - Core 3: rl_policy / gait_generator (50-100 Hz)
 - Core 4-5: ROS通信、ロギング、可視化

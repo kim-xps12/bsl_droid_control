@@ -41,7 +41,7 @@
           &lt;mxGeometry x=&quot;120&quot; y=&quot;160&quot; width=&quot;540&quot; height=&quot;70&quot; as=&quot;geometry&quot; /&gt;
         &lt;/mxCell&gt;
         
-        &lt;mxCell id=&quot;node-hw&quot; value=&quot;robstride_hardware&amp;lt;br&amp;gt;✅ 実装済み&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=10;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+        &lt;mxCell id=&quot;node-hw&quot; value=&quot;aoba_hardware&amp;lt;br&amp;gt;✅ 実装済み&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcccc;strokeColor=#b85450;fontSize=10;fontStyle=1&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
           &lt;mxGeometry x=&quot;130&quot; y=&quot;185&quot; width=&quot;120&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
         &lt;/mxCell&gt;
         
@@ -96,7 +96,7 @@
           &lt;mxGeometry x=&quot;130&quot; y=&quot;330&quot; width=&quot;120&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
         &lt;/mxCell&gt;
         
-        &lt;mxCell id=&quot;hw-imu&quot; value=&quot;USB/I2C&amp;lt;br&amp;gt;→ IMU&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;fontSize=9;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+        &lt;mxCell id=&quot;hw-imu&quot; value=&quot;USB (RS232)&amp;lt;br&amp;gt;→ IMU&quot; style=&quot;rounded=1;whiteSpace=wrap;html=1;fillColor=#d4c5de;strokeColor=#9673a6;fontSize=9;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
           &lt;mxGeometry x=&quot;260&quot; y=&quot;330&quot; width=&quot;80&quot; height=&quot;40&quot; as=&quot;geometry&quot; /&gt;
         &lt;/mxCell&gt;
         
@@ -271,7 +271,7 @@
           &lt;mxGeometry x=&quot;760&quot; y=&quot;580&quot; width=&quot;250&quot; height=&quot;120&quot; as=&quot;geometry&quot; /&gt;
         &lt;/mxCell&gt;
         
-        &lt;mxCell id=&quot;topic-gait-target&quot; value=&quot;/gait_target (100Hz)&amp;lt;br&amp;gt;目標関節軌道&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#ffcccc;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+        &lt;mxCell id=&quot;topic-gait-target&quot; value=&quot;/gait_target (50-100Hz)&amp;lt;br&amp;gt;目標関節軌道&quot; style=&quot;text;html=1;strokeColor=none;fillColor=#ffcccc;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=10;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
           &lt;mxGeometry x=&quot;770&quot; y=&quot;605&quot; width=&quot;120&quot; height=&quot;35&quot; as=&quot;geometry&quot; /&gt;
         &lt;/mxCell&gt;
         
@@ -388,7 +388,7 @@
 
 <!-- RT nodes -->
 <rect x="130" y="185" width="120" height="40" rx="10" ry="10" fill="#ffcccc" stroke="#b85450" stroke-width="2"/>
-<text x="190" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">robstride_hardware</text>
+<text x="190" y="201" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="10" font-weight="bold" fill="#333">aoba_hardware</text>
 <text x="190" y="217" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#388e3c">実装済み</text>
 
 <rect x="260" y="185" width="100" height="40" rx="10" ry="10" fill="#ffcccc" stroke="#b85450" stroke-width="2"/>
@@ -439,7 +439,7 @@
 <text x="190" y="362" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">→ RobStride Motors</text>
 
 <rect x="260" y="330" width="80" height="40" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
-<text x="300" y="347" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">USB/I2C</text>
+<text x="300" y="347" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">USB (RS232)</text>
 <text x="300" y="362" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="9" fill="#333">→ IMU</text>
 
 <rect x="350" y="330" width="80" height="40" rx="10" ry="10" fill="#d4c5de" stroke="#9673a6" stroke-width="2"/>
@@ -582,7 +582,7 @@
 <text x="885" y="598" text-anchor="middle" font-family="Helvetica, sans-serif" font-size="11" font-weight="bold" fill="#333">Jetson内部のみ (ネットワーク不通過)</text>
 
 <rect x="770" y="605" width="120" height="35" rx="10" ry="10" fill="#ffcccc" stroke="none"/>
-<text x="778" y="620" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/gait_target (100Hz)</text>
+<text x="778" y="620" text-anchor="start" font-family="Helvetica, sans-serif" font-size="10" fill="#333">/gait_target (50-100Hz)</text>
 <text x="778" y="634" text-anchor="start" font-family="Helvetica, sans-serif" font-size="9" fill="#666">目標関節軌道</text>
 
 <rect x="900" y="605" width="100" height="35" rx="10" ry="10" fill="#ffcccc" stroke="none"/>

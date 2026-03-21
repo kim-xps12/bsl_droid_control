@@ -1,0 +1,17 @@
+# Trajectory Replay: Foot trajectory (CamberTrajectory + IK)
+# bsl_droid_simplified_v2 parameters
+
+trajectory_replay:
+  ros__parameters:
+    source_type: "foot"
+    mode: "viz"
+    publish_rate: 50.0
+    enabled: true
+
+    foot:
+      step_height: 0.04
+      step_length: 0.08
+      step_frequency: 0.5
+      leg_extension_ratio: 0.90
+      thigh_length: 0.11
+      shank_length: 0.12

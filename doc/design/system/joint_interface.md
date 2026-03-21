@@ -94,7 +94,7 @@
 │                     MacBook                         │
 │                                                     │
 │  ┌─────────────────┐      ┌───────────────────┐   │
-│  │  gait_pattern_  │      │  robot_state_     │   │
+│  │  trajectory_  │      │  robot_state_     │   │
 │  │  generator      │─────▶│  publisher        │   │
 │  │                 │      │                   │   │
 │  │ /joint_commands │      │ URDF → /tf        │   │
@@ -112,7 +112,7 @@
 
 **Launch設定**:
 ```bash
-pixi run ros2 launch biped_gait_control gait_visualization.launch.py target:=viz_only
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=viz_only
 ```
 
 **特徴**:
@@ -129,7 +129,7 @@ pixi run ros2 launch biped_gait_control gait_visualization.launch.py target:=viz
 │                     MacBook                         │
 │                                                     │
 │  ┌─────────────────┐                               │
-│  │  gait_pattern_  │                               │
+│  │  trajectory_  │                               │
 │  │  generator      │                               │
 │  │                 │                               │
 │  │ /joint_commands │                               │
@@ -182,7 +182,7 @@ pixi run ros2 launch biped_gait_control gait_simulation.launch.py simulator:=muj
 │            MacBook               │  │      Jetson Orin Nano Super      │
 │                                  │  │                                  │
 │  ┌─────────────────┐            │  │  ┌─────────────────────────────┐│
-│  │  gait_pattern_  │            │  │  │       ros2_control_node     ││
+│  │  trajectory_  │            │  │  │       ros2_control_node     ││
 │  │  generator      │     ROS 2  │  │  │                             ││
 │  │                 │──────DDS──▶│  │  │  ┌─────────────────────┐   ││
 │  │ /joint_commands │     WiFi   │  │  │  │ forward_position_   │   ││
@@ -194,7 +194,7 @@ pixi run ros2 launch biped_gait_control gait_simulation.launch.py simulator:=muj
 │  │                 │            │  │  │  └─────────┬───────────┘   ││
 │  │  Robot Model    │  /joint_   │  │  │            │               ││
 │  │  TF Tree        │  states    │  │  │  ┌─────────▼───────────┐   ││
-│  └─────────────────┘  (200Hz)   │  │  │  │ robstride_hardware  │   ││
+│  └─────────────────┘  (200Hz)   │  │  │  │ aoba_hardware  │   ││
 │                                  │  │  │  │                     │   ││
 │  ┌─────────────────┐            │  │  │  │ CAN → RobStride    │   ││
 │  │  Plotjuggler    │◀───────────│  │  │  │        RS02         │   ││
@@ -208,13 +208,13 @@ pixi run ros2 launch biped_gait_control gait_simulation.launch.py simulator:=muj
 Jetson側:
 ```bash
 # ros2_control + Hardware Interface起動
-pixi run ros2 launch robstride_hardware bringup.launch.py
+pixi run ros2 launch aoba_hardware bringup.launch.py
 ```
 
 MacBook側:
 ```bash
 # 歩容生成 + 可視化（実機向け）
-pixi run ros2 launch biped_gait_control gait_control.launch.py target:=hardware
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=hardware
 
 # RViz可視化のみ（Jetsonからの/joint_statesを購読）
 pixi run ros2 launch biped_description display_rviz_only.launch.py
@@ -310,7 +310,7 @@ STATE_QOS = QoSProfile(
 
 **Phase 1（即座に実装）**:
 - `viz_only`モード: `/joint_commands` → `/joint_states` のリマップ
-- `gait_pattern_generator`を`/joint_commands`にpublishするよう変更
+- `trajectory_generator`を`/joint_commands`にpublishするよう変更
 
 **Phase 2（シミュレータ統合時）**:
 - `mujoco`モード: MuJoCo Python APIブリッジ
@@ -405,7 +405,7 @@ trajectory.points = [
 
 ### 8.2 次のアクション
 
-1. **即座に**: `gait_pattern_generator`を`/joint_commands`にpublishするよう変更
+1. **即座に**: `trajectory_generator`を`/joint_commands`にpublishするよう変更
 2. **Phase 1**: `joint_command_router`（viz_onlyモード）実装
 3. **Phase 2**: MuJoCoブリッジ実装、物理シミュレーション検証
 4. **Phase 3**: Jetson連携、実機制御検証

@@ -35,7 +35,7 @@ RobStride RS02アクチュエータをros2_control準拠で制御する。
 > 参考: http://canable.io/
 
 > **アーキテクチャ**: [arch_ros2_control.md](arch_ros2_control.md) を参照  
-> **実装詳細**: [robstride_hardware_impl.md](robstride_hardware_impl.md) を参照
+> **実装詳細**: [aoba_hardware_impl.md](aoba_hardware_impl.md) を参照
 
 ---
 
@@ -88,14 +88,14 @@ git commit -m "Pin RobStride_Control version"
 cd ~/ros2_ws
 
 # ament_cmake パッケージを作成
-pixi run ros2 pkg create --build-type ament_cmake --destination-directory src robstride_hardware
+pixi run ros2 pkg create --build-type ament_cmake --destination-directory src aoba_hardware
 
 # ディレクトリ構造を追加
-mkdir -p src/robstride_hardware/include/robstride_hardware
-mkdir -p src/robstride_hardware/src
-mkdir -p src/robstride_hardware/urdf
-mkdir -p src/robstride_hardware/config
-mkdir -p src/robstride_hardware/launch
+mkdir -p src/aoba_hardware/include/aoba_hardware
+mkdir -p src/aoba_hardware/src
+mkdir -p src/aoba_hardware/urdf
+mkdir -p src/aoba_hardware/config
+mkdir -p src/aoba_hardware/launch
 ```
 
 **ディレクトリ構成**:
@@ -105,10 +105,10 @@ ros2_ws/src/
 │   └── cpp/
 │       ├── include/
 │       └── src/
-└── robstride_hardware/         # 作成したパッケージ
+└── aoba_hardware/         # 作成したパッケージ
     ├── CMakeLists.txt
     ├── package.xml
-    ├── include/robstride_hardware/
+    ├── include/aoba_hardware/
     ├── src/
     ├── urdf/
     ├── config/
@@ -119,7 +119,7 @@ ros2_ws/src/
 
 ### 4. package.xml の編集
 
-`src/robstride_hardware/package.xml` に以下の依存を追加:
+`src/aoba_hardware/package.xml` に以下の依存を追加:
 
 - `hardware_interface`
 - `pluginlib`
@@ -130,7 +130,7 @@ ros2_ws/src/
 
 ### 5. CMakeLists.txt の編集
 
-`src/robstride_hardware/CMakeLists.txt` で以下を設定:
+`src/aoba_hardware/CMakeLists.txt` で以下を設定:
 
 - submoduleのソースパス: `../RobStride_Control/cpp`
 - `target_include_directories` でsubmoduleのヘッダを追加
@@ -140,7 +140,7 @@ ros2_ws/src/
 
 ### 6. ソースファイル作成
 
-`src/robstride_hardware/src/robstride_hardware.cpp` を作成。
+`src/aoba_hardware/src/aoba_hardware.cpp` を作成。
 
 `hardware_interface::SystemInterface` を継承し、以下を実装:
 - `on_init()`
@@ -153,7 +153,7 @@ ros2_ws/src/
 
 ### 7. Plugin定義ファイル作成
 
-`src/robstride_hardware/robstride_hardware_plugin.xml` を作成し、Hardware Interfaceをpluginとして登録。
+`src/aoba_hardware/aoba_hardware_plugin.xml` を作成し、Hardware Interfaceをpluginとして登録。
 
 ---
 
@@ -161,7 +161,7 @@ ros2_ws/src/
 
 ```bash
 cd ~/ros2_ws
-pixi run colcon build --packages-select robstride_hardware
+pixi run colcon build --packages-select aoba_hardware
 ```
 
 成功すれば `Summary: 1 package finished` と表示される。

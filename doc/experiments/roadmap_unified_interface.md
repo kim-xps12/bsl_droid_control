@@ -13,7 +13,7 @@ MacBookで歩容設計 → 物理シミュレータで検証 → 送信先切り
 ### 前提条件
 
 - `biped_gait_control`パッケージで50Hz関節角度生成が動作済み
-- `robstride_hardware`パッケージでros2_control Hardware Interfaceが実装済み（未統合）
+- `aoba_hardware`パッケージでros2_control Hardware Interfaceが実装済み（未統合）
 - Jetson Orin Nano SuperとMacBookの分散構成が確立済み
 
 ---
@@ -34,13 +34,13 @@ MacBookで歩容設計 → 物理シミュレータで検証 → 送信先切り
 
 ### 0.1 目標
 
-現在の`gait_pattern_generator`を修正し、統一トピック`/joint_commands`を導入する。
+現在の`trajectory_replay`を修正し、統一トピック`/joint_commands`を導入する。
 
 ### 0.2 実装タスク
 
 #### タスク 0.2.1: 出力トピック変更
 
-**変更対象**: `biped_gait_control/biped_gait_control/gait_pattern_generator.py`
+**変更対象**: `biped_gait_control/biped_gait_control/trajectory_replay.py`
 
 ```python
 # Before
@@ -52,7 +52,7 @@ self.joint_command_pub = self.create_publisher(JointState, '/joint_commands', qo
 
 #### タスク 0.2.2: Launchファイル更新
 
-**変更対象**: `biped_gait_control/launch/gait_visualization.launch.py`
+**変更対象**: `biped_gait_control/launch/trajectory_replay.launch.py`
 
 ```python
 # target引数を追加
@@ -78,7 +78,7 @@ DeclareLaunchArgument('target', default_value='viz_only',
 
 ```bash
 # このコマンドでRViz可視化が動作する
-pixi run ros2 launch biped_gait_control gait_visualization.launch.py target:=viz_only
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=viz_only
 ```
 
 ---
@@ -138,7 +138,7 @@ def validate_and_clamp(self, positions: List[float]) -> List[float]:
 
 ```bash
 # 可視化が安定動作
-pixi run ros2 launch biped_gait_control gait_visualization.launch.py target:=viz_only
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=viz_only
 
 # 診断情報が確認できる
 pixi run ros2 topic echo /diagnostics
@@ -302,7 +302,7 @@ pixi run ros2 topic list  # Jetson側のトピックが見えるか
 
 #### タスク 3.3.2: コントローラ設定更新
 
-**変更対象**: `robstride_hardware/config/controllers.yaml`
+**変更対象**: `aoba_hardware/config/controllers.yaml`
 
 ```yaml
 forward_position_controller:
@@ -383,14 +383,14 @@ MacBook                          Jetson
    ```bash
    cd ~/Projects/bsl_droid_ros2/ros2_ws
    export ROS_DOMAIN_ID=42
-   pixi run ros2 launch robstride_hardware bringup.launch.py
+   pixi run ros2 launch aoba_hardware bringup.launch.py
    ```
 
 2. **【MacBook】歩容生成起動（hardwareモード）**
    ```bash
    cd ~/Projects/bsl_droid_ros2/ros2_ws
    export ROS_DOMAIN_ID=42
-   pixi run ros2 launch biped_gait_control gait_control.launch.py target:=hardware
+   pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=hardware
    ```
 
 3. **【MacBook】可視化起動**
@@ -408,10 +408,10 @@ MacBook                          Jetson
 
 ```bash
 # 【Jetson】実機制御
-pixi run ros2 launch robstride_hardware bringup.launch.py
+pixi run ros2 launch aoba_hardware bringup.launch.py
 
 # 【MacBook】歩容生成
-pixi run ros2 launch biped_gait_control gait_control.launch.py target:=hardware
+pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=hardware
 
 # 【MacBook】可視化
 pixi run ros2 launch biped_description display_rviz_only.launch.py
@@ -475,7 +475,7 @@ pixi run ros2 bag record -a -o experiment_data
 
 1. **可視化のみモード（MacBook単体）**
    ```bash
-   pixi run ros2 launch biped_gait_control gait_visualization.launch.py target:=viz_only
+   pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=viz_only
    ```
    - [ ] RVizで歩行アニメーションが表示される
 
@@ -489,10 +489,10 @@ pixi run ros2 bag record -a -o experiment_data
 3. **実機モード（MacBook + Jetson）**
    ```bash
    # Jetson
-   pixi run ros2 launch robstride_hardware bringup.launch.py
+   pixi run ros2 launch aoba_hardware bringup.launch.py
    
    # MacBook
-   pixi run ros2 launch biped_gait_control gait_control.launch.py target:=hardware
+   pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=hardware
    ```
    - [ ] 実機モータが歩容パターンに追従する
    - [ ] 緊急停止が機能する
