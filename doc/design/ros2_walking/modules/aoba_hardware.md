@@ -84,7 +84,7 @@ Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
 
 ### タイミング診断ログ
 
-200 サイクルごとに、RT スレッドが `DiagnosticSnapshot`（固定サイズ POD）にタイミング統計とモータ状態を書き込み、非 RT ログスレッドが RCLCPP_INFO で出力する（SPSC atomic flag パターン）。RT スレッド内では一切のログ出力・動的メモリ割当を行わない。設計の詳細は [rt_safe_diagnostic_logging.md](../../../rt_safe_diagnostic_logging.md) を参照。
+200 サイクルごとに、RT スレッドが `DiagnosticSnapshot`（固定サイズ POD）にタイミング統計とモータ状態を書き込み、非 RT ログスレッドが RCLCPP_INFO で出力する（SPSC atomic flag パターン）。RT スレッド内では一切のログ出力・動的メモリ割当を行わない。設計の詳細は [rt_safe_diagnostic_logging.md](../../../article/art006_description_aoba_hardware_logging/art006_description_aoba_hardware_logging.md) を参照。
 
 出力形式:
 
