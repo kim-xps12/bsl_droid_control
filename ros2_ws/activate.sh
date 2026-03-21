@@ -16,13 +16,14 @@ if [ -n "$CONDA_PREFIX" ]; then
     export GZ_SIM_SYSTEM_PLUGIN_PATH="${CONDA_PREFIX}/lib${GZ_SIM_SYSTEM_PLUGIN_PATH:+:$GZ_SIM_SYSTEM_PLUGIN_PATH}"
 fi
 
-# Genesis: pixi pypi-dependenciesではpillow版競合により追加不可のため、
-# pip install --no-deps で個別インストールする。
-# biped_genesis_sim パッケージ（Genesis物理エンジンROS 2ブリッジ）に必要。
+# Genesis: biped_genesis_sim パッケージ（Genesis物理エンジンROS 2ブリッジ）に必要。
+# 以前はここで pip による自動インストールを行っていたが、
+# activation 時の暗黙インストールは再現性・オフライン環境・権限等の観点から問題があるため、
+# 未インストールであることのみ検出し、明示的なセットアップタスクの実行を案内する。
 if [ -n "$CONDA_PREFIX" ]; then
     if ! python -c "import genesis" 2>/dev/null; then
-        echo "[activate.sh] Installing genesis-world into pixi environment..."
-        python -m ensurepip --default-pip -q 2>/dev/null
-        python -m pip install -q --no-deps genesis-world quadrants 2>/dev/null
+        echo "[activate.sh] WARNING: Python モジュール 'genesis' が見つかりません。" >&2
+        echo "[activate.sh] biped_genesis_sim を利用する前に、別途セットアップを実行してください。" >&2
+        echo "[activate.sh] 例: pixi run setup-genesis" >&2
     fi
 fi

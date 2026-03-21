@@ -16,6 +16,7 @@ rviz2 = "rviz2"
 format-cpp = { cmd = "clang-format -i src/aoba_hardware/include/aoba_hardware/*.hpp src/aoba_hardware/src/*.cpp src/aoba_hardware/test/*.cpp" }
 check-format-cpp = { cmd = "clang-format --dry-run --Werror src/aoba_hardware/include/aoba_hardware/*.hpp src/aoba_hardware/src/*.cpp src/aoba_hardware/test/*.cpp" }
 lint-cpp = { cmd = "ament_cpplint --linelength 100 --filters=-build/header_guard src/aoba_hardware/include/aoba_hardware/*.hpp src/aoba_hardware/src/*.cpp src/aoba_hardware/test/*.cpp" }
+setup-genesis = { cmd = "python -m ensurepip --default-pip -q && python -m pip install --no-deps genesis-world==0.2.1 quadrants" }
 
 # macOS: aoba_hardware はLinux専用（linux/can.h依存）のため除外
 [target.osx-arm64.tasks]
@@ -56,4 +57,4 @@ ros-jazzy-forward-command-controller = ">=4.36.0,<5"
 pytorch = "*"
 clang-format = ">=18"
 # NOTE: genesis-world はpixi pypi-dependenciesではpillow版競合により追加不可。
-# activate.shで自動インストールする（pip install --no-deps genesis-world）。
+# pixi run setup-genesis で明示的にインストールする。
