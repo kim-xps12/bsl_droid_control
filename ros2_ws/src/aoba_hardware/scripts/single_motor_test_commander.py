@@ -40,6 +40,7 @@ class SingleMotorTestCommander(Node):
         self.trajectory_duration: float = 0.0
         self.reached_target: bool = False
         self.reached_target_time: rclpy.time.Time | None = None
+        self.test_finished: bool = False
 
         self.joint_state_sub = self.create_subscription(
             JointState, "/joint_states", self._joint_state_cb, 10
@@ -101,7 +102,8 @@ class SingleMotorTestCommander(Node):
                 self.get_logger().info(
                     f"Hold complete ({self.hold_duration:.1f}s). Test finished."
                 )
-                raise SystemExit(0)
+                self.test_finished = True
+                return
 
         msg = Float64MultiArray()
         msg.data = [cmd_pos]
@@ -112,9 +114,8 @@ def main() -> None:
     rclpy.init()
     node = SingleMotorTestCommander()
     try:
-        rclpy.spin(node)
-    except SystemExit:
-        pass
+        while rclpy.ok() and not node.test_finished:
+            rclpy.spin_once(node)
     finally:
         node.destroy_node()
         rclpy.shutdown()
