@@ -31,7 +31,7 @@
     <limit lower="-12.566" upper="12.566" effort="17.0" velocity="44.0"/>
   </joint>
 
-  <!-- ros2_control: single motor on can0 -->
+  <!-- ros2_control: single motor on can1 -->
   <ros2_control name="aoba_system" type="system">
     <hardware>
       <plugin>aoba_hardware/AobaHardware</plugin>
