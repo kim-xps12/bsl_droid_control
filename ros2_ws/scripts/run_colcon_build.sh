@@ -22,12 +22,8 @@ fi
 
 # Suppress known macOS/conda-forge install_name_tool noise. All other warnings remain visible.
 awk '
-    /^--- stderr: biped_msgs$/ { suppress_stderr_block = 1; next }
-    suppress_stderr_block && /^---$/ { suppress_stderr_block = 0; next }
-    suppress_stderr_block { next }
     /install_name_tool: warning: changes being made to the file will invalidate the code signature/ { next }
     /^\[cctools-port\]: generating fake signature/ { next }
-    /^  1 package had stderr output: biped_msgs$/ { next }
     { print }
 ' "$tmp_log"
 
