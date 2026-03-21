@@ -111,10 +111,12 @@ def generate_launch_description():
     )
 
     # biped_joy_safety_node (emergency stop)
+    # Safety node uses wall clock (use_sim_time=False) so that gamepad disconnect
+    # detection works even when /clock stops (e.g. Genesis crash).
     joy_safety = Node(
         package="biped_safety",
         executable="biped_joy_safety_node",
-        parameters=[joy_config, {"use_sim_time": True}],
+        parameters=[joy_config, {"use_sim_time": False}],
         output="screen",
     )
 
