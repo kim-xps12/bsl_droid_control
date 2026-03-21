@@ -14,7 +14,7 @@
 	url = https://github.com/Seeed-Projects/RobStride_Control.git
 [submodule "ref/Open_Duck_Mini"]
 	path = ref/Open_Duck_Mini
-	url = git@github.com:apirrone/Open_Duck_Mini.git
+	url = https://github.com/apirrone/Open_Duck_Mini.git
 [submodule "ref/Open_Duck_Playground"]
 	path = ref/Open_Duck_Playground
-	url = git@github.com:apirrone/Open_Duck_Playground.git
+	url = https://github.com/apirrone/Open_Duck_Playground.git
