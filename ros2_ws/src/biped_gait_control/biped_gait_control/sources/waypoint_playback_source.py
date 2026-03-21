@@ -36,6 +36,10 @@ class WaypointPlaybackSource(TrajectorySource):
             raise ValueError("At least 2 waypoints are required")
 
         self._times = np.array(times)
+
+        if not np.all(np.diff(self._times) > 0):
+            raise ValueError("waypoint.times must be strictly monotonically increasing")
+
         self._positions = np.array(positions_flat).reshape(n_waypoints, 10)
         self._duration = self._times[-1] - self._times[0]
 
@@ -49,7 +53,7 @@ class WaypointPlaybackSource(TrajectorySource):
         if self._loop:
             t = self._times[0] + ((elapsed_sec - self._times[0]) % self._duration)
         else:
-            t = min(elapsed_sec, self._times[-1])
+            t = max(self._times[0], min(elapsed_sec, self._times[-1]))
 
         # Find bracketing waypoint indices
         idx = int(np.searchsorted(self._times, t, side="right") - 1)
