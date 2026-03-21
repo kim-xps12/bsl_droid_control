@@ -44,6 +44,7 @@ class MultiMotorZeroCommander(Node):
         self.trajectory_start_time: rclpy.time.Time | None = None
         self.all_reached: bool = False
         self.all_reached_time: rclpy.time.Time | None = None
+        self.test_finished: bool = False
 
         self.joint_state_sub = self.create_subscription(
             JointState, '/joint_states', self._joint_state_cb, 10,
@@ -131,7 +132,8 @@ class MultiMotorZeroCommander(Node):
                 self.get_logger().info(
                     f'Hold complete ({self.hold_duration:.1f}s). Test finished.'
                 )
-                raise SystemExit(0)
+                self.test_finished = True
+                return
 
         msg = Float64MultiArray()
         msg.data = cmd_positions
@@ -142,9 +144,8 @@ def main() -> None:
     rclpy.init()
     node = MultiMotorZeroCommander()
     try:
-        rclpy.spin(node)
-    except SystemExit:
-        pass
+        while rclpy.ok() and not node.test_finished:
+            rclpy.spin_once(node)
     finally:
         node.destroy_node()
         rclpy.shutdown()
