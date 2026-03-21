@@ -13,6 +13,7 @@ The genesis_sim_node and rl_policy_node form a synchronous event-driven loop:
   -> genesis receives, steps physics, publishes new /policy_obs -> ...
 """
 
+import os
 from pathlib import Path
 
 from launch import LaunchDescription
@@ -34,9 +35,16 @@ def generate_launch_description():
     joy_config = PathJoinSubstitution([pkg_bringup, "config", "joy_f710.yaml"])
     genesis_config = PathJoinSubstitution([pkg_bringup, "config", "genesis_sim.yaml"])
 
-    # Default URDF path for Genesis (plain URDF, not xacro)
-    repo_root = Path(__file__).resolve().parents[4]
-    default_genesis_urdf = str(repo_root / "rl_ws" / "assets" / "bsl_droid_simplified_v2.urdf")
+    # Default URDF path for Genesis (plain URDF, not xacro).
+    # Use PIXI_PROJECT_ROOT (set by pixi, points to ros2_ws/) to resolve the repo root.
+    # Avoids fragile __file__-based parent traversal that breaks in install space.
+    pixi_root = os.environ.get("PIXI_PROJECT_ROOT", "")
+    if pixi_root:
+        default_genesis_urdf = str(
+            Path(pixi_root).parent / "rl_ws" / "assets" / "bsl_droid_simplified_v2.urdf"
+        )
+    else:
+        default_genesis_urdf = ""
 
     # Launch arguments
     model_path_arg = DeclareLaunchArgument(
