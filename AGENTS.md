@@ -4,11 +4,25 @@
 - このリポジトリは「BSL-Droid」の制御に関するソフトウェア全般を扱う
 - 動作環境はJetson Orin Nano Super（実機・RT制御）とMacBook（可視化・机上開発）の分散構成を前提としている
 
-## 仮想化された開発環境の利用手順
 
-### ROS 2環境（ros2_ws）
+## プラットフォーム別の注意事項
+- Jetson Orin Nano Super(linux-aarch64): ros2_control利用可
+- M4 MacBook Air(osx-arm64): ros2_control不可（RoboStack JazzyのmacOS ARM64ビルド未提供）
 
-pixiでROS 2環境を管理している．
+## 作業ディレクトリ
+
+このリポジトリでは各環境のworkspaceへ`cd`してからコマンドを実行する必要がある．
+
+- ROS 2環境: `cd ros2_ws` → `pixi run ...`
+- 強化学習環境: `cd rl_ws` → `uv run ...`
+
+ルール: `cd` と後続コマンドを `&&` で連結してはならない。`settings.json` の allow パターンはコマンド先頭からマッチするため、`cd ... && cmd` 形式ではパターンに一致せず許可ダイアログが発生する。`cd` と後続コマンドは別々の Bash ツール呼び出しに分けること（作業ディレクトリは Bash 呼び出し間で保持される）。
+
+## ROS 2環境（ros2_ws）
+
+### 開発環境の仮想化
+
+pixiでROS 2環境を管理している．依存関係の解消およびビルドコマンドは以下の通り．
 
 ```bash
 cd ros2_ws
@@ -17,30 +31,6 @@ pixi run build
 ```
 
 > **注意**: `pixi run build` は `pixi.toml` の `[tasks]` で定義されたビルドコマンドを実行する。`--cmake-args -DPython3_EXECUTABLE=$CONDA_PREFIX/bin/python3` はタスク定義に含まれているため、手動で指定する必要はない。pyenvなど他のPython環境がある場合でもpixi環境のPythonが自動的に使用される。
-
-### 強化学習環境（rl_ws）
-
-uvで強化学習環境を管理している．
-
-```bash
-cd rl_ws
-uv sync
-```
-
-### プラットフォーム注意
-- **Jetson (linux-aarch64)**: ros2_control利用可
-- **MacBook (osx-arm64)**: ros2_control不可（RoboStack JazzyのmacOS ARM64ビルド未提供）
-
-## 作業ディレクトリ
-
-このリポジトリでは各環境のworkspaceへ`cd`してからコマンドを実行する必要がある．
-
-- **ROS 2環境**: `cd ros2_ws` → `pixi run ...`
-- **強化学習環境**: `cd rl_ws` → `uv run ...`
-
-**重要**: `cd` と後続コマンドを `&&` で連結してはならない。`settings.json` の allow パターンはコマンド先頭からマッチするため、`cd ... && cmd` 形式ではパターンに一致せず許可ダイアログが発生する。`cd` と後続コマンドは別々の Bash ツール呼び出しに分けること（作業ディレクトリは Bash 呼び出し間で保持される）。
-
-## ROS 2環境（ros2_ws）
 
 ### よく使う起動コマンド
 
@@ -75,9 +65,18 @@ pixi run ros2 launch aoba_hardware bringup.launch.py
 
 強化学習ワークスペース`rl_ws/`はuvで管理されている．ROS 2環境（ros2_ws）とは独立した仮想環境である．
 
+### 開発環境の仮想化
+
+依存関係の解消コマンドは以下の通り．
+
+```bash
+cd rl_ws
+uv sync
+```
+
 ### コマンド実行形式
 
-**必須**: `rl_ws`ディレクトリに移動してから`uv run`で実行すること．
+ルール: `rl_ws`ディレクトリに移動してから`uv run`で実行すること．
 
 ```bash
 # 正しい形式
@@ -234,6 +233,7 @@ pixi run lint-cpp
 - 必ず日本語で執筆し，N1相当の流暢で自然な日本語を用いること．
 - 図は`drawio.svg`形式のファイル名に`drawio`の規格に準じたxmlタグを格納することで，独立して作成すること．
 - 図をmarkdownドキュメント内にアスキーアートで描くことは行なってはいけない．二重管理の状態を避けるために厳守する．
+- ドキュメント（README.md, 設計書等）にパッケージや機能の開発ステータス（「開発中」「完成」等）を記載しない．ステータスはソースコード自体が示すものであり，ドキュメント上のステータス表記は陳腐化して誤解を招くリスクがメンテナンスコストに見合わない．
 
 ### 実験レポートの構成ルール[厳守]
 
@@ -338,5 +338,5 @@ doc/experiments/exp007_droid_rl_walking_ref_unitree/
 
 ### DrawIO図の作成ルール
 
-`.drawio.svg`ファイルの作成・編集時は、drawioスキル（`.claude/skills/drawio/SKILL.md`）のルールに従うこと。形式はDrawIO XML（`<mxfile>`）のみ許可。純粋なSVG形式は禁止。
+`.drawio.svg`ファイルの作成・編集時は、drawioスキル（`.claude/skills/drawio/SKILL.md`）に従うこと。形式はDrawIO XML（`<mxfile>`）のみ許可。純粋なSVG形式は禁止。
 - 主要な実行コマンドはプロジェクトルートの`README.md`に記載し，パッケージ直下のドキュメントには二重管理を防ぐため記載しない．コマンドに言及したい場合は「ルートのREADME.mdを参照のこと」で扱うこと

@@ -95,7 +95,7 @@ export ROS_DOMAIN_ID=42
 | データ | 推定帯域 | 備考 |
 |--------|----------|------|
 | `/robot_state` (200Hz) | ~100 KB/s | 状態推定データ |
-| `/joint_states` (200Hz) | ~50 KB/s | 関節状態 |
+| `/joint_states` (50Hz) | ~12.5 KB/s | 関節状態 |
 | `/imu/data` (200Hz) | ~30 KB/s | IMUデータ |
 | `/camera/image` (30Hz, 640x480) | ~10 MB/s | 圧縮推奨 |
 | `/tf` | ~20 KB/s | 座標変換 |
@@ -118,7 +118,7 @@ export ROS_DOMAIN_ID=42
 | `gait_generator` | 50-100 Hz | 歩容パターン生成 |
 | `imu_driver` | 200-1000 Hz | IMUセンサドライバ |
 | `robot_state_publisher` | - | URDFからTF配信 |
-| `joint_state_broadcaster` | 200 Hz | 関節状態のPublish |
+| `joint_state_broadcaster` | 50 Hz | 関節状態のPublish |
 
 ### 4.2 MacBook側ノード（可視化・開発）
 

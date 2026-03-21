@@ -31,9 +31,12 @@ ros2_ws/src/aoba_hardware/
     multi_bus_latency_test.cpp        # 多モータ・多バス CAN レイテンシ計測
   scripts/
     single_motor_test_commander.py    # 単一モータ手動コマンドツール
+    multi_motor_zero_commander.py     # 複数モータゼロ点移動テストコマンダ
+    analyze_timing_log.py             # CAN 通信統計のログ分析ユーティリティ
   launch/
-    bringup.launch.py                 # フルシステム起動
+    bringup.launch.py                 # 10関節 ros2_control 起動（可視化モデルなし）
     single_motor_test.launch.py       # 単一モータデバッグ起動
+    multi_motor_zero_test.launch.py   # 複数モータゼロ点テスト起動
   config/
     controllers.yaml                  # forward_position_controller（10 関節）
     single_motor_controllers.yaml     # 単一モータ用コントローラ設定
@@ -66,10 +69,10 @@ Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
 │   Phase 1: 全バスへコマンドをバースト送信                           │
 │             can1 の全モータ（5 軸）→ can2 の全モータ（5 軸）        │
 │   Phase 2: 全バスから応答をバースト受信                             │
-│             can1 の全モータ（poll, timeout 2ms）                   │
-│             can2 の全モータ（poll, timeout 2ms）                   │
+│             can1 の全モータ（poll, 初回 3ms / 以降 1ms）           │
+│             can2 の全モータ（poll, 初回 3ms / 以降 1ms）           │
 │   Phase 3: missed response 処理（last-known-value 保持）           │
-│   Phase 4: タイミング統計のログ出力（200 サイクルごと）              │
+│   Phase 4: DiagnosticSnapshot へ集計（非 RT ログスレッドが出力）    │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -81,12 +84,15 @@ Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
 
 ### タイミング診断ログ
 
-200 サイクルごとに以下の形式でログ出力される:
+200 サイクルごとに、RT スレッドが `DiagnosticSnapshot`（固定サイズ POD）にタイミング統計とモータ状態を書き込み、非 RT ログスレッドが RCLCPP_INFO で出力する（SPSC atomic flag パターン）。RT スレッド内では一切のログ出力・動的メモリ割当を行わない。設計の詳細は [rt_safe_diagnostic_logging.md](../../../article/art006_description_aoba_hardware_logging/art006_description_aoba_hardware_logging.md) を参照。
+
+出力形式:
 
 ```
-[Timing] write() avg=2600us, max=3100us, missed=0/2000
+[Timing] write() min=1800us avg=2600us max=3100us stddev=180.5us | send min=200 avg=320 max=450us | recv min=800 avg=980 max=1200us | missed=0/2000
 [Timing]   can1: send=320us, recv=980us, ok=5/5
 [Timing]   can2: send=330us, recv=970us, ok=5/5
+[State] left_hip_yaw_joint (id=11): cmd=0.0000 rad | pos=0.0012 rad, vel=0.0000 rad/s, effort=0.0000 Nm
 ```
 
 ### エラーハンドリング
@@ -94,6 +100,8 @@ Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
 - 応答がないモータは last-known-value を保持（状態を更新しない）
 - 連続 10 サイクル（50 ms）未応答で WARN ログを出力
 - 安全判断は `biped_safety` ノードが担当
+
+> **注意**: `aoba_system.urdf.xacro` は ros2_control 定義（CAN/モータID/ゲイン）のみを含み、ロボットのリンク形状・TFツリーは `biped_description/urdf` が提供する。`bringup.launch.py` 単体ではRVizでのロボットモデル可視化はできない。
 
 ---
 
@@ -122,8 +130,8 @@ Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
 |---|---|
 | `on_init()` | URDF `<ros2_control>` セクションから関節パラメータ（`can_interface`, `motor_id`, `kp`, `kd`）を読み込む。バスごとに `AobaDriver` インスタンスを生成 |
 | `on_configure()` | 各 `AobaDriver` を CAN バスに接続（`connect()`） |
-| `on_activate()` | (1) `disable_auto_report()` — 自発的フィードバックフレームを無効化 (2) `enable()` — モータ有効化 (3) `set_mode(MIT)` — MIT 制御モード設定 (4) `drain_rx_buffer()` — 起動直後の残留フレームを破棄 (5) zero-torque probe コマンドで通信確認 |
-| `on_deactivate()` | 全モータを `disable()` |
+| `on_activate()` | (1) `disable_auto_report()` — 自発的フィードバックフレームを無効化 (2) `enable()` — モータ有効化 (3) `set_mode(MIT)` — MIT 制御モード設定 (4) `drain_rx_buffer()` — 起動直後の残留フレームを破棄 (5) zero-torque probe コマンドで通信確認 (6) 非 RT 診断ログスレッドを起動 |
+| `on_deactivate()` | (1) 非 RT ログスレッドを停止（`join()`） (2) 各モータにゼロトルク安全コマンドを送信（kp=0, kd=0, torque_ff=0） (3) 各モータを `disable()` |
 | `on_cleanup()` | 全 `AobaDriver` を `disconnect()` |
 
 ---
@@ -132,10 +140,10 @@ Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
 
 | 項目 | 実装 |
 |---|---|
-| メモリ事前割当 | `on_init()` で `std::vector` のバッファを `reserve()` |
-| poll() タイムアウト | 各バスの受信フェーズで timeout 2ms を指定。最悪ケースで `n_buses × timeout` に収束 |
+| メモリ事前割当 | `on_init()` で `std::vector` のバッファを `resize()` により確保・初期化 |
+| poll() タイムアウト | 各バスの受信フェーズで初回 3ms / 以降 1ms のタイムアウトを指定。最悪ケースで `n_buses × 初回timeout` に収束 |
 | 動的割当の回避 | RT パス（`read()` / `write()`）内で new/delete を使用しない |
-| タイミング統計 | ローリングカウンタで 200 サイクルごとに集計・ログ出力（ログ自体は非 RT だが RCLCPP_INFO を使用） |
+| タイミング統計 | 200 サイクルごとに `DiagnosticSnapshot`（固定サイズ POD）へ集計し、非 RT ログスレッドが RCLCPP_INFO で出力（SPSC atomic flag パターン）。RT スレッド内でのログ出力は一切行わない |
 
 ---
 
@@ -172,15 +180,23 @@ Controller Manager RT ループ (200Hz, CPU 2, SCHED_FIFO 90)
 
 ### single_motor_test
 
-単一モータを接続した状態で動作確認を行う。
+単一モータを接続した状態で動作確認を行う自己完結型テスト。launch 起動のみで、コマンド送信・統計分析・シャットダウンまで自動で完結する。
 
 ```bash
-# 単一モータテスト起動
+# デフォルト（0 rad, 0.5 rad/s, 10秒ホールド）
 ros2 launch aoba_hardware single_motor_test.launch.py
 
-# 位置コマンド送信（別ターミナル）
-ros2 run aoba_hardware single_motor_test_commander.py
+# パラメータ指定
+ros2 launch aoba_hardware single_motor_test.launch.py \
+  target_position:=1.57 max_velocity:=0.3 hold_duration:=15.0
 ```
+
+起動シーケンス:
+1. Controller Manager + Robot State Publisher
+2. joint_state_broadcaster → forward_position_controller スポーン
+3. single_motor_test_commander ノード自動起動（目標位置へ移動 → ホールド）
+4. テスト完了 → analyze_timing_log.py による統計分析
+5. 分析完了 → 全体シャットダウン
 
 ### can_latency_test
 
@@ -189,6 +205,23 @@ ros2 run aoba_hardware single_motor_test_commander.py
 ```bash
 # Usage: can_latency_test [interface] [motor_id] [iterations]
 ros2 run aoba_hardware can_latency_test can1 11 1000
+```
+
+### multi_motor_zero_test
+
+複数モータを同時にゼロ点（0 rad）へ移動し、CAN 通信品質を定量評価する。モータ構成は launch 引数で動的に指定可能（URDF とコントローラ設定を動的生成）。テスト完了後に `analyze_timing_log.py` による統計分析を自動実行し、シャットダウンする。
+
+```bash
+# 2モータ on can1
+ros2 launch aoba_hardware multi_motor_zero_test.launch.py motors:='can1:11,12'
+
+# 本番と同等の10モータ構成
+ros2 launch aoba_hardware multi_motor_zero_test.launch.py \
+  motors:='can1:11,12,13,14,15 can2:21,22,23,24,25'
+
+# ゲイン・保持時間のカスタマイズ
+ros2 launch aoba_hardware multi_motor_zero_test.launch.py \
+  motors:='can1:11,12 can2:21,22' kp:=20.0 kd:=0.5 hold_duration:=15.0
 ```
 
 ### multi_bus_latency_test

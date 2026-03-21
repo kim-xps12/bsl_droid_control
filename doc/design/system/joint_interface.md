@@ -143,7 +143,7 @@ pixi run ros2 launch biped_gait_control trajectory_replay.launch.py target:=viz_
 │  │  /joint_commands  →  Gazebo/MuJoCo API     │   │
 │  │                                             │   │
 │  │  Gazebo/MuJoCo    →  /joint_states         │   │
-│  │  (sensor feedback)    (200Hz)              │   │
+│  │  (sensor feedback)    (50Hz)               │   │
 │  └─────────────────────────────────────────────┘   │
 │           │                                         │
 │           ▼                                         │
@@ -194,12 +194,13 @@ pixi run ros2 launch biped_gait_control gait_simulation.launch.py simulator:=muj
 │  │                 │            │  │  │  └─────────┬───────────┘   ││
 │  │  Robot Model    │  /joint_   │  │  │            │               ││
 │  │  TF Tree        │  states    │  │  │  ┌─────────▼───────────┐   ││
-│  └─────────────────┘  (200Hz)   │  │  │  │ aoba_hardware  │   ││
+│  └─────────────────┘  (50Hz)    │  │  │  │ aoba_hardware  │   ││
 │                                  │  │  │  │                     │   ││
 │  ┌─────────────────┐            │  │  │  │ CAN → RobStride    │   ││
 │  │  Plotjuggler    │◀───────────│  │  │  │        RS02         │   ││
 │  │                 │ diagnostics│  │  │  └─────────────────────┘   ││
-│  └─────────────────┘            │  │  └─────────────────────────────┘│
+│  │                 │ (planned)  │  │  └─────────────────────────────┘│
+│  └─────────────────┘            │  └──────────────────────────────────┘
 └──────────────────────────────────┘  └──────────────────────────────────┘
 ```
 
@@ -229,7 +230,7 @@ pixi run ros2 launch biped_description display_rviz_only.launch.py
 | トピック | 型 | 方向 | 周波数 | 説明 |
 |---------|-----|------|--------|------|
 | `/joint_commands` | `sensor_msgs/JointState` | Gait→Router | 50Hz | 目標関節角度 |
-| `/joint_states` | `sensor_msgs/JointState` | Router→RViz | 50-200Hz | 実際の関節状態 |
+| `/joint_states` | `sensor_msgs/JointState` | Router→RViz | 50Hz | 実際の関節状態 |
 | `/joint_trajectory` | `trajectory_msgs/JointTrajectory` | Gait→Router | 50Hz | 軌道ベース（将来拡張） |
 
 ### 4.2 関節名規則（URDF準拠）
@@ -352,7 +353,8 @@ def validate_joint_commands(positions: List[float]) -> bool:
 
 ### 6.3 ログ・診断
 
-- `/diagnostics`トピックで各ノードの状態をpublish
+- `/diagnostics`トピックで各ノードの状態をpublish（**将来実装予定**）
+- 現状、`aoba_hardware` は非RTスレッドからの `RCLCPP_INFO` / `RCLCPP_WARN` によるロガー出力で診断情報を提供
 - 制御ループ遅延の監視
 - 通信品質の監視（特にDDS越え通信時）
 
