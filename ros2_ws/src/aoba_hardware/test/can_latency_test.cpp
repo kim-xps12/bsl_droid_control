@@ -5,14 +5,12 @@
  * @file can_latency_test.cpp
  * @brief CAN通信レイテンシ測定テスト
  *
- * 単一モータ(ID=127)に対してコマンド送信→レスポンス受信の往復時間を計測
- *
- * Build:
- *   g++ -std=c++17 -O2 -I../include can_latency_test.cpp ../src/aoba_driver.cpp -o
- * can_latency_test
+ * 単一モータに対してコマンド送信→レスポンス受信の往復時間を計測する。
+ * CMakeでビルドされる（ament_cmake経由）。
  *
  * Usage:
- *   sudo ./can_latency_test [iterations]
+ *   ros2 run aoba_hardware can_latency_test [interface] [motor_id] [iterations]
+ *   # デフォルト: can0, motor_id=127, iterations=1000
  */
 
 #include <algorithm>
