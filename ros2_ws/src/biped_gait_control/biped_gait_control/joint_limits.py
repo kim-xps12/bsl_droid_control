@@ -36,6 +36,11 @@ def clamp_joint_angles(
     Returns:
         Clamped 10 joint angles in radians.
     """
+    if len(positions) != len(JOINT_LIMITS_10):
+        raise ValueError(
+            f"positions must have {len(JOINT_LIMITS_10)} elements, got {len(positions)}"
+        )
+
     clamped = []
     for i, (pos, (lo, hi)) in enumerate(zip(positions, JOINT_LIMITS_10)):
         if pos < lo:
