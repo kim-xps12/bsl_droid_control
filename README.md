@@ -161,8 +161,19 @@ pixi run ros2 launch biped_bringup genesis_teleop.launch.py
 ### 実機制御（Jetson専用）
 
 ```bash
-# RS02 単関節（joint1）の単体検証
+# 全10関節の ros2_control 起動（デュアルCANバス）
 pixi run ros2 launch aoba_hardware bringup.launch.py
+
+# 単一モータテスト（自動テスト → 統計分析 → シャットダウン）
+pixi run ros2 launch aoba_hardware single_motor_test.launch.py
+pixi run ros2 launch aoba_hardware single_motor_test.launch.py target_position:=1.57
+
+# 複数モータゼロ点テスト（モータ構成を引数で指定）
+pixi run ros2 launch aoba_hardware multi_motor_zero_test.launch.py motors:='can1:11,12,13,14,15 can2:21,22,23,24,25'
+
+# CAN レイテンシ計測
+pixi run ros2 run aoba_hardware can_latency_test can1 11 1000
+pixi run ros2 run aoba_hardware multi_bus_latency_test can1:11,12,13,14,15 can2:21,22,23,24,25
 ```
 
 ### トピックの確認
@@ -177,16 +188,16 @@ pixi run ros2 run tf2_tools view_frames
 
 ## パッケージ一覧
 
-| パッケージ | 説明 | 状態 |
-|-----------|------|------|
-| `biped_bringup` | 起動・設定統合（genesis_teleop） | ✅ 完成 |
-| `biped_description` | URDFモデル・RViz2可視化・関節操作GUI | ✅ 完成 |
-| `biped_gait_control` | 歩容生成・軌道リプレイ（50Hz関節角度出力） | ✅ 完成 |
-| `biped_genesis_sim` | Genesis物理シミュレータブリッジ | ✅ 完成 |
-| `biped_msgs` | カスタムメッセージ定義（SafetyStatus / RLPolicyState） | ✅ 完成 |
-| `biped_rl_policy` | RLポリシー推論ノード（simモード） | ✅ 完成 |
-| `biped_safety` | 安全監視ノード（緊急停止・ゲームパッド切断検知・将来: 関節・姿勢監視） | 🔄 一部実装済み |
-| `aoba_hardware` | ros2_control用ハードウェアインターフェース | 🔄 開発中 |
+| パッケージ | 説明 |
+|-----------|------|
+| `biped_bringup` | 起動・設定統合（genesis_teleop） |
+| `biped_description` | URDFモデル・RViz2可視化・関節操作GUI |
+| `biped_gait_control` | 歩容生成・軌道リプレイ（50Hz関節角度出力） |
+| `biped_genesis_sim` | Genesis物理シミュレータブリッジ |
+| `biped_msgs` | カスタムメッセージ定義（SafetyStatus / RLPolicyState） |
+| `biped_rl_policy` | RLポリシー推論ノード（simモード） |
+| `biped_safety` | 安全監視ノード（緊急停止・ゲームパッド切断検知） |
+| `aoba_hardware` | ros2_control用ハードウェアインターフェース（Jetson専用） |
 
 ## 強化学習環境（rl_ws）
 
@@ -322,7 +333,7 @@ bsl_droid_control/
         ├── biped_msgs/              # カスタムメッセージ定義
         ├── biped_rl_policy/         # RLポリシー推論
         ├── biped_safety/            # 安全監視（緊急停止・ゲームパッド切断検知・将来: 関節・姿勢監視）
-        ├── aoba_hardware/      # ros2_control用IF（開発中）
+        ├── aoba_hardware/      # ros2_control用ハードウェアインターフェース（Jetson専用）
         └── pub_sub_*/               # ROS 2チュートリアル
 ```
 
