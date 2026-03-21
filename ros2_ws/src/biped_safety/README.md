@@ -11,7 +11,7 @@
 
 ## biped_joy_safety_node
 
-- START ボタンで非常停止をトグル
+- L3 + R3 ボタン同時押しで非常停止をトグル
 - 一定時間 `/joy` が来なければ非常停止を強制有効化
 - パラメータは通常 `biped_bringup/config/joy_f710.yaml` から与える
 
