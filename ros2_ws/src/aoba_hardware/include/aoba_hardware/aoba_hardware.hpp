@@ -168,6 +168,9 @@ private:
   std::vector<int> missed_response_count_;
   static constexpr int kMissedResponseWarnThreshold = 10;  // 200Hzで50ms相当
 
+  // ジョイント毎の有効フラグ（プローブ失敗時にfalse → ランタイムでスキップ）
+  std::vector<bool> joint_enabled_;
+
   // === タイミング診断 ===
   WriteTimingStats last_timing_;                                // 直近サイクルのタイミング
   std::unordered_map<std::string, BusTimingStats> bus_timing_;  // バス毎のタイミング
