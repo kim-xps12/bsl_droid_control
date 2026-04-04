@@ -23,7 +23,15 @@
       "Bash(cat /private/tmp/claude-*/**/tasks/*.output *)",
       "Bash(tail *)",
       "Bash(ln -sf *)",
-      "Bash(pixi run:*)"
+      "Bash(pixi run:*)",
+      "Bash(pixi install:*)",
+      "Bash(pkill -f ros2_control_node)",
+      "Bash(pkill -f spawner)",
+      "Bash(find /home/user/bsl_droid_control -name \"*.py\" -path \"*/rl_ws/*\" -exec grep -l \"axis\\\\|negate\\\\|sign.*joint\" {} \\\\;)",
+      "Bash(find /home/user/bsl_droid_control -type f \\\\\\( -name \"*.py\" -o -name \"*.cpp\" -o -name \"*.h\" \\\\\\) -exec grep -l \"motor_id\\\\|can_interface\" {} \\\\;)",
+      "Bash(ls /home/user/bsl_droid_control/ros2_ws/install/aoba_description/share/aoba_description/config/plotjuggler*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
     ]
   },
   "hooks": {

@@ -1,95 +1,71 @@
 # Jetsonセッション引き継ぎ
 
-## 未ビルド・未検証の変更
+## 現在の状態: bringup_headless.launch.py 正常動作
 
-macOSでの作業は完了済み。Jetsonでビルド＆実機テストが必要。
+`no ros2_control tag` エラーは解決済み。`bringup_headless.launch.py` は正常に起動し、200Hz RTループが稼働している。
 
-### A. ブリッジノード関連（前回セッション）
+## 解決済み: `no ros2_control tag` エラー
 
-`joint_gui.py` → 実機モーター連携のための一連の変更。
+### 根本原因
+
+Mac側の `display_custom.launch.py` が起動する `robot_state_publisher` が `aoba.xacro`（`<ros2_control>` タグなし）を `/robot_description` トピックに transient_local QoS で配信していた。Jazzy (v4.42.1) の controller_manager はパラメータではなくトピックからURDFを受信する仕様に変更されており、Mac のURDFを先に受け取ってクラッシュしていた。
+
+### 修正内容
+
+3つのbringup launchファイルで controller_manager の `robot_description` トピックを `/hw/robot_description` にリマップし、Mac側パブリッシャーと衝突しない構造にした:
+
+| ファイル | 修正 |
+|---------|------|
+| `bringup.launch.py` | controller_manager と robot_state_publisher の robot_description を `/hw/robot_description` にリマップ |
+| `bringup_headless.launch.py` | `robot_description_publisher` ノードを追加し `/hw/robot_description` に配信、controller_manager も同トピックにリマップ |
+| `bringup_with_bridge.launch.py` | 同上（headlessと同様） |
+
+## 完了済みの作業
+
+### ビルド
+- `cd ros2_ws && pixi install && pixi run build` → 全9パッケージ成功
+
+### CAN疎通確認
+- can1, can2 ともに UP 状態
+- motor_id=11 (can1), motor_id=21 (can2) のプローブOK確認済み
+
+### 起動確認
+- `bringup_headless.launch.py` → 正常起動、200Hz RTループ稼働、missed=0/2000
+- motor 11, 21 が ACTIVE（2/10）、残りは物理接続未確認でDISABLED
+
+## 変更内容（前セッションからの引き継ぎ含む）
+
+### A. `no ros2_control tag` 修正（本セッション）
+
+| 変更 | ファイル |
+|------|---------|
+| controller_manager の robot_description トピックリマップ | `aoba_hardware/launch/bringup.launch.py` |
+| robot_description_publisher 追加 + トピックリマップ | `aoba_hardware/launch/bringup_headless.launch.py` |
+| robot_description_publisher 追加 + トピックリマップ | `aoba_hardware/launch/bringup_with_bridge.launch.py` |
+
+### B. ブリッジノード関連（前セッション）
 
 | 変更 | ファイル |
 |------|---------|
 | `aoba_description` を `ament_cmake_python` 対応 | `CMakeLists.txt`, `package.xml`, `aoba_description/__init__.py` |
-| `joint_limits.py` を `aoba_description` に移動 | 元: `biped_gait_control/joint_limits.py` → 先: `aoba_description/aoba_description/joint_limits.py` |
+| `joint_limits.py` を `aoba_description` に移動 | `aoba_description/aoba_description/joint_limits.py` |
 | `joint_gui.py` の可動範囲を `joint_limits.py` から取得 | `scripts/joint_gui.py` |
-| `aoba_system.urdf.xacro` を `aoba.xacro` include方式に変更、joint名をrev11形式に | `urdf/aoba_system.urdf.xacro` |
+| `aoba_system.urdf.xacro` を `aoba.xacro` include方式に変更 | `urdf/aoba_system.urdf.xacro` |
 | `controllers.yaml` のjoint名をrev形式に | `config/controllers.yaml` |
-| `doc/README.md` のjoint名をrev形式に | `doc/README.md` |
-| ブリッジノード新規作成（`/joint_states` 11軸 → `/forward_position_controller/commands` 10軸） | `biped_gait_control/joint_state_bridge_node.py` |
-| エントリーポイント登録 | `biped_gait_control/setup.py` |
+| ブリッジノード新規作成 | `biped_gait_control/joint_state_bridge_node.py` |
 | `bringup_with_bridge.launch.py` 新規作成 | `aoba_hardware/launch/bringup_with_bridge.launch.py` |
 
-macOS側で `pixi run build` + `display_custom.launch.py` 起動確認済み。
-
-### B. プローブ失敗グレースフルデグラデーション（今回セッション）
-
-モータが部分的に接続されていても `on_activate()` が成功するようにした。
+### C. プローブ失敗グレースフルデグラデーション（前セッション）
 
 | 変更 | ファイル |
 |------|---------|
 | `joint_enabled_` メンバ追加 | `include/aoba_hardware/aoba_hardware.hpp` |
-| プローブ失敗を `ERROR` → `WARN` に格下げ、disabled jointをランタイムでスキップ | `src/aoba_hardware.cpp` |
-
-clang-format / cpplint パス済み。macOSではros2_control依存でコンパイル不可のためJetsonでのビルドが必要。
-
-## Jetsonでの作業手順
-
-### 1. コード同期
-
-```bash
-# Jetson側でpull（またはMacからpush後にpull）
-cd ~/Projects/bsl_droid_control
-git pull
-```
-
-### 2. ビルド
-
-```bash
-cd ros2_ws
-pixi install
-pixi run build  # aoba_hardware含む全パッケージ
-```
-
-### 3. 部分接続テスト（モータ1個）
-
-CAN1にモータ1個（例: motor_id=11）のみ接続して起動:
-
-```bash
-# CAN通信確認
-sudo ip link set can1 up type can bitrate 1000000
-candump can1  # フレームが見えるか確認
-
-# 起動
-pixi run ros2 launch aoba_hardware bringup_headless.launch.py
-```
-
-期待されるログ:
-```
-Motor 11 on can1: probe OK (pos=X.XXX rad)
-Motor 12 on can1: no response to probe — joint disabled.
-...
-Motor probe summary: 1/10 active
-Activated: 1/10 motors on 2 bus(es), synchronous send/receive mode
-```
-
-### 4. Mac→Jetsonブリッジテスト（全モータ接続後）
-
-```bash
-# Jetson
-pixi run ros2 launch aoba_hardware bringup_with_bridge.launch.py
-
-# Mac
-pixi run ros2 launch aoba_description display_custom.launch.py
-```
-
-確認項目:
-- MacのGUIスライダー操作 → `ros2 topic echo /forward_position_controller/commands` に値が反映
-- `/hw/joint_states` にhardware broadcasterの出力が出ること（`/joint_states` ではない）
-- 実機モータが追従すること
+| プローブ失敗を `ERROR` → `WARN` に格下げ | `src/aoba_hardware.cpp` |
 
 ## 注意事項
 
-- `bringup_with_bridge.launch.py` は `joint_state_broadcaster` を `/hw/joint_states` にリマップしている。MacのGUI（`/joint_states`）との競合を防ぐため
-- ブリッジノードは11軸メッセージ（GUI由来）のみ処理し、10軸メッセージ（hw broadcaster由来）は無視する
-- 全モータ未接続（0/10 active）の場合は従来通り `CallbackReturn::ERROR` で停止する
+- `bringup_with_bridge.launch.py` は `joint_state_broadcaster` を `/hw/joint_states` にリマップ
+- ブリッジノードは11軸メッセージのみ処理、10軸メッセージは無視
+- 全モータ未接続（0/10 active）の場合は `CallbackReturn::ERROR` で停止
+- 作業ディレクトリは `ros2_ws`（`cd` と後続コマンドを `&&` で連結しないこと）
+- Mac/Jetson間のDDS通信はデフォルトで同一ドメイン（ROS_DOMAIN_ID未設定）
