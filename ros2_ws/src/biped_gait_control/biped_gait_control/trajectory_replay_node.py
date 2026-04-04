@@ -35,7 +35,7 @@ from rclpy.qos import QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool, Float64MultiArray, Header
 
-from .joint_limits import clamp_joint_angles
+from aoba_description.joint_limits import clamp_joint_angles
 from .sources.foot_trajectory_source import FootTrajectorySource
 from .sources.single_joint_oscillation_source import SingleJointOscillationSource
 from .sources.waypoint_playback_source import WaypointPlaybackSource
