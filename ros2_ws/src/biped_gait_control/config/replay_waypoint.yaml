@@ -9,26 +9,31 @@ trajectory_replay:
     publish_rate: 50.0
     enabled: true
 
+    # Initialization ramp (control mode only)
+    init_duration: 1.5        # seconds to ramp from current pose to trajectory start
+    init_state_timeout: 10.0  # seconds to wait for /joint_states before aborting
+
     waypoint:
       loop: true
       # Waypoint timestamps [sec]
       times: [0.0, 1.0, 2.0, 3.0, 4.0]
       # Joint positions: 11 values per waypoint (flattened)
       # Order: rev11-rev15 (left leg), rev21-rev25 (right leg), rev31 (neck)
-      # Waypoint 0 (t=0.0s): standing pose
-      # Waypoint 1 (t=1.0s): left leg slightly bent
-      # Waypoint 2 (t=2.0s): standing pose
-      # Waypoint 3 (t=3.0s): right leg slightly bent
-      # Waypoint 4 (t=4.0s): standing pose (loop back to 0)
+      # Base pose: walking standby (hip=-60deg, knee=90deg, ankle=-30deg)
+      # Waypoint 0 (t=0.0s): walking standby
+      # Waypoint 1 (t=1.0s): left leg extend (delta: hip+0.3, knee-0.6, ankle+0.3)
+      # Waypoint 2 (t=2.0s): walking standby
+      # Waypoint 3 (t=3.0s): right leg extend (delta: hip+0.3, knee-0.6, ankle+0.3)
+      # Waypoint 4 (t=4.0s): walking standby (loop back to 0)
       positions: [
-        # wp0: standing
-        0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0,  0.0,
-        # wp1: left knee bend
-        0.0, 0.0, 0.3, -0.6, 0.3,  0.0, 0.0, 0.0, 0.0, 0.0,  0.0,
-        # wp2: standing
-        0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0,  0.0,
-        # wp3: right knee bend
-        0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.3, -0.6, 0.3,  0.0,
-        # wp4: standing
-        0.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 0.0, 0.0,  0.0,
+        # wp0: walking standby
+        0.0, 0.0, -1.0472, 1.5708, -0.5236,  0.0, 0.0, -1.0472, 1.5708, -0.5236,  0.0,
+        # wp1: left leg extend from standby
+        0.0, 0.0, -0.7472, 0.9708, -0.2236,  0.0, 0.0, -1.0472, 1.5708, -0.5236,  0.0,
+        # wp2: walking standby
+        0.0, 0.0, -1.0472, 1.5708, -0.5236,  0.0, 0.0, -1.0472, 1.5708, -0.5236,  0.0,
+        # wp3: right leg extend from standby
+        0.0, 0.0, -1.0472, 1.5708, -0.5236,  0.0, 0.0, -0.7472, 0.9708, -0.2236,  0.0,
+        # wp4: walking standby
+        0.0, 0.0, -1.0472, 1.5708, -0.5236,  0.0, 0.0, -1.0472, 1.5708, -0.5236,  0.0,
       ]
