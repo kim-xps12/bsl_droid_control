@@ -124,13 +124,27 @@ cd ros2_ws
 ### RViz2でロボットモデルを可視化
 
 ```bash
-# rviz2によるロボットモデルの表示のみ
+# rviz2によるロボットモデルの表示のみ（外部から/joint_statesを供給）
 # JointStatesがpublishされるまでは表示される形状が不定
-pixi run ros2 launch biped_description display_rviz_only.launch.py
+pixi run ros2 launch aoba_description display_rviz_only.launch.py
 
-# スライダーによるJointStatesのpublisherも併せて起動
-pixi run ros2 launch biped_description display_custom.launch.py
+# aobaモデルのシンプルな表示＋スライダー
+pixi run ros2 launch aoba_description display.launch.py
+
+# aoba_description: スライダーGUI + 歩行待機姿勢ボタン付き
+pixi run ros2 launch aoba_description display_custom.launch.py
+
+# PlotJugglerによるリアルタイム関節角度可視化付き
+pixi run ros2 launch aoba_description display_custom.launch.py plot:=true
 ```
+
+PlotJugglerのレイアウトファイル（`ros2_ws/src/aoba_description/config/plotjuggler_joint_states.xml`）は、監視対象トピックの追加・プロット配置の変更に応じて更新が必要になる。更新手順は以下の通り:
+
+1. `plot:=true` で起動
+2. PlotJuggler上で Streaming → ROS 2 Topic Subscriber からトピックを追加（例: `/forward_position_controller/commands`）
+3. プロットエリアにドラッグして配置を調整
+4. File → Save Layout で同じパスに上書き保存
+5. `pixi run build` でinstall先に反映
 
 ### 軌道リプレイ（RViz / 実機検証）
 
@@ -197,6 +211,7 @@ pixi run ros2 run tf2_tools view_frames
 | `biped_msgs` | カスタムメッセージ定義（SafetyStatus / RLPolicyState） |
 | `biped_rl_policy` | RLポリシー推論ノード（simモード） |
 | `biped_safety` | 安全監視ノード（緊急停止・ゲームパッド切断検知） |
+| `aoba_description` | Aobaロボット URDFモデル・RViz2可視化・関節操作GUI |
 | `aoba_hardware` | ros2_control用ハードウェアインターフェース（Jetson専用） |
 
 ## 強化学習環境（rl_ws）
