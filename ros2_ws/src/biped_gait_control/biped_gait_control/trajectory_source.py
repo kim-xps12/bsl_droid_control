@@ -1,8 +1,8 @@
 """
 Abstract base class for trajectory sources.
 
-All trajectory sources produce 10 joint angles (radians) in a canonical order
-matching the forward_position_controller joint configuration.
+All trajectory sources produce joint angles (radians) in a canonical order
+matching the aoba_description URDF joint configuration.
 """
 
 from abc import ABC, abstractmethod
@@ -13,23 +13,27 @@ from rclpy.node import Node
 class TrajectorySource(ABC):
     """Abstract base class for trajectory sources.
 
-    Each concrete source generates 10 joint angles in radians at the canonical order:
-    [L_hip_yaw, L_hip_roll, L_hip_pitch, L_knee_pitch, L_ankle_pitch,
-     R_hip_yaw, R_hip_roll, R_hip_pitch, R_knee_pitch, R_ankle_pitch]
+    Each concrete source generates joint angles in radians at the canonical order:
+    [rev11, rev12, rev13, rev14, rev15,   (left leg)
+     rev21, rev22, rev23, rev24, rev25,   (right leg)
+     rev31]                                (neck)
     """
 
     JOINT_NAMES: list[str] = [
-        "left_hip_yaw_joint",
-        "left_hip_roll_joint",
-        "left_hip_pitch_joint",
-        "left_knee_pitch_joint",
-        "left_ankle_pitch_joint",
-        "right_hip_yaw_joint",
-        "right_hip_roll_joint",
-        "right_hip_pitch_joint",
-        "right_knee_pitch_joint",
-        "right_ankle_pitch_joint",
+        "rev11",  # left hip yaw
+        "rev12",  # left hip roll
+        "rev13",  # left hip pitch
+        "rev14",  # left knee pitch
+        "rev15",  # left ankle pitch
+        "rev21",  # right hip yaw
+        "rev22",  # right hip roll
+        "rev23",  # right hip pitch
+        "rev24",  # right knee pitch
+        "rev25",  # right ankle pitch
+        "rev31",  # neck
     ]
+
+    NUM_JOINTS: int = len(JOINT_NAMES)
 
     @abstractmethod
     def configure(self, node: Node) -> None:
@@ -42,13 +46,13 @@ class TrajectorySource(ABC):
 
     @abstractmethod
     def compute(self, elapsed_sec: float) -> list[float]:
-        """Compute 10 joint angles in radians for the given time.
+        """Compute joint angles in radians for the given time.
 
         Args:
             elapsed_sec: Elapsed time since start in seconds.
 
         Returns:
-            List of 10 joint angles in radians, in canonical order.
+            List of NUM_JOINTS joint angles in radians, in canonical order.
         """
 
     @abstractmethod

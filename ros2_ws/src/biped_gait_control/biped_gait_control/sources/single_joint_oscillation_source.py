@@ -16,11 +16,12 @@ class SingleJointOscillationSource(TrajectorySource):
     """Oscillate a single joint for hardware testing."""
 
     def configure(self, node: Node) -> None:
-        node.declare_parameter("oscillation.joint_name", "left_knee_pitch_joint")
+        n_joints = self.NUM_JOINTS
+        node.declare_parameter("oscillation.joint_name", "rev14")
         node.declare_parameter("oscillation.amplitude", 0.3)
         node.declare_parameter("oscillation.frequency", 0.5)
         node.declare_parameter("oscillation.offset", 0.0)
-        node.declare_parameter("oscillation.default_positions", [0.0] * 10)
+        node.declare_parameter("oscillation.default_positions", [0.0] * n_joints)
 
         self._joint_name: str = node.get_parameter("oscillation.joint_name").value
         self._amplitude: float = node.get_parameter("oscillation.amplitude").value
@@ -38,9 +39,9 @@ class SingleJointOscillationSource(TrajectorySource):
 
         self._joint_index = self.JOINT_NAMES.index(self._joint_name)
 
-        if len(self._default_positions) != 10:
+        if len(self._default_positions) != n_joints:
             raise ValueError(
-                f"default_positions must have 10 elements, got {len(self._default_positions)}"
+                f"default_positions must have {n_joints} elements, got {len(self._default_positions)}"
             )
 
         node.get_logger().info(

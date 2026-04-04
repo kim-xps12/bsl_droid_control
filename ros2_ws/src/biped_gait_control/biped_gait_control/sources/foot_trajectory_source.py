@@ -1,7 +1,7 @@
 """
 Foot trajectory source using CamberTrajectory + inverse kinematics.
 
-Wraps the existing WalkingPatternGenerator to produce 10 joint angles
+Wraps the existing WalkingPatternGenerator to produce joint angles
 from an elliptical arc foot trajectory with 2-link IK.
 """
 
@@ -20,8 +20,8 @@ class FootTrajectorySource(TrajectorySource):
         node.declare_parameter("foot.step_length", 0.08)
         node.declare_parameter("foot.step_frequency", 0.5)
         node.declare_parameter("foot.leg_extension_ratio", 0.90)
-        node.declare_parameter("foot.thigh_length", 0.11)
-        node.declare_parameter("foot.shank_length", 0.12)
+        node.declare_parameter("foot.thigh_length", 0.125)
+        node.declare_parameter("foot.shank_length", 0.13)
 
         gait_params = GaitParameters(
             step_height=node.get_parameter("foot.step_height").value,
@@ -47,12 +47,23 @@ class FootTrajectorySource(TrajectorySource):
             f"thigh={thigh_length}, shank={shank_length}"
         )
 
+    @staticmethod
+    def _apply_axis_sign(angles_rad: list[float]) -> list[float]:
+        """Negate pitch angles for aoba's (0, -1, 0) axis convention.
+
+        IK outputs assume positive-Y axis. aoba's hip_pitch, knee_pitch,
+        ankle_pitch joints all use negative-Y axis, so indices 2,3,4 are negated.
+        """
+        signs = [1.0, 1.0, -1.0, -1.0, -1.0]
+        return [a * s for a, s in zip(angles_rad, signs)]
+
     def compute(self, elapsed_sec: float) -> list[float]:
         left_deg, right_deg = self._generator.generate(elapsed_sec)
-        # Convert degrees to radians
-        left_rad = [np.radians(a) for a in left_deg]
-        right_rad = [np.radians(a) for a in right_deg]
-        return left_rad + right_rad
+        # Convert degrees to radians and apply aoba axis sign convention
+        left_rad = self._apply_axis_sign([np.radians(a) for a in left_deg])
+        right_rad = self._apply_axis_sign([np.radians(a) for a in right_deg])
+        # Neck (rev31) held at 0
+        return left_rad + right_rad + [0.0]
 
     def reset(self) -> None:
         pass  # Stateless (phase is computed from elapsed_sec)

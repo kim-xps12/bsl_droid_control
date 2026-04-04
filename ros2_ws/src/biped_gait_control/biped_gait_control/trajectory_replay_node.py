@@ -28,6 +28,7 @@ Parameters:
 """
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 
@@ -126,7 +127,7 @@ class TrajectoryReplayNode(Node):
 
         if not self._enabled or self._estop_active:
             # Output zeros (default standing pose)
-            positions = [0.0] * 10
+            positions = [0.0] * TrajectorySource.NUM_JOINTS
         else:
             positions = self._source.compute(elapsed_sec)
 
@@ -157,8 +158,8 @@ class TrajectoryReplayNode(Node):
         msg.header.frame_id = "base_link"
         msg.name = list(TrajectorySource.JOINT_NAMES)
         msg.position = positions
-        msg.velocity = [0.0] * 10
-        msg.effort = [0.0] * 10
+        msg.velocity = [0.0] * TrajectorySource.NUM_JOINTS
+        msg.effort = [0.0] * TrajectorySource.NUM_JOINTS
         self._joint_state_pub.publish(msg)
 
     def _publish_hw_command(self, positions: list[float]) -> None:
@@ -168,14 +169,23 @@ class TrajectoryReplayNode(Node):
 
 
 def main(args: list[str] | None = None) -> None:
-    rclpy.init(args=args)
+    import signal
+
+    rclpy.init(args=args, signal_handler_options=rclpy.SignalHandlerOptions.NO)
     node = TrajectoryReplayNode()
+
+    def _shutdown(sig: int, _frame: object) -> None:
+        if rclpy.ok():
+            node.get_logger().info(f"Received signal {sig}, shutting down...")
+            rclpy.shutdown()
+
+    signal.signal(signal.SIGINT, _shutdown)
+    signal.signal(signal.SIGTERM, _shutdown)
 
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
-        if rclpy.ok():
-            node.get_logger().info("Shutting down...")
+    except ExternalShutdownException:
+        pass
     finally:
         node.destroy_node()
         if rclpy.ok():
