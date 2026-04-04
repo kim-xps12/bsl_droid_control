@@ -15,8 +15,9 @@ class WaypointPlaybackSource(TrajectorySource):
     """Multi-joint waypoint playback with linear interpolation."""
 
     def configure(self, node: Node) -> None:
+        n_joints = self.NUM_JOINTS
         node.declare_parameter("waypoint.times", [0.0, 2.0])
-        node.declare_parameter("waypoint.positions", [0.0] * 20)
+        node.declare_parameter("waypoint.positions", [0.0] * (2 * n_joints))
         node.declare_parameter("waypoint.loop", True)
 
         times = list(node.get_parameter("waypoint.times").value)
@@ -24,12 +25,12 @@ class WaypointPlaybackSource(TrajectorySource):
         self._loop: bool = node.get_parameter("waypoint.loop").value
 
         n_waypoints = len(times)
-        expected_len = n_waypoints * 10
+        expected_len = n_waypoints * n_joints
 
         if len(positions_flat) != expected_len:
             raise ValueError(
                 f"waypoint.positions must have {expected_len} elements "
-                f"({n_waypoints} waypoints × 10 joints), got {len(positions_flat)}"
+                f"({n_waypoints} waypoints × {n_joints} joints), got {len(positions_flat)}"
             )
 
         if n_waypoints < 2:
@@ -40,7 +41,7 @@ class WaypointPlaybackSource(TrajectorySource):
         if not np.all(np.diff(self._times) > 0):
             raise ValueError("waypoint.times must be strictly monotonically increasing")
 
-        self._positions = np.array(positions_flat).reshape(n_waypoints, 10)
+        self._positions = np.array(positions_flat).reshape(n_waypoints, n_joints)
         self._duration = self._times[-1] - self._times[0]
 
         node.get_logger().info(

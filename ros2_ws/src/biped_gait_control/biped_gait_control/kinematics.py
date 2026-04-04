@@ -27,11 +27,11 @@ from typing import Tuple, List
 class LinkLengths:
     """Robot link length parameters."""
 
-    hip_width: float = 0.15   # Distance between left/right hip joints (Y direction) [m]
-    hip_yaw: float = 0.03     # Yaw axis link length (hip yaw -> hip roll) [m]
-    hip_roll: float = 0.02    # Roll axis link length (hip roll -> hip pitch) [m]
-    thigh: float = 0.11       # Thigh length (hip pitch -> knee pitch) [m]
-    shank: float = 0.12       # Shank length (knee pitch -> ankle pitch) [m]
+    hip_width: float = 0.12   # Distance between left/right hip joints (Y direction) [m]
+    hip_yaw: float = 0.0525   # Yaw axis link length (hip yaw -> hip roll) [m]
+    hip_roll: float = 0.06735  # Roll axis link length (hip roll -> hip pitch) [m]
+    thigh: float = 0.125      # Thigh length (hip pitch -> knee pitch) [m]
+    shank: float = 0.13       # Shank length (knee pitch -> ankle pitch) [m]
     foot: float = 0.09        # Foot length (ankle pitch -> foot tip) [m]
 
 

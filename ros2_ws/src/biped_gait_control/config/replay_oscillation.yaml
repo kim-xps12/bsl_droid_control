@@ -10,11 +10,11 @@ trajectory_replay:
 
     oscillation:
       # Target joint to oscillate
-      # Valid: left/right_hip_yaw/roll/pitch_joint, left/right_knee_pitch_joint, left/right_ankle_pitch_joint
-      joint_name: "left_knee_pitch_joint"
+      # Valid: rev11-rev15 (left leg), rev21-rev25 (right leg), rev31 (neck)
+      joint_name: "rev14"
       amplitude: 0.3       # [rad] (~17 deg)
       frequency: 0.5       # [Hz]
       offset: -0.5         # [rad] center offset from default position
-      # Default positions for all 10 joints [rad]
-      # All joints not being oscillated hold these positions
-      default_positions: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      # Default positions for all 11 joints [rad]
+      # Order: rev11-rev15, rev21-rev25, rev31
+      default_positions: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

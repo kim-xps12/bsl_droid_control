@@ -39,9 +39,12 @@ cd ros2_ws
 
 # URDF可視化（カスタムGUI付き）
 pixi run ros2 launch biped_description display_custom.launch.py
+pixi run ros2 launch aoba_description display_custom.launch.py
+pixi run ros2 launch aoba_description display_custom.launch.py plot:=true  # PlotJuggler付き
 
 # 外部から /joint_states を供給する場合（競合回避）
 pixi run ros2 launch biped_description display_rviz_only.launch.py
+pixi run ros2 launch aoba_description display_rviz_only.launch.py
 
 # 軌道リプレイ（足軌道 / 単関節振動 / ウェイポイント補間）
 pixi run ros2 launch biped_gait_control trajectory_replay.launch.py

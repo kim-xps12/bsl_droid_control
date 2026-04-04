@@ -56,5 +56,6 @@ ros-jazzy-joint-trajectory-controller = ">=4.36.0,<5"
 ros-jazzy-forward-command-controller = ">=4.36.0,<5"
 pytorch = "*"
 clang-format = ">=18"
+ros-jazzy-plotjuggler-ros = "*"
 # NOTE: genesis-world はpixi pypi-dependenciesではpillow版競合により追加不可。
 # pixi run setup-genesis で明示的にインストールする。

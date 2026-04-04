@@ -29,16 +29,16 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    biped_description_share = FindPackageShare('biped_description')
+    aoba_description_share = FindPackageShare('aoba_description')
     biped_gait_control_share = FindPackageShare('biped_gait_control')
 
-    # URDF: bsl_droid_simplified_v2
+    # URDF: aoba
     urdf_file = PathJoinSubstitution([
-        biped_description_share, 'urdf', 'bsl_droid_simplified_v2.urdf.xacro'
+        aoba_description_share, 'urdf', 'aoba.xacro'
     ])
 
     rviz_config = PathJoinSubstitution([
-        biped_description_share, 'rviz', 'biped_display.rviz'
+        aoba_description_share, 'rviz', 'aoba_display.rviz'
     ])
 
     # Launch arguments
@@ -83,6 +83,8 @@ def generate_launch_description():
             config_file_path,
             {'mode': LaunchConfiguration('mode')},
         ],
+        sigterm_timeout='5',
+        sigkill_timeout='2',
     )
 
     # Robot state publisher
@@ -97,7 +99,9 @@ def generate_launch_description():
                 value_type=str
             ),
             'use_sim_time': use_sim_time
-        }]
+        }],
+        sigterm_timeout='5',
+        sigkill_timeout='2',
     )
 
     # RViz2

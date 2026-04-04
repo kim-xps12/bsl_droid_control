@@ -1,5 +1,5 @@
 # Trajectory Replay: Foot trajectory (CamberTrajectory + IK)
-# bsl_droid_simplified_v2 parameters
+# aoba_description parameters
 
 trajectory_replay:
   ros__parameters:
@@ -13,5 +13,5 @@ trajectory_replay:
       step_length: 0.08
       step_frequency: 0.5
       leg_extension_ratio: 0.90
-      thigh_length: 0.11
-      shank_length: 0.12
+      thigh_length: 0.125
+      shank_length: 0.13
