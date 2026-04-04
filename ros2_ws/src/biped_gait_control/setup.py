@@ -31,6 +31,7 @@ setup(
     entry_points={
         'console_scripts': [
             'trajectory_replay = biped_gait_control.trajectory_replay_node:main',
+            'joint_state_bridge = biped_gait_control.joint_state_bridge_node:main',
         ],
     },
 )
