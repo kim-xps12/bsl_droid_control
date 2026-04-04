@@ -52,13 +52,22 @@ CallbackReturn AobaHardware::on_init(
     jcfg.motor_id = params.count("motor_id") ? std::stoi(params.at("motor_id")) : 11;
     jcfg.kp = params.count("kp") ? std::stod(params.at("kp")) : 30.0;
     jcfg.kd = params.count("kd") ? std::stod(params.at("kd")) : 1.0;
+    jcfg.direction = params.count("direction") ? std::stod(params.at("direction")) : 1.0;
+
+    if (jcfg.direction != 1.0 && jcfg.direction != -1.0) {
+      RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"),
+                   "Joint[%zu] %s: invalid direction=%.1f (must be +1 or -1)", i,
+                   jcfg.name.c_str(), jcfg.direction);
+      return CallbackReturn::ERROR;
+    }
 
     // ジョイントをCANバス毎にグループ化する
     buses_[jcfg.can_interface].joint_indices.push_back(i);
 
     RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
-                "Joint[%zu]: name=%s, bus=%s, motor_id=%d, kp=%.1f, kd=%.2f", i, jcfg.name.c_str(),
-                jcfg.can_interface.c_str(), jcfg.motor_id, jcfg.kp, jcfg.kd);
+                "Joint[%zu]: name=%s, bus=%s, motor_id=%d, kp=%.1f, kd=%.2f, dir=%.0f", i,
+                jcfg.name.c_str(), jcfg.can_interface.c_str(), jcfg.motor_id, jcfg.kp, jcfg.kd,
+                jcfg.direction);
   }
 
   // バス毎のタイミングマップを事前確保する
@@ -141,10 +150,10 @@ CallbackReturn AobaHardware::on_activate(const rclcpp_lifecycle::State& /*previo
 
     auto [recv_id, state] = driver.read_one_response(50);
     if (recv_id == jcfg.motor_id && state.valid) {
-      hw_positions_[i] = state.position;
+      hw_positions_[i] = jcfg.direction * state.position;
       joint_enabled_[i] = true;
       RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Motor %d on %s: probe OK (pos=%.3f rad)",
-                  jcfg.motor_id, jcfg.can_interface.c_str(), state.position);
+                  jcfg.motor_id, jcfg.can_interface.c_str(), hw_positions_[i]);
     } else {
       RCLCPP_WARN(rclcpp::get_logger("AobaHardware"),
                   "Motor %d on %s: no response to probe — joint disabled. "
@@ -224,7 +233,7 @@ CallbackReturn AobaHardware::on_deactivate(const rclcpp_lifecycle::State& /*prev
     auto& driver = buses_.at(jcfg.can_interface).driver;
 
     aoba_driver::MitCommand safe_cmd;
-    safe_cmd.position = hw_positions_[i];
+    safe_cmd.position = jcfg.direction * hw_positions_[i];
     safe_cmd.velocity = 0.0;
     safe_cmd.kp = 0.0;
     safe_cmd.kd = 0.0;
@@ -309,7 +318,7 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
       if (!joint_enabled_[ji])
         continue;
       aoba_driver::MitCommand cmd;
-      cmd.position = hw_commands_position_[ji];
+      cmd.position = joints_[ji].direction * hw_commands_position_[ji];
       cmd.velocity = 0.0;
       cmd.kp = joints_[ji].kp;
       cmd.kd = joints_[ji].kd;
@@ -347,9 +356,9 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
       // 受信したモータIDと一致するジョイントを探して状態を更新する
       for (size_t ji : bus.joint_indices) {
         if (joint_enabled_[ji] && joints_[ji].motor_id == motor_id && !response_received_[ji]) {
-          hw_positions_[ji] = state.position;
-          hw_velocities_[ji] = state.velocity;
-          hw_efforts_[ji] = state.torque;
+          hw_positions_[ji] = joints_[ji].direction * state.position;
+          hw_velocities_[ji] = joints_[ji].direction * state.velocity;
+          hw_efforts_[ji] = joints_[ji].direction * state.torque;
           response_received_[ji] = true;
           missed_response_count_[ji] = 0;
           remaining--;
