@@ -14,7 +14,15 @@
     ```
 
 1. terminalからJetsonにSSHする
-1. tmuxを起動して，次節の操作を行う．
+   ```bash
+   ssh user@192.168.1.111
+   ```
+
+1. bsl_droid_controlディレクトリに移動してからtmuxを起動して，次節の操作を行う．
+    ```bash
+    cd bsl_droid_control
+    tmux
+    ```
 
 ### Jetson側
 
@@ -42,7 +50,7 @@
     pixi run ros2 launch aoba_hardware bringup_headless.launch.py joint_states_topic:=/hw/joint_states
     ```
 
-1. 別ターミナルで歩容再生ノードを起動
+1. 別ペインで歩容再生ノードを起動
     ```bash
     # Jetsonで実行するときは`rviz:=fals`とする（可視化はmacbookで机上検討をするとき用）
     cd ros2_ws
