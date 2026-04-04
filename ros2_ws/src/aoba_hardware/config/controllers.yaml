@@ -23,14 +23,14 @@ joint_state_broadcaster:
 forward_position_controller:
   ros__parameters:
     joints:
-      - left_hip_yaw_joint
-      - left_hip_roll_joint
-      - left_hip_pitch_joint
-      - left_knee_pitch_joint
-      - left_ankle_pitch_joint
-      - right_hip_yaw_joint
-      - right_hip_roll_joint
-      - right_hip_pitch_joint
-      - right_knee_pitch_joint
-      - right_ankle_pitch_joint
+      - rev11
+      - rev12
+      - rev13
+      - rev14
+      - rev15
+      - rev21
+      - rev22
+      - rev23
+      - rev24
+      - rev25
     interface_name: position

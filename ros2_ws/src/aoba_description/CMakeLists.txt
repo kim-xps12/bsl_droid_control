@@ -16,11 +16,14 @@ endif()
 # Find ament packages and libraries for ament and system dependencies
 ################################################################################
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(urdf REQUIRED)
 
 ################################################################################
 # Install
 ################################################################################
+ament_python_install_package(${PROJECT_NAME})
+
 install(DIRECTORY meshes urdf launch rviz scripts config
   DESTINATION share/${PROJECT_NAME}
 )

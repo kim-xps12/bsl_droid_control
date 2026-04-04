@@ -8,13 +8,18 @@ trajectory_replay:
     publish_rate: 50.0
     enabled: true
 
+    # Initialization ramp (control mode only)
+    init_duration: 1.5        # seconds to ramp from current pose to trajectory start
+    init_state_timeout: 10.0  # seconds to wait for /joint_states before aborting
+
     oscillation:
       # Target joint to oscillate
       # Valid: rev11-rev15 (left leg), rev21-rev25 (right leg), rev31 (neck)
       joint_name: "rev14"
       amplitude: 0.3       # [rad] (~17 deg)
       frequency: 0.5       # [Hz]
-      offset: -0.5         # [rad] center offset from default position
-      # Default positions for all 11 joints [rad]
+      offset: 0.0          # [rad] center offset from default position
+      # Default positions for all 11 joints [rad] — walking standby pose
       # Order: rev11-rev15, rev21-rev25, rev31
-      default_positions: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      # hip_pitch=-60deg, knee_pitch=90deg, ankle_pitch=-30deg
+      default_positions: [0.0, 0.0, -1.0472, 1.5708, -0.5236, 0.0, 0.0, -1.0472, 1.5708, -0.5236, 0.0]

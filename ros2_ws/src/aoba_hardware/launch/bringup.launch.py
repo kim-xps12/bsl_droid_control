@@ -56,10 +56,15 @@ def generate_launch_description():
     # - URDFからHardware Interface (AobaHardware) をロード
     # - 200Hzでread()/write()を呼び出すリアルタイムループ
     # - コントローラーのライフサイクル管理
+    # Jazzy (v4.x) の controller_manager はパラメータではなく
+    # /robot_description トピックからURDFを受信する。
+    # Mac側 robot_state_publisher が ros2_controlタグなしURDFを
+    # /robot_description に配信するため、専用トピックにリマップして衝突回避。
     control_node = Node(
         package='controller_manager',
         executable='ros2_control_node',
         parameters=[robot_description, controller_config],
+        remappings=[('robot_description', '/hw/robot_description')],
         output='both',  # stdout/stderrを両方表示
     )
     
@@ -69,11 +74,14 @@ def generate_launch_description():
     # URDFからTF (Transform) を計算して /tf トピックに配信
     # joint_statesトピックを購読し、各リンクの位置姿勢を計算
     # RViz等で可視化するために必要
+    # robot_description出力も /hw/robot_description にリマップ
+    # → controller_manager が正しいURDF (ros2_controlタグ付き) を受信
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
         output='both',
         parameters=[robot_description],
+        remappings=[('robot_description', '/hw/robot_description')],
     )
     
     # ============================================================

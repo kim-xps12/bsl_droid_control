@@ -40,6 +40,7 @@ CallbackReturn AobaHardware::on_init(
   hw_commands_position_.resize(n, 0.0);
   response_received_.resize(n, false);
   missed_response_count_.resize(n, 0);
+  joint_enabled_.resize(n, false);
 
   // URDFのjointパラメータからジョイント設定を読み込む
   for (size_t i = 0; i < n; ++i) {
@@ -51,13 +52,22 @@ CallbackReturn AobaHardware::on_init(
     jcfg.motor_id = params.count("motor_id") ? std::stoi(params.at("motor_id")) : 11;
     jcfg.kp = params.count("kp") ? std::stod(params.at("kp")) : 30.0;
     jcfg.kd = params.count("kd") ? std::stod(params.at("kd")) : 1.0;
+    jcfg.direction = params.count("direction") ? std::stod(params.at("direction")) : 1.0;
+
+    if (jcfg.direction != 1.0 && jcfg.direction != -1.0) {
+      RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"),
+                   "Joint[%zu] %s: invalid direction=%.1f (must be +1 or -1)", i,
+                   jcfg.name.c_str(), jcfg.direction);
+      return CallbackReturn::ERROR;
+    }
 
     // ジョイントをCANバス毎にグループ化する
     buses_[jcfg.can_interface].joint_indices.push_back(i);
 
     RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
-                "Joint[%zu]: name=%s, bus=%s, motor_id=%d, kp=%.1f, kd=%.2f", i, jcfg.name.c_str(),
-                jcfg.can_interface.c_str(), jcfg.motor_id, jcfg.kp, jcfg.kd);
+                "Joint[%zu]: name=%s, bus=%s, motor_id=%d, kp=%.1f, kd=%.2f, dir=%.0f", i,
+                jcfg.name.c_str(), jcfg.can_interface.c_str(), jcfg.motor_id, jcfg.kp, jcfg.kd,
+                jcfg.direction);
   }
 
   // バス毎のタイミングマップを事前確保する
@@ -106,18 +116,22 @@ CallbackReturn AobaHardware::on_activate(const rclcpp_lifecycle::State& /*previo
 
     // モータを有効化する
     if (!driver.enable(jcfg.motor_id)) {
-      RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"), "Failed to enable motor %d on %s",
-                   jcfg.motor_id, jcfg.can_interface.c_str());
-      return CallbackReturn::ERROR;
+      RCLCPP_WARN(rclcpp::get_logger("AobaHardware"),
+                  "Failed to enable motor %d on %s — joint disabled", jcfg.motor_id,
+                  jcfg.can_interface.c_str());
+      joint_enabled_[i] = false;
+      continue;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     driver.drain_rx_buffer();
 
     // MIT制御モードを設定する
     if (!driver.set_mode(jcfg.motor_id, aoba_driver::ControlMode::MIT)) {
-      RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"), "Failed to set MIT mode for motor %d on %s",
-                   jcfg.motor_id, jcfg.can_interface.c_str());
-      return CallbackReturn::ERROR;
+      RCLCPP_WARN(rclcpp::get_logger("AobaHardware"),
+                  "Failed to set MIT mode for motor %d on %s — joint disabled", jcfg.motor_id,
+                  jcfg.can_interface.c_str());
+      joint_enabled_[i] = false;
+      continue;
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     driver.drain_rx_buffer();
@@ -136,21 +150,43 @@ CallbackReturn AobaHardware::on_activate(const rclcpp_lifecycle::State& /*previo
 
     auto [recv_id, state] = driver.read_one_response(50);
     if (recv_id == jcfg.motor_id && state.valid) {
-      hw_positions_[i] = state.position;
+      hw_positions_[i] = jcfg.direction * state.position;
+      joint_enabled_[i] = true;
       RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Motor %d on %s: probe OK (pos=%.3f rad)",
-                  jcfg.motor_id, jcfg.can_interface.c_str(), state.position);
+                  jcfg.motor_id, jcfg.can_interface.c_str(), hw_positions_[i]);
     } else {
-      RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"),
-                   "Motor %d on %s: no response to probe command. "
-                   "Check: motor power, CAN wiring, CAN bitrate (1Mbps), motor ID",
-                   jcfg.motor_id, jcfg.can_interface.c_str());
-      return CallbackReturn::ERROR;
+      RCLCPP_WARN(rclcpp::get_logger("AobaHardware"),
+                  "Motor %d on %s: no response to probe — joint disabled. "
+                  "Check: motor power, CAN wiring, CAN bitrate (1Mbps), motor ID",
+                  jcfg.motor_id, jcfg.can_interface.c_str());
+      joint_enabled_[i] = false;
     }
+  }
+
+  // プローブ結果のサマリーログ
+  int active_count = 0;
+  for (size_t i = 0; i < joints_.size(); ++i) {
+    const char* status = joint_enabled_[i] ? "ACTIVE" : "DISABLED";
+    RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "  Joint[%zu] %s (motor %d on %s): %s", i,
+                joints_[i].name.c_str(), joints_[i].motor_id, joints_[i].can_interface.c_str(),
+                status);
+    if (joint_enabled_[i])
+      active_count++;
+  }
+  RCLCPP_INFO(rclcpp::get_logger("AobaHardware"), "Motor probe summary: %d/%zu active",
+              active_count, joints_.size());
+
+  if (active_count == 0) {
+    RCLCPP_ERROR(rclcpp::get_logger("AobaHardware"),
+                 "All motors failed to respond. Cannot activate.");
+    return CallbackReturn::ERROR;
   }
 
   // コマンドの初期値を現在位置に設定する（急な動作を防止）
   for (size_t i = 0; i < hw_commands_position_.size(); ++i) {
-    hw_commands_position_[i] = hw_positions_[i];
+    if (joint_enabled_[i]) {
+      hw_commands_position_[i] = hw_positions_[i];
+    }
   }
 
   // タイミング統計をリセットする
@@ -173,8 +209,8 @@ CallbackReturn AobaHardware::on_activate(const rclcpp_lifecycle::State& /*previo
   log_thread_ = std::thread(&AobaHardware::diagnostic_log_thread_func, this);
 
   RCLCPP_INFO(rclcpp::get_logger("AobaHardware"),
-              "Activated: %zu motors on %zu bus(es), synchronous send/receive mode", joints_.size(),
-              buses_.size());
+              "Activated: %d/%zu motors on %zu bus(es), synchronous send/receive mode",
+              active_count, joints_.size(), buses_.size());
 
   return CallbackReturn::SUCCESS;
 }
@@ -189,13 +225,15 @@ CallbackReturn AobaHardware::on_deactivate(const rclcpp_lifecycle::State& /*prev
     log_thread_.join();
   }
 
-  // ゼロトルクコマンド（安全状態）を送信してから各モータを無効化する
+  // ゼロトルクコマンド（安全状態）を送信してから各有効モータを無効化する
   for (size_t i = 0; i < joints_.size(); ++i) {
+    if (!joint_enabled_[i])
+      continue;
     const auto& jcfg = joints_[i];
     auto& driver = buses_.at(jcfg.can_interface).driver;
 
     aoba_driver::MitCommand safe_cmd;
-    safe_cmd.position = hw_positions_[i];
+    safe_cmd.position = jcfg.direction * hw_positions_[i];
     safe_cmd.velocity = 0.0;
     safe_cmd.kp = 0.0;
     safe_cmd.kd = 0.0;
@@ -275,10 +313,12 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
   for (auto& [bus_name, bus] : buses_) {
     const auto t_bus_send_start = clock::now();
 
-    // バス上の全モータにMIT制御コマンドを送信する
+    // バス上の有効なモータにMIT制御コマンドを送信する
     for (size_t ji : bus.joint_indices) {
+      if (!joint_enabled_[ji])
+        continue;
       aoba_driver::MitCommand cmd;
-      cmd.position = hw_commands_position_[ji];
+      cmd.position = joints_[ji].direction * hw_commands_position_[ji];
       cmd.velocity = 0.0;
       cmd.kp = joints_[ji].kp;
       cmd.kd = joints_[ji].kd;
@@ -299,7 +339,11 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
 
   for (auto& [bus_name, bus] : buses_) {
     const auto t_bus_recv_start = clock::now();
-    int remaining = static_cast<int>(bus.joint_indices.size());
+    int remaining = 0;
+    for (size_t ji : bus.joint_indices) {
+      if (joint_enabled_[ji])
+        remaining++;
+    }
     int bus_received = 0;
     int timeout_ms = 3;  // 全バーストレスポンスを待機（5モータで約1.5ms）
 
@@ -311,10 +355,10 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
 
       // 受信したモータIDと一致するジョイントを探して状態を更新する
       for (size_t ji : bus.joint_indices) {
-        if (joints_[ji].motor_id == motor_id && !response_received_[ji]) {
-          hw_positions_[ji] = state.position;
-          hw_velocities_[ji] = state.velocity;
-          hw_efforts_[ji] = state.torque;
+        if (joint_enabled_[ji] && joints_[ji].motor_id == motor_id && !response_received_[ji]) {
+          hw_positions_[ji] = joints_[ji].direction * state.position;
+          hw_velocities_[ji] = joints_[ji].direction * state.velocity;
+          hw_efforts_[ji] = joints_[ji].direction * state.torque;
           response_received_[ji] = true;
           missed_response_count_[ji] = 0;
           remaining--;
@@ -330,7 +374,7 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
     bt.receive_us =
         std::chrono::duration<double, std::micro>(clock::now() - t_bus_recv_start).count();
     bt.received = bus_received;
-    bt.expected = static_cast<int>(bus.joint_indices.size());
+    bt.expected = remaining + bus_received;
     total_received += bus_received;
   }
 
@@ -340,6 +384,8 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
   // ミスレスポンス警告をスナップショットに蓄積するためのカウンタ
   int warn_count = 0;
   for (size_t i = 0; i < joints_.size(); ++i) {
+    if (!joint_enabled_[i])
+      continue;
     if (!response_received_[i]) {
       missed_response_count_[i]++;
       total_missed++;
@@ -363,7 +409,12 @@ hardware_interface::return_type AobaHardware::write(const rclcpp::Time& /*time*/
       std::chrono::duration<double, std::micro>(t_recv_done - t_send_done).count();
   last_timing_.total_us = std::chrono::duration<double, std::micro>(t_recv_done - t_start).count();
   last_timing_.responses_received = total_received;
-  last_timing_.responses_expected = static_cast<int>(joints_.size());
+  int enabled_count = 0;
+  for (size_t i = 0; i < joints_.size(); ++i) {
+    if (joint_enabled_[i])
+      enabled_count++;
+  }
+  last_timing_.responses_expected = enabled_count;
 
   total_us_sum_ += last_timing_.total_us;
   total_us_sum_sq_ += last_timing_.total_us * last_timing_.total_us;

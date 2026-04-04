@@ -16,6 +16,8 @@ from rcl_interfaces.srv import GetParameters
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 
+from aoba_description.joint_limits import JOINT_LIMITS
+
 try:
     from PyQt5.QtCore import Qt, QTimer
     from PyQt5.QtWidgets import (
@@ -36,20 +38,31 @@ except ImportError:
 
 
 # --- 関節設定 ---
-# (表示名, 下限[deg], 上限[deg], グループ)
-# 可動範囲は biped_gait_control/joint_limits.py を参照
+# (表示名, グループ) — UI固有情報のみ保持
+# 順序は JOINT_LIMITS (left 5 + right 5 + neck 1) に対応
+_JOINT_UI: list[tuple[str, str, str]] = [
+    ("rev11", "L: hip yaw", "left"),
+    ("rev12", "L: hip roll", "left"),
+    ("rev13", "L: hip pitch", "left"),
+    ("rev14", "L: knee pitch", "left"),
+    ("rev15", "L: ankle pitch", "left"),
+    ("rev21", "R: hip yaw", "right"),
+    ("rev22", "R: hip roll", "right"),
+    ("rev23", "R: hip pitch", "right"),
+    ("rev24", "R: knee pitch", "right"),
+    ("rev25", "R: ankle pitch", "right"),
+    ("rev31", "Neck", "neck"),
+]
+
+# (表示名, 下限[deg], 上限[deg], グループ) — 可動範囲は joint_limits.py から取得
 JOINT_CONFIG: dict[str, tuple[str, float, float, str]] = {
-    "rev11": ("L: hip yaw", -30, 30, "left"),
-    "rev12": ("L: hip roll", -25, 25, "left"),
-    "rev13": ("L: hip pitch", -90, 120, "left"),
-    "rev14": ("L: knee pitch", 0, 150, "left"),
-    "rev15": ("L: ankle pitch", -90, 90, "left"),
-    "rev21": ("R: hip yaw", -30, 30, "right"),
-    "rev22": ("R: hip roll", -25, 25, "right"),
-    "rev23": ("R: hip pitch", -90, 120, "right"),
-    "rev24": ("R: knee pitch", 0, 150, "right"),
-    "rev25": ("R: ankle pitch", -90, 90, "right"),
-    "rev31": ("Neck", -90, 90, "neck"),
+    name: (
+        display,
+        math.degrees(JOINT_LIMITS[i][0]),
+        math.degrees(JOINT_LIMITS[i][1]),
+        group,
+    )
+    for i, (name, display, group) in enumerate(_JOINT_UI)
 }
 
 # 歩行待機姿勢 [deg]

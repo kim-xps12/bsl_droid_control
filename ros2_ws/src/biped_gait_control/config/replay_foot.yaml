@@ -8,10 +8,14 @@ trajectory_replay:
     publish_rate: 50.0
     enabled: true
 
+    # Initialization ramp (control mode only)
+    init_duration: 1.5        # seconds to ramp from current pose to trajectory start
+    init_state_timeout: 10.0  # seconds to wait for /joint_states before aborting
+
     foot:
-      step_height: 0.04
-      step_length: 0.08
+      step_height: 0.02
+      step_length: 0.12
       step_frequency: 0.5
-      leg_extension_ratio: 0.90
+      leg_extension_ratio: 0.75   # +10mm lower from 0.71
       thigh_length: 0.125
       shank_length: 0.13

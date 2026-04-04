@@ -41,6 +41,7 @@ struct JointConfig {
   int motor_id = 0;           // モータのCAN ID
   double kp = 30.0;           // 位置ゲイン [Nm/rad]
   double kd = 1.0;            // ダンピングゲイン [Nm/(rad/s)]
+  double direction = 1.0;     // モータ回転方向 (+1.0 or -1.0)
 };
 
 /// CANバス毎のコンテキスト
@@ -167,6 +168,9 @@ private:
   // ジョイント毎のレスポンス欠落カウンタ（診断用）
   std::vector<int> missed_response_count_;
   static constexpr int kMissedResponseWarnThreshold = 10;  // 200Hzで50ms相当
+
+  // ジョイント毎の有効フラグ（プローブ失敗時にfalse → ランタイムでスキップ）
+  std::vector<bool> joint_enabled_;
 
   // === タイミング診断 ===
   WriteTimingStats last_timing_;                                // 直近サイクルのタイミング
