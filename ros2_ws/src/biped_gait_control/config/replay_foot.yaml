@@ -12,10 +12,16 @@ trajectory_replay:
     init_duration: 1.5        # seconds to ramp from current pose to trajectory start
     init_state_timeout: 10.0  # seconds to wait for /joint_states before aborting
 
+    # Gamepad joystick speed control (enabled via gamepad:=true launch arg)
+    # joy_speed_control: false   # Set true to enable /joy subscription
+    # joy_axis: 1                # Left stick Y-axis (F710)
+    # joy_axis_invert: false      # Set true to negate axis value
+    # joy_deadzone: 0.08         # Deadzone threshold
+
     foot:
-      step_height: 0.02
-      step_length: 0.12
-      step_frequency: 0.5
+      step_height: 0.03
+      step_length: 0.08
+      step_frequency: 1.0
       leg_extension_ratio: 0.75   # +10mm lower from 0.71
       thigh_length: 0.125
       shank_length: 0.13

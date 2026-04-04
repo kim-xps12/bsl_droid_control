@@ -17,6 +17,8 @@
   <depend>visualization_msgs</depend>
 
   <exec_depend>aoba_description</exec_depend>
+  <exec_depend>biped_bringup</exec_depend>
+  <exec_depend>biped_safety</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
