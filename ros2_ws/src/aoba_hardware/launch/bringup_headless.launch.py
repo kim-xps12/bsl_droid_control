@@ -75,7 +75,10 @@ def generate_launch_description():
         executable='robot_state_publisher',
         name='robot_description_publisher',
         parameters=[robot_description],
-        remappings=[('robot_description', '/hw/robot_description')],
+        remappings=[
+            ('robot_description', '/hw/robot_description'),
+            ('joint_states', '/hw/joint_states'),
+        ],
         output='both',
     )
 
