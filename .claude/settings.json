@@ -31,7 +31,26 @@
       "Bash(find /home/user/bsl_droid_control -type f \\\\\\( -name \"*.py\" -o -name \"*.cpp\" -o -name \"*.h\" \\\\\\) -exec grep -l \"motor_id\\\\|can_interface\" {} \\\\;)",
       "Bash(ls /home/user/bsl_droid_control/ros2_ws/install/aoba_description/share/aoba_description/config/plotjuggler*)",
       "Bash(git add:*)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Read(//dev/shm/**)",
+      "Bash(ls /tmp/launch_params_*)",
+      "Bash(candump -n 1 -T 1000 can1)",
+      "Bash(candump -n 1 -T 1000 can2)",
+      "Bash(wait)",
+      "Read(//home/user/robstride-python/examples/**)",
+      "Read(//home/user/robstride-python/**)",
+      "Read(//sys/class/net/**)",
+      "Bash(cat /etc/udev/rules.d/*can*)",
+      "Bash(ip -d link show type can)",
+      "Bash(sudo udevadm:*)",
+      "Read(//etc/systemd/network/**)",
+      "Read(//sys/bus/usb/devices/**)",
+      "Read(//usr/lib/udev/rules.d/**)",
+      "Read(//usr/lib/systemd/network/**)",
+      "Bash(ls -la /etc/systemd/network/10-can*.link)",
+      "Bash(find /home/user/bsl_droid_control/ros2_ws/src -type f \\\\\\( -name \"*.py\" -o -name \"*.cpp\" -o -name \"*.hpp\" \\\\\\) -exec grep -l \"clamp\\\\|saturate\\\\|limit.*command\\\\|validate.*joint\" {} \\\\;)",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(ros2 topic:*)"
     ]
   },
   "hooks": {
