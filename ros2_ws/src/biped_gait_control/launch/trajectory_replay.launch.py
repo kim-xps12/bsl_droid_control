@@ -88,6 +88,7 @@ def generate_launch_description():
     )
 
     # Robot state publisher
+    # trajectory_replay_node publishes to /cmd/joint_states, so remap here
     robot_state_publisher_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -100,6 +101,7 @@ def generate_launch_description():
             ),
             'use_sim_time': use_sim_time
         }],
+        remappings=[('joint_states', '/cmd/joint_states')],
         sigterm_timeout='5',
         sigkill_timeout='2',
     )

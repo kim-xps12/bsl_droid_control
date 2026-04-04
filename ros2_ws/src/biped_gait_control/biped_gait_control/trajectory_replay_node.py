@@ -7,11 +7,13 @@ via the Strategy pattern. Publishes joint commands for both rviz2
 visualization and real hardware control.
 
 Published Topics:
-    /joint_states (sensor_msgs/JointState):
-        Joint angle targets for all leg joints (always published).
+    /cmd/joint_states (sensor_msgs/JointState):
+        Joint angle targets for all joints including neck (always published).
+        Used for RViz visualization and PlotJuggler comparison.
 
     /forward_position_controller/commands (std_msgs/Float64MultiArray):
         Position commands for ros2_control hardware (control mode only).
+        Contains 10 actuated joints (excludes neck).
 
 Subscribed Topics:
     /emergency_stop (std_msgs/Bool):
@@ -70,7 +72,7 @@ class TrajectoryReplayNode(Node):
         qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE)
 
         self._joint_state_pub = self.create_publisher(
-            JointState, "/joint_states", qos
+            JointState, "/cmd/joint_states", qos
         )
 
         self._hw_cmd_pub = None
@@ -164,7 +166,7 @@ class TrajectoryReplayNode(Node):
 
     def _publish_hw_command(self, positions: list[float]) -> None:
         msg = Float64MultiArray()
-        msg.data = positions
+        msg.data = positions[:10]  # 10 actuated joints (exclude neck)
         self._hw_cmd_pub.publish(msg)
 
 
