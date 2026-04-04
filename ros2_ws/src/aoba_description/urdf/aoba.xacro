@@ -1,0 +1,335 @@
+<?xml version="1.0" ?>
+<robot name="aoba" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:include filename="$(find aoba_description)/urdf/materials.xacro" />
+<xacro:include filename="$(find aoba_description)/urdf/aoba.trans" />
+<link name="base_link">
+  <inertial>
+    <origin xyz="-0.10775006669795932 -0.0014579326216230281 -0.037227471747289964" rpy="0 0 0"/>
+    <mass value="33778.79754843115"/>
+    <inertia ixx="30.336996" iyy="19.331237" izz="14.744798" ixy="0.348884" iyz="-3.909874" ixz="-0.832528"/>
+  </inertial>
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link11_1">
+  <inertial>
+    <origin xyz="-0.003753274013027406 -0.0003130654805813121 -0.04580851374923082" rpy="0 0 0"/>
+    <mass value="1.8367561805050272"/>
+    <inertia ixx="0.001703" iyy="0.001146" izz="0.001089" ixy="2e-06" iyz="2.1e-05" ixz="-3.8e-05"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.0 -0.06 0.037" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link11_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="0.0 -0.06 0.037" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link11_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link21_1">
+  <inertial>
+    <origin xyz="-0.0029594571061755844 7.851436904793285e-08 -0.04152159029175311" rpy="0 0 0"/>
+    <mass value="2.241240576569183"/>
+    <inertia ixx="0.002302" iyy="0.001485" izz="0.00148" ixy="0.0" iyz="0.0" ixz="-5.9e-05"/>
+  </inertial>
+  <visual>
+    <origin xyz="0.0 0.06 0.037" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link21_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="0.0 0.06 0.037" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link21_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link12_1">
+  <inertial>
+    <origin xyz="0.004449944154914006 0.025132986098890503 1.2648040686291662e-05" rpy="0 0 0"/>
+    <mass value="0.8836012810948399"/>
+    <inertia ixx="0.001098" iyy="0.000463" izz="0.001042" ixy="0.00023" iyz="-0.0" ixz="0.0"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.018 -0.06 0.0895" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link12_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.018 -0.06 0.0895" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link12_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link22_1">
+  <inertial>
+    <origin xyz="0.019642690549989978 0.0014321728159432112 -0.0011379355691713139" rpy="0 0 0"/>
+    <mass value="1.767202562275354"/>
+    <inertia ixx="0.003446" iyy="0.001337" izz="0.003739" ixy="-0.000713" iyz="5.4e-05" ixz="3.1e-05"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.01825 0.06 0.0895" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link22_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.01825 0.06 0.0895" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link22_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link13_1">
+  <inertial>
+    <origin xyz="8.598210055963795e-06 0.02097188168363756 -0.06239856876645131" rpy="0 0 0"/>
+    <mass value="3.6889266825883382"/>
+    <inertia ixx="0.01542" iyy="0.016326" izz="0.002167" ixy="1e-06" iyz="8e-06" ixz="1e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.003 -0.12735 0.0895" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link13_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.003 -0.12735 0.0895" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link13_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link23_1">
+  <inertial>
+    <origin xyz="-8.598210056503294e-06 -0.02097188168363781 -0.062398568766451334" rpy="0 0 0"/>
+    <mass value="3.6889266825883382"/>
+    <inertia ixx="0.01542" iyy="0.016326" izz="0.002167" ixy="1e-06" iyz="-8e-06" ixz="-1e-06"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.00325 0.12735 0.0895" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link23_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.00325 0.12735 0.0895" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link23_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link14_1">
+  <inertial>
+    <origin xyz="-0.04722372125911741 -0.011890718991776128 -0.06118499020927745" rpy="0 0 0"/>
+    <mass value="4.4722435268776595"/>
+    <inertia ixx="0.01808" iyy="0.033203" izz="0.016362" ixy="0.001279" iyz="-0.001168" ixz="0.010561"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.003 -0.12735 0.2145" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link14_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.003 -0.12735 0.2145" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link14_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link24_1">
+  <inertial>
+    <origin xyz="-0.007119308750048997 0.015427748042427566 -0.09088524536308482" rpy="0 0 0"/>
+    <mass value="2.9522576556592655"/>
+    <inertia ixx="0.007638" iyy="0.008483" izz="0.001569" ixy="-5.9e-05" iyz="0.000222" ixz="0.000495"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.00325 0.12735 0.2145" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link24_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.00325 0.12735 0.2145" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link24_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link15_1">
+  <inertial>
+    <origin xyz="-0.001995336813068513 0.018703542111368043 -0.030994705633205943" rpy="0 0 0"/>
+    <mass value="7.0120886056522025"/>
+    <inertia ixx="0.018635" iyy="0.033673" izz="0.030463" ixy="0.004719" iyz="-0.006887" ixz="0.005427"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.003 -0.13225 0.3445" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link15_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.003 -0.13225 0.3445" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link15_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link25_1">
+  <inertial>
+    <origin xyz="0.01917875571440413 0.009023566658277984 -0.06169127564574606" rpy="0 0 0"/>
+    <mass value="3.744644161248792"/>
+    <inertia ixx="0.002751" iyy="0.012331" izz="0.011158" ixy="-8.2e-05" iyz="0.000392" ixz="0.000109"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.00325 0.13225 0.3445" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link25_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.00325 0.13225 0.3445" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link25_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<link name="link31_1">
+  <inertial>
+    <origin xyz="-0.06120228160027722 -0.016274714387538632 0.13682127440347" rpy="0 0 0"/>
+    <mass value="5.264933310754651"/>
+    <inertia ixx="0.036383" iyy="0.038948" izz="0.059423" ixy="-6.9e-05" iyz="0.000148" ixz="0.002301"/>
+  </inertial>
+  <visual>
+    <origin xyz="-0.071478 -0.01675 -0.036668" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link31_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+    <material name="_"/>
+  </visual>
+  <collision>
+    <origin xyz="-0.071478 -0.01675 -0.036668" rpy="0 0 0"/>
+    <geometry>
+      <mesh filename="package://aoba_description/meshes/link31_1.stl" scale="0.001 0.001 0.001"/>
+    </geometry>
+  </collision>
+</link>
+
+<joint name="rev11" type="continuous">
+  <origin xyz="0.0 0.06 -0.037" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="link11_1"/>
+  <axis xyz="-0.0 -0.0 -1.0"/>
+</joint>
+
+<joint name="rev21" type="continuous">
+  <origin xyz="0.0 -0.06 -0.037" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="link21_1"/>
+  <axis xyz="-0.0 -0.0 -1.0"/>
+</joint>
+
+<joint name="rev12" type="continuous">
+  <origin xyz="0.018 0.0 -0.0525" rpy="0 0 0"/>
+  <parent link="link11_1"/>
+  <child link="link12_1"/>
+  <axis xyz="1.0 -0.0 0.0"/>
+</joint>
+
+<joint name="rev22" type="continuous">
+  <origin xyz="0.01825 0.0 -0.0525" rpy="0 0 0"/>
+  <parent link="link21_1"/>
+  <child link="link22_1"/>
+  <axis xyz="1.0 -0.0 0.0"/>
+</joint>
+
+<joint name="rev13" type="continuous">
+  <origin xyz="-0.015 0.06735 0.0" rpy="0 0 0"/>
+  <parent link="link12_1"/>
+  <child link="link13_1"/>
+  <axis xyz="-0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="rev23" type="continuous">
+  <origin xyz="-0.015 -0.06735 0.0" rpy="0 0 0"/>
+  <parent link="link22_1"/>
+  <child link="link23_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="rev14" type="continuous">
+  <origin xyz="0.0 0.0 -0.125" rpy="0 0 0"/>
+  <parent link="link13_1"/>
+  <child link="link14_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="rev24" type="continuous">
+  <origin xyz="0.0 0.0 -0.125" rpy="0 0 0"/>
+  <parent link="link23_1"/>
+  <child link="link24_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="rev15" type="continuous">
+  <origin xyz="0.0 0.0049 -0.13" rpy="0 0 0"/>
+  <parent link="link14_1"/>
+  <child link="link15_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="rev25" type="continuous">
+  <origin xyz="0.0 -0.0049 -0.13" rpy="0 0 0"/>
+  <parent link="link24_1"/>
+  <child link="link25_1"/>
+  <axis xyz="0.0 -1.0 0.0"/>
+</joint>
+
+<joint name="rev31" type="continuous">
+  <origin xyz="0.071478 0.01675 0.036668" rpy="0 0 0"/>
+  <parent link="base_link"/>
+  <child link="link31_1"/>
+  <axis xyz="-0.0 1.0 0.0"/>
+</joint>
+
+</robot>
