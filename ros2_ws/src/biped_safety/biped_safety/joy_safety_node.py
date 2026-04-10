@@ -49,15 +49,13 @@ class BipedJoySafetyNode(Node):
         self._joy_received = True
 
         # Rising edge detection on simultaneous press of all emergency stop buttons
+        # Latch-only: once activated, cannot be deactivated via gamepad (restart required)
         all_pressed = all(
             len(msg.buttons) > btn and msg.buttons[btn] == 1 for btn in self._estop_buttons
         )
-        if all_pressed and not self._prev_all_pressed:
-            self._emergency_stop = not self._emergency_stop
-            if self._emergency_stop:
-                self.get_logger().warn('Emergency stop ACTIVATED (L3+R3)')
-            else:
-                self.get_logger().info('Emergency stop DEACTIVATED (L3+R3)')
+        if all_pressed and not self._prev_all_pressed and not self._emergency_stop:
+            self._emergency_stop = True
+            self.get_logger().warn('Emergency stop ACTIVATED (L3+R3) - restart required to resume')
             self._publish_estop()
         self._prev_all_pressed = all_pressed
 

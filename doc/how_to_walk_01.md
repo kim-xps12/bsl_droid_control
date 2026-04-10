@@ -54,5 +54,9 @@
     ```bash
     # Jetsonで実行するときは`rviz:=fals`とする（可視化はmacbookで机上検討をするとき用）
     cd ros2_ws
-    pixi run ros2 launch biped_gait_control trajectory_replay.launch.py mode:=control rviz:=false
+
+    # ゲームパッドで歩容を動かす用
+    pixi run ros2 launch biped_gait_control trajectory_replay.launch.py mode:=control rviz:=false gamepad:=true
+    # 実機を繋がない机上検討用
+    pixi run ros2 launch biped_gait_control trajectory_replay.launch.py rviz:=false gamepad:=true
     ```

@@ -31,6 +31,7 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     aoba_description_share = FindPackageShare('aoba_description')
     biped_gait_control_share = FindPackageShare('biped_gait_control')
+    biped_bringup_share = FindPackageShare('biped_bringup')
 
     # URDF: aoba
     urdf_file = PathJoinSubstitution([
@@ -66,12 +67,21 @@ def generate_launch_description():
         description='Launch RViz2'
     )
 
+    gamepad_arg = DeclareLaunchArgument(
+        'gamepad',
+        default_value='false',
+        description='Enable gamepad joystick speed control (launches joy_node + safety node)'
+    )
+
     config_file_path = PathJoinSubstitution([
         biped_gait_control_share, 'config', LaunchConfiguration('config_file')
     ])
 
+    joy_config = PathJoinSubstitution([biped_bringup_share, 'config', 'joy_f710.yaml'])
+
     use_sim_time = LaunchConfiguration('use_sim_time')
     rviz_enabled = LaunchConfiguration('rviz')
+    gamepad_enabled = LaunchConfiguration('gamepad')
 
     # Trajectory replay node
     trajectory_replay_node = Node(
@@ -81,7 +91,10 @@ def generate_launch_description():
         output='screen',
         parameters=[
             config_file_path,
-            {'mode': LaunchConfiguration('mode')},
+            {
+                'mode': LaunchConfiguration('mode'),
+                'joy_speed_control': gamepad_enabled,
+            },
         ],
         sigterm_timeout='5',
         sigkill_timeout='2',
@@ -119,6 +132,23 @@ def generate_launch_description():
         sigkill_timeout='2',
     )
 
+    # Gamepad nodes (conditional)
+    joy_node = Node(
+        package='joy',
+        executable='joy_node',
+        parameters=[joy_config],
+        output='screen',
+        condition=IfCondition(gamepad_enabled),
+    )
+
+    joy_safety_node = Node(
+        package='biped_safety',
+        executable='biped_joy_safety_node',
+        parameters=[joy_config, {'use_sim_time': False}],
+        output='screen',
+        condition=IfCondition(gamepad_enabled),
+    )
+
     # Shutdown entire launch when main node exits (prevents orphan processes)
     shutdown_on_main_exit = RegisterEventHandler(
         OnProcessExit(
@@ -132,8 +162,11 @@ def generate_launch_description():
         mode_arg,
         use_sim_time_arg,
         rviz_arg,
+        gamepad_arg,
         trajectory_replay_node,
         robot_state_publisher_node,
         rviz_node,
+        joy_node,
+        joy_safety_node,
         shutdown_on_main_exit,
     ])

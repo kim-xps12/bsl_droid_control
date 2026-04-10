@@ -50,7 +50,9 @@
       "Bash(ls -la /etc/systemd/network/10-can*.link)",
       "Bash(find /home/user/bsl_droid_control/ros2_ws/src -type f \\\\\\( -name \"*.py\" -o -name \"*.cpp\" -o -name \"*.hpp\" \\\\\\) -exec grep -l \"clamp\\\\|saturate\\\\|limit.*command\\\\|validate.*joint\" {} \\\\;)",
       "Bash(grep -E \"\\\\.py$\")",
-      "Bash(ros2 topic:*)"
+      "Bash(ros2 topic:*)",
+      "Read(//proc/bus/input/**)",
+      "Bash(lsmod)"
     ]
   },
   "hooks": {

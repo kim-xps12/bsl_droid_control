@@ -46,7 +46,7 @@ from aoba_description.joint_limits import clamp_joint_angles
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
-from sensor_msgs.msg import JointState
+from sensor_msgs.msg import JointState, Joy
 from std_msgs.msg import Bool, Float64MultiArray, Header
 
 from .sources.foot_trajectory_source import FootTrajectorySource
@@ -76,6 +76,14 @@ class TrajectoryReplayNode(Node):
         self.declare_parameter("enabled", True)
         self.declare_parameter("init_duration", 1.5)
         self.declare_parameter("init_state_timeout", 10.0)
+        self.declare_parameter("joy_speed_control", False)
+        self.declare_parameter("joy_axis", 1)
+        self.declare_parameter("joy_axis_invert", False)
+        self.declare_parameter("joy_deadzone", 0.08)
+        self.declare_parameter("joy_turn_axis", 0)
+        self.declare_parameter("joy_turn_axis_invert", True)
+        self.declare_parameter("joy_turn_deadzone", 0.08)
+        self.declare_parameter("joy_turn_max_scale", 1.0)
 
         source_type: str = self.get_parameter("source_type").value
         self._mode: str = self.get_parameter("mode").value
@@ -83,6 +91,17 @@ class TrajectoryReplayNode(Node):
         self._enabled: bool = self.get_parameter("enabled").value
         self._init_duration: float = self.get_parameter("init_duration").value
         self._init_state_timeout: float = self.get_parameter("init_state_timeout").value
+
+        # Joy speed control parameters
+        joy_val = self.get_parameter("joy_speed_control").value
+        self._joy_speed_control: bool = joy_val if isinstance(joy_val, bool) else str(joy_val).lower() in ("true", "1")
+        self._joy_axis: int = self.get_parameter("joy_axis").value
+        self._joy_axis_invert: bool = self.get_parameter("joy_axis_invert").value
+        self._joy_deadzone: float = self.get_parameter("joy_deadzone").value
+        self._joy_turn_axis: int = self.get_parameter("joy_turn_axis").value
+        self._joy_turn_axis_invert: bool = self.get_parameter("joy_turn_axis_invert").value
+        self._joy_turn_deadzone: float = self.get_parameter("joy_turn_deadzone").value
+        self._joy_turn_max_scale: float = self.get_parameter("joy_turn_max_scale").value
 
         # Create trajectory source
         self._source = self._create_source(source_type)
@@ -122,6 +141,11 @@ class TrajectoryReplayNode(Node):
             Bool, "/emergency_stop", self._estop_callback, qos
         )
 
+        # Joy speed control subscriber
+        if self._joy_speed_control:
+            self.create_subscription(Joy, "/joy", self._joy_callback, 10)
+            self._source.speed_scale = 0.0
+
         # Joint state subscriber (control mode only, for initialization)
         if self._mode == "control":
             self.create_subscription(
@@ -134,6 +158,14 @@ class TrajectoryReplayNode(Node):
         self._phase_start_time = self.get_clock().now()
         self._log_count = 0
 
+        joy_info = ""
+        if self._joy_speed_control:
+            joy_info = (
+                f"\n  Joy speed control: enabled (axis={self._joy_axis}, "
+                f"invert={self._joy_axis_invert}, deadzone={self._joy_deadzone})"
+                f"\n  Joy turn control: enabled (axis={self._joy_turn_axis}, "
+                f"invert={self._joy_turn_axis_invert}, deadzone={self._joy_turn_deadzone})"
+            )
         self.get_logger().info(
             f"TrajectoryReplayNode started:\n"
             f"  Source: {source_type}\n"
@@ -143,6 +175,7 @@ class TrajectoryReplayNode(Node):
             f"  Phase: {self._phase.name}\n"
             f"  Init duration: {self._init_duration:.1f}s\n"
             f"  Init state timeout: {self._init_state_timeout:.1f}s"
+            f"{joy_info}"
         )
 
     @staticmethod
@@ -167,6 +200,38 @@ class TrajectoryReplayNode(Node):
             self.get_logger().info("Emergency stop released")
         self._estop_active = msg.data
 
+    def _joy_callback(self, msg: Joy) -> None:
+        """Map joystick axes to walking speed and turn scale."""
+        # Speed control (left stick Y)
+        if self._joy_axis < len(msg.axes):
+            raw = msg.axes[self._joy_axis]
+            if self._joy_axis_invert:
+                raw = -raw
+            abs_raw = abs(raw)
+            if abs_raw < self._joy_deadzone:
+                scale = 0.0
+            else:
+                scale = (abs_raw - self._joy_deadzone) / (1.0 - self._joy_deadzone)
+                scale = min(scale, 1.0)
+                if raw < 0.0:
+                    scale = -scale
+            self._source.speed_scale = scale
+
+        # Turn control (right stick X)
+        if self._joy_turn_axis < len(msg.axes):
+            raw_turn = msg.axes[self._joy_turn_axis]
+            if self._joy_turn_axis_invert:
+                raw_turn = -raw_turn
+            abs_turn = abs(raw_turn)
+            if abs_turn < self._joy_turn_deadzone:
+                turn = 0.0
+            else:
+                turn = (abs_turn - self._joy_turn_deadzone) / (1.0 - self._joy_turn_deadzone)
+                turn = min(turn, 1.0)
+                if raw_turn < 0.0:
+                    turn = -turn
+            self._source.turn_scale = turn * self._joy_turn_max_scale
+
     def _joint_state_callback(self, msg: JointState) -> None:
         """Store current joint positions from hardware feedback."""
         name_to_pos = dict(zip(msg.name, msg.position, strict=False))
@@ -176,13 +241,8 @@ class TrajectoryReplayNode(Node):
     def _timer_callback(self) -> None:
         now = self.get_clock().now()
 
-        # E-stop / disabled: output zeros regardless of phase
+        # E-stop / disabled: stop all command output (hardware holds last position / depowers)
         if not self._enabled or self._estop_active:
-            positions = [0.0] * TrajectorySource.NUM_JOINTS
-            positions = clamp_joint_angles(positions)
-            self._publish_joint_state(positions, now)
-            if self._hw_cmd_pub is not None:
-                self._publish_hw_command(positions)
             return
 
         # Phase dispatch

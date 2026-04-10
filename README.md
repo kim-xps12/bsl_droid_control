@@ -313,6 +313,12 @@ uv run python biped_walking/biped_eval.py -e droid-walking-v1 --gamepad --gamepa
 
 詳細は [rl_ws/README.md](rl_ws/README.md) を参照してください。
 
+## Claude Code スキル
+
+`.claude/skills/` 配下のスキルのうち、プロジェクト固有でないもの（`drawio-svg`, `svg-logo-designer` 等）は [claude-code-skills](https://github.com/kim-xps12/claude-code-skills) リポジトリで管理しており、シンボリックリンクで参照している。
+
+共有スキルの追加・セットアップ手順は上記リポジトリのREADMEを参照。
+
 ## ディレクトリ構造
 
 ```

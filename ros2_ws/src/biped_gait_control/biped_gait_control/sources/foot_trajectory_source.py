@@ -39,6 +39,12 @@ class FootTrajectorySource(TrajectorySource):
             shank_length=shank_length,
         )
 
+        # Virtual time accumulator for speed scaling
+        self._speed_scale: float = 1.0
+        self._turn_scale: float = 0.0
+        self._virtual_time: float = 0.0
+        self._last_elapsed: float = 0.0
+
         node.get_logger().info(
             f"FootTrajectorySource configured: "
             f"step_height={gait_params.step_height}, "
@@ -46,6 +52,22 @@ class FootTrajectorySource(TrajectorySource):
             f"step_frequency={gait_params.step_frequency}, "
             f"thigh={thigh_length}, shank={shank_length}"
         )
+
+    @property
+    def speed_scale(self) -> float:
+        return self._speed_scale
+
+    @speed_scale.setter
+    def speed_scale(self, value: float) -> None:
+        self._speed_scale = max(-1.0, min(value, 1.0))
+
+    @property
+    def turn_scale(self) -> float:
+        return self._turn_scale
+
+    @turn_scale.setter
+    def turn_scale(self, value: float) -> None:
+        self._turn_scale = max(-1.0, min(value, 1.0))
 
     @staticmethod
     def _apply_axis_sign(angles_rad: list[float]) -> list[float]:
@@ -58,7 +80,18 @@ class FootTrajectorySource(TrajectorySource):
         return [a * s for a, s in zip(angles_rad, signs)]
 
     def compute(self, elapsed_sec: float) -> list[float]:
-        left_deg, right_deg = self._generator.generate(elapsed_sec)
+        # Advance virtual time proportionally to speed_scale
+        dt = max(0.0, elapsed_sec - self._last_elapsed)
+        self._last_elapsed = elapsed_sec
+        self._virtual_time += dt * self._speed_scale
+
+        # Differential turning: turn_scale > 0 = turn left (left leg steps larger)
+        left_step_scale = 1.0 + self._turn_scale
+        right_step_scale = 1.0 - self._turn_scale
+
+        left_deg, right_deg = self._generator.generate(
+            self._virtual_time, left_step_scale, right_step_scale
+        )
         # Convert degrees to radians and apply aoba axis sign convention
         left_rad = self._apply_axis_sign([np.radians(a) for a in left_deg])
         right_rad = self._apply_axis_sign([np.radians(a) for a in right_deg])
@@ -66,4 +99,5 @@ class FootTrajectorySource(TrajectorySource):
         return left_rad + right_rad + [0.0]
 
     def reset(self) -> None:
-        pass  # Stateless (phase is computed from elapsed_sec)
+        self._virtual_time = 0.0
+        self._last_elapsed = 0.0
