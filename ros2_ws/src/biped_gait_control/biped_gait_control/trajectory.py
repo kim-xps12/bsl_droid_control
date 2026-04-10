@@ -37,7 +37,7 @@ class CamberTrajectory:
         """
         self.params = gait_params or GaitParameters()
 
-    def generate(self, phase: float) -> Tuple[float, float]:
+    def generate(self, phase: float, step_length: float | None = None) -> Tuple[float, float]:
         """
         Generate foot trajectory point for given phase.
 
@@ -45,11 +45,12 @@ class CamberTrajectory:
             phase: Walking cycle phase (0.0-1.0)
                 - 0.0-0.5: Stance phase
                 - 0.5-1.0: Swing phase
+            step_length: Override step length [m]. If None, uses params default.
 
         Returns:
             (x, z) relative coordinates from hip reference.
         """
-        half_step = self.params.step_length / 2
+        half_step = (step_length if step_length is not None else self.params.step_length) / 2
 
         if phase < 0.5:
             # Stance phase: linear ground contact (back to front)
@@ -103,12 +104,16 @@ class WalkingPatternGenerator:
             self.params.leg_extension_ratio
         )
 
-    def generate(self, t: float) -> Tuple[list, list]:
+    def generate(
+        self, t: float, left_step_scale: float = 1.0, right_step_scale: float = 1.0
+    ) -> Tuple[list, list]:
         """
         Generate walking pattern for given time.
 
         Args:
             t: Current time [seconds]
+            left_step_scale: Multiplier for left leg step length (1.0 = nominal).
+            right_step_scale: Multiplier for right leg step length (1.0 = nominal).
 
         Returns:
             (left_angles, right_angles) where each is:
@@ -128,10 +133,10 @@ class WalkingPatternGenerator:
         base_leg_height = (l1 + l2) * self.params.leg_extension_ratio
 
         # Left leg
-        left_angles = self._compute_leg_angles(left_phase, base_leg_height, l1, l2)
+        left_angles = self._compute_leg_angles(left_phase, base_leg_height, l1, l2, left_step_scale)
 
         # Right leg
-        right_angles = self._compute_leg_angles(right_phase, base_leg_height, l1, l2)
+        right_angles = self._compute_leg_angles(right_phase, base_leg_height, l1, l2, right_step_scale)
 
         return left_angles, right_angles
 
@@ -140,7 +145,8 @@ class WalkingPatternGenerator:
         phase: float,
         base_leg_height: float,
         l1: float,
-        l2: float
+        l2: float,
+        step_scale: float = 1.0,
     ) -> list:
         """
         Compute joint angles for single leg.
@@ -150,12 +156,14 @@ class WalkingPatternGenerator:
             base_leg_height: Base leg vertical length.
             l1: Thigh length.
             l2: Shank length.
+            step_scale: Multiplier for step length (1.0 = nominal).
 
         Returns:
             [yaw, roll, hip_pitch, knee_pitch, ankle_pitch] in degrees.
         """
-        # Get foot trajectory
-        rel_x, rel_z = self.trajectory.generate(phase)
+        # Get foot trajectory with scaled step length
+        scaled_step = self.params.step_length * step_scale
+        rel_x, rel_z = self.trajectory.generate(phase, step_length=scaled_step)
 
         # Target ankle position
         target_x = 0 + rel_x
