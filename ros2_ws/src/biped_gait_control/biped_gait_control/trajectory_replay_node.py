@@ -80,6 +80,10 @@ class TrajectoryReplayNode(Node):
         self.declare_parameter("joy_axis", 1)
         self.declare_parameter("joy_axis_invert", False)
         self.declare_parameter("joy_deadzone", 0.08)
+        self.declare_parameter("joy_turn_axis", 0)
+        self.declare_parameter("joy_turn_axis_invert", True)
+        self.declare_parameter("joy_turn_deadzone", 0.08)
+        self.declare_parameter("joy_turn_max_scale", 1.0)
 
         source_type: str = self.get_parameter("source_type").value
         self._mode: str = self.get_parameter("mode").value
@@ -94,6 +98,10 @@ class TrajectoryReplayNode(Node):
         self._joy_axis: int = self.get_parameter("joy_axis").value
         self._joy_axis_invert: bool = self.get_parameter("joy_axis_invert").value
         self._joy_deadzone: float = self.get_parameter("joy_deadzone").value
+        self._joy_turn_axis: int = self.get_parameter("joy_turn_axis").value
+        self._joy_turn_axis_invert: bool = self.get_parameter("joy_turn_axis_invert").value
+        self._joy_turn_deadzone: float = self.get_parameter("joy_turn_deadzone").value
+        self._joy_turn_max_scale: float = self.get_parameter("joy_turn_max_scale").value
 
         # Create trajectory source
         self._source = self._create_source(source_type)
@@ -155,6 +163,8 @@ class TrajectoryReplayNode(Node):
             joy_info = (
                 f"\n  Joy speed control: enabled (axis={self._joy_axis}, "
                 f"invert={self._joy_axis_invert}, deadzone={self._joy_deadzone})"
+                f"\n  Joy turn control: enabled (axis={self._joy_turn_axis}, "
+                f"invert={self._joy_turn_axis_invert}, deadzone={self._joy_turn_deadzone})"
             )
         self.get_logger().info(
             f"TrajectoryReplayNode started:\n"
@@ -191,19 +201,36 @@ class TrajectoryReplayNode(Node):
         self._estop_active = msg.data
 
     def _joy_callback(self, msg: Joy) -> None:
-        """Map joystick forward tilt to walking speed scale."""
-        if self._joy_axis >= len(msg.axes):
-            return
-        raw = msg.axes[self._joy_axis]
-        if self._joy_axis_invert:
-            raw = -raw  # F710: -1.0=forward -> +1.0=forward
-        # Only forward tilt (positive after inversion) maps to speed
-        if raw < self._joy_deadzone:
-            scale = 0.0
-        else:
-            scale = (raw - self._joy_deadzone) / (1.0 - self._joy_deadzone)
-            scale = min(scale, 1.0)
-        self._source.speed_scale = scale
+        """Map joystick axes to walking speed and turn scale."""
+        # Speed control (left stick Y)
+        if self._joy_axis < len(msg.axes):
+            raw = msg.axes[self._joy_axis]
+            if self._joy_axis_invert:
+                raw = -raw
+            abs_raw = abs(raw)
+            if abs_raw < self._joy_deadzone:
+                scale = 0.0
+            else:
+                scale = (abs_raw - self._joy_deadzone) / (1.0 - self._joy_deadzone)
+                scale = min(scale, 1.0)
+                if raw < 0.0:
+                    scale = -scale
+            self._source.speed_scale = scale
+
+        # Turn control (right stick X)
+        if self._joy_turn_axis < len(msg.axes):
+            raw_turn = msg.axes[self._joy_turn_axis]
+            if self._joy_turn_axis_invert:
+                raw_turn = -raw_turn
+            abs_turn = abs(raw_turn)
+            if abs_turn < self._joy_turn_deadzone:
+                turn = 0.0
+            else:
+                turn = (abs_turn - self._joy_turn_deadzone) / (1.0 - self._joy_turn_deadzone)
+                turn = min(turn, 1.0)
+                if raw_turn < 0.0:
+                    turn = -turn
+            self._source.turn_scale = turn * self._joy_turn_max_scale
 
     def _joint_state_callback(self, msg: JointState) -> None:
         """Store current joint positions from hardware feedback."""

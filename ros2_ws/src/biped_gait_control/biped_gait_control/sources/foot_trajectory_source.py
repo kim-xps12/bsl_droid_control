@@ -41,6 +41,7 @@ class FootTrajectorySource(TrajectorySource):
 
         # Virtual time accumulator for speed scaling
         self._speed_scale: float = 1.0
+        self._turn_scale: float = 0.0
         self._virtual_time: float = 0.0
         self._last_elapsed: float = 0.0
 
@@ -58,7 +59,15 @@ class FootTrajectorySource(TrajectorySource):
 
     @speed_scale.setter
     def speed_scale(self, value: float) -> None:
-        self._speed_scale = max(0.0, min(value, 1.0))
+        self._speed_scale = max(-1.0, min(value, 1.0))
+
+    @property
+    def turn_scale(self) -> float:
+        return self._turn_scale
+
+    @turn_scale.setter
+    def turn_scale(self, value: float) -> None:
+        self._turn_scale = max(-1.0, min(value, 1.0))
 
     @staticmethod
     def _apply_axis_sign(angles_rad: list[float]) -> list[float]:
@@ -76,7 +85,13 @@ class FootTrajectorySource(TrajectorySource):
         self._last_elapsed = elapsed_sec
         self._virtual_time += dt * self._speed_scale
 
-        left_deg, right_deg = self._generator.generate(self._virtual_time)
+        # Differential turning: turn_scale > 0 = turn left (left leg steps larger)
+        left_step_scale = 1.0 + self._turn_scale
+        right_step_scale = 1.0 - self._turn_scale
+
+        left_deg, right_deg = self._generator.generate(
+            self._virtual_time, left_step_scale, right_step_scale
+        )
         # Convert degrees to radians and apply aoba axis sign convention
         left_rad = self._apply_axis_sign([np.radians(a) for a in left_deg])
         right_rad = self._apply_axis_sign([np.radians(a) for a in right_deg])
