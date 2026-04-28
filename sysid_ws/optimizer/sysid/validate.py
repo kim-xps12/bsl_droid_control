@@ -22,7 +22,6 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any
 
 import matplotlib.pyplot as plt
 import mujoco
@@ -115,65 +114,73 @@ def rmse(a: NDArray[np.float64], b: NDArray[np.float64]) -> float:
 
 def plot_comparison(
     t: NDArray[np.float64],
+    q_target: NDArray[np.float64],
     q_real: NDArray[np.float64],
     v_real: NDArray[np.float64],
     q_init: NDArray[np.float64],
     v_init: NDArray[np.float64],
     q_iden: NDArray[np.float64],
     v_iden: NDArray[np.float64],
+    params_init: dict[str, float],
+    params_iden: dict[str, float],
+    kp: float,
+    kd: float,
     output_png: str | None = None,
 ) -> None:
-    rmse_q_init = rmse(q_real, q_init)
-    rmse_q_iden = rmse(q_real, q_iden)
-    rmse_v_init = rmse(v_real, v_init)
-    rmse_v_iden = rmse(v_real, v_iden)
+    """before sysid / after sysid を縦に積んだ比較プロットを出力する。
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 8))
-    fig.suptitle("RS-02 System Identification Validation", fontsize=13)
+    各行は (位置, 速度) の 2 列。位置パネルにはコマンド (target_position) を
+    グレーの階段線、real を青、sim をオレンジ破線で重ねる。左下にその行で
+    使ったパラメータを注記する。
+    """
 
-    # ── 位置トレース ─────────────────────────────────────────────────────────
-    ax = axes[0, 0]
-    ax.plot(t, q_real, color="tab:blue", lw=1.5, label="Real")
-    ax.plot(t, q_init, color="tab:orange", lw=1.0, ls="--", label=f"Sim (initial)  RMSE={rmse_q_init:.4f} rad")
-    ax.plot(t, q_iden, color="tab:green", lw=1.0, ls="-.", label=f"Sim (identified) RMSE={rmse_q_iden:.4f} rad")
-    ax.set_xlabel("Time [s]")
-    ax.set_ylabel("Position [rad]")
-    ax.set_title("Position")
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.3)
+    def _annotate_params(ax, params: dict[str, float]) -> None:
+        text = (
+            f"armature={params['armature']:.4f}  "
+            f"frictionloss={params['frictionloss']:.3f}  "
+            f"damping={params['damping']:.3f}"
+        )
+        ax.text(
+            0.01, 0.02, text,
+            transform=ax.transAxes,
+            fontsize=8, color="tab:orange",
+            ha="left", va="bottom",
+        )
 
-    # ── 位置誤差 ─────────────────────────────────────────────────────────────
-    ax = axes[0, 1]
-    ax.plot(t, q_real - q_init, color="tab:orange", lw=0.8, label="real − initial")
-    ax.plot(t, q_real - q_iden, color="tab:green", lw=0.8, label="real − identified")
-    ax.axhline(0, color="black", lw=0.5, ls="--")
-    ax.set_xlabel("Time [s]")
-    ax.set_ylabel("Position error [rad]")
-    ax.set_title("Position Error")
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.3)
+    fig, axes = plt.subplots(2, 2, figsize=(14, 8), sharex=True)
+    fig.suptitle(f"RS-02 sysid validation  [kp={kp} kd={kd}]", fontsize=12)
 
-    # ── 速度トレース ─────────────────────────────────────────────────────────
-    ax = axes[1, 0]
-    ax.plot(t, v_real, color="tab:blue", lw=1.5, label="Real")
-    ax.plot(t, v_init, color="tab:orange", lw=1.0, ls="--", label=f"Sim (initial)  RMSE={rmse_v_init:.4f} rad/s")
-    ax.plot(t, v_iden, color="tab:green", lw=1.0, ls="-.", label=f"Sim (identified) RMSE={rmse_v_iden:.4f} rad/s")
-    ax.set_xlabel("Time [s]")
-    ax.set_ylabel("Velocity [rad/s]")
-    ax.set_title("Velocity")
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.3)
+    rows = [
+        ("before sysid", q_init, v_init, params_init),
+        ("after sysid",  q_iden, v_iden, params_iden),
+    ]
 
-    # ── 速度誤差 ─────────────────────────────────────────────────────────────
-    ax = axes[1, 1]
-    ax.plot(t, v_real - v_init, color="tab:orange", lw=0.8, label="real − initial")
-    ax.plot(t, v_real - v_iden, color="tab:green", lw=0.8, label="real − identified")
-    ax.axhline(0, color="black", lw=0.5, ls="--")
-    ax.set_xlabel("Time [s]")
-    ax.set_ylabel("Velocity error [rad/s]")
-    ax.set_title("Velocity Error")
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.3)
+    for i, (label, q_sim, v_sim, params) in enumerate(rows):
+        rmse_q = rmse(q_real, q_sim)
+        rmse_v = rmse(v_real, v_sim)
+
+        # ── 位置パネル: cmd / real / sim ─────────────────────────────────────
+        ax_q = axes[i, 0]
+        ax_q.plot(t, q_target, color="0.6", lw=0.7, drawstyle="steps-post", label="cmd")
+        ax_q.plot(t, q_real,   color="tab:blue",   lw=1.5, label="real")
+        ax_q.plot(t, q_sim,    color="tab:orange", lw=1.0, ls="--", label="sim")
+        ax_q.set_ylabel("Position [rad]")
+        ax_q.set_title(f"{label}    pos RMSE = {rmse_q:.4f} rad", loc="left", fontsize=10)
+        ax_q.legend(loc="upper right", fontsize=8)
+        ax_q.grid(True, alpha=0.3)
+        _annotate_params(ax_q, params)
+
+        # ── 速度パネル: real / sim (cmd は PD 設定で 0 一定なので省略) ─────
+        ax_v = axes[i, 1]
+        ax_v.plot(t, v_real, color="tab:blue",   lw=1.5, label="real")
+        ax_v.plot(t, v_sim,  color="tab:orange", lw=1.0, ls="--", label="sim")
+        ax_v.set_ylabel("Velocity [rad/s]")
+        ax_v.set_title(f"vel RMSE = {rmse_v:.4f} rad/s", loc="left", fontsize=10)
+        ax_v.legend(loc="upper right", fontsize=8)
+        ax_v.grid(True, alpha=0.3)
+
+    axes[1, 0].set_xlabel("Time [s]")
+    axes[1, 1].set_xlabel("Time [s]")
 
     plt.tight_layout()
 
@@ -199,27 +206,32 @@ def validate(
     output_png: str | None = None,
 ) -> None:
     print(f"Loading CSV: {csv_path}")
-    t, tau, q_target, q_real, v_real = load_recording(csv_path)
+    t, _tau, q_target, q_real, v_real = load_recording(csv_path)
     print(f"  {len(t)} valid samples, duration={float(t[-1] - t[0]):.2f} s")
 
     q0, v0 = float(q_real[0]), float(v_real[0])
 
-    # 初期パラメータでシミュレーション
+    # 初期パラメータでシミュレーション (XML default をそのまま使う)
     print("\nSimulating with initial parameters ...")
     model_init = mujoco.MjModel.from_xml_path(model_path)
+    params_init = {
+        "armature": float(model_init.dof_armature[0]),
+        "frictionloss": float(model_init.dof_frictionloss[0]),
+        "damping": float(model_init.dof_damping[0]),
+    }
     q_init, v_init = simulate_pd(model_init, q_target, q0, v0, kp, kd)
 
     # 同定パラメータでシミュレーション
     print(f"Loading identified params: {params_path}")
-    params = load_params(params_path)
-    print(f"  armature={params['armature']:.6f}  "
-          f"frictionloss={params['frictionloss']:.6f}  "
-          f"damping={params['damping']:.6f}")
+    params_iden = load_params(params_path)
+    print(f"  armature={params_iden['armature']:.6f}  "
+          f"frictionloss={params_iden['frictionloss']:.6f}  "
+          f"damping={params_iden['damping']:.6f}")
 
     model_iden = mujoco.MjModel.from_xml_path(model_path)
-    model_iden.dof_armature[0] = params["armature"]
-    model_iden.dof_frictionloss[0] = params["frictionloss"]
-    model_iden.dof_damping[0] = params["damping"]
+    model_iden.dof_armature[0] = params_iden["armature"]
+    model_iden.dof_frictionloss[0] = params_iden["frictionloss"]
+    model_iden.dof_damping[0] = params_iden["damping"]
     print("\nSimulating with identified parameters ...")
     q_iden, v_iden = simulate_pd(model_iden, q_target, q0, v0, kp, kd)
 
@@ -235,7 +247,15 @@ def validate(
     print(f"  Velocity RMSE:  initial={rmse_v_init:.4f} rad/s  →  identified={rmse_v_iden:.4f} rad/s  "
           f"(improvement: {100.0 * (1.0 - rmse_v_iden / max(rmse_v_init, 1e-9)):.1f}%)")
 
-    plot_comparison(t, q_real, v_real, q_init, v_init, q_iden, v_iden, output_png)
+    plot_comparison(
+        t, q_target,
+        q_real, v_real,
+        q_init, v_init,
+        q_iden, v_iden,
+        params_init, params_iden,
+        kp, kd,
+        output_png,
+    )
 
 
 # =============================================================================
