@@ -1,0 +1,263 @@
+# Copyright (c) 2024-2025, Yutaro KIMURA (B-SKY Lab)
+# SPDX-License-Identifier: MIT
+
+"""
+validate.py — 同定パラメータの検証（初期値 vs 同定値 vs 実機）
+
+重要: 検証シミュレーションはオープンループトルクリプレイではなく
+クローズドループ PD シミュレーション。
+CSVの target_position をシミュレーション内の PD コントローラに入力し、
+シミュレーション自身の位置・速度でフィードバック演算する。
+
+Usage:
+    uv run python sysid/validate.py \\
+        --csv data/recording_validate.csv \\
+        --model ../models/rs02_joint.xml \\
+        --params results/identified_params.json \\
+        --output-png results/validation.png
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+import matplotlib.pyplot as plt
+import mujoco
+import numpy as np
+import pandas as pd
+from numpy.typing import NDArray
+
+
+# =============================================================================
+# データ読み込み
+# =============================================================================
+
+
+def load_recording(csv_path: str) -> tuple[NDArray[np.float64], ...]:
+    """CSV を読み込み (t, cmd_torque, target_position, q, v) を返す。
+
+    valid==0 行は除外する。
+    """
+    df = pd.read_csv(csv_path)
+    if "valid" in df.columns:
+        df = df[df["valid"] == 1].reset_index(drop=True)
+    t = df["timestamp"].to_numpy(dtype=np.float64)
+    tau = df["cmd_torque"].to_numpy(dtype=np.float64)
+    q_target = df["target_position"].to_numpy(dtype=np.float64)
+    q = df["position"].to_numpy(dtype=np.float64)
+    v = df["velocity"].to_numpy(dtype=np.float64)
+    return t, tau, q_target, q, v
+
+
+def load_params(json_path: str) -> dict[str, float]:
+    with open(json_path) as f:
+        return json.load(f)
+
+
+# =============================================================================
+# クローズドループ PD シミュレーション
+# =============================================================================
+
+
+def simulate_pd(
+    model: mujoco.MjModel,
+    q_targets: NDArray[np.float64],
+    q0: float,
+    v0: float,
+    kp: float,
+    kd: float,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """クローズドループ PD シミュレーション。
+
+    各ステップでシミュレーション内の qpos/qvel を使って
+    PD 制御量を計算することで、実機と同条件のフィードバックを再現する。
+
+    target_position 列（= 録画時のランダム目標位置）をそのまま入力する。
+    """
+    data = mujoco.MjData(model)
+    data.qpos[0] = q0
+    data.qvel[0] = v0
+    mujoco.mj_forward(model, data)
+
+    n = len(q_targets)
+    q_sim = np.empty(n, dtype=np.float64)
+    v_sim = np.empty(n, dtype=np.float64)
+
+    for i in range(n):
+        # PD トルク: シミュレーション内の状態でフィードバック
+        tau = kp * (q_targets[i] - data.qpos[0]) + kd * (0.0 - data.qvel[0])
+        # RS-02 ピークトルクでクランプ
+        tau = float(np.clip(tau, -17.0, 17.0))
+        data.ctrl[0] = tau
+        mujoco.mj_step(model, data)
+        q_sim[i] = data.qpos[0]
+        v_sim[i] = data.qvel[0]
+
+    return q_sim, v_sim
+
+
+# =============================================================================
+# 統計
+# =============================================================================
+
+
+def rmse(a: NDArray[np.float64], b: NDArray[np.float64]) -> float:
+    return float(np.sqrt(np.mean((a - b) ** 2)))
+
+
+# =============================================================================
+# プロット
+# =============================================================================
+
+
+def plot_comparison(
+    t: NDArray[np.float64],
+    q_real: NDArray[np.float64],
+    v_real: NDArray[np.float64],
+    q_init: NDArray[np.float64],
+    v_init: NDArray[np.float64],
+    q_iden: NDArray[np.float64],
+    v_iden: NDArray[np.float64],
+    output_png: str | None = None,
+) -> None:
+    rmse_q_init = rmse(q_real, q_init)
+    rmse_q_iden = rmse(q_real, q_iden)
+    rmse_v_init = rmse(v_real, v_init)
+    rmse_v_iden = rmse(v_real, v_iden)
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 8))
+    fig.suptitle("RS-02 System Identification Validation", fontsize=13)
+
+    # ── 位置トレース ─────────────────────────────────────────────────────────
+    ax = axes[0, 0]
+    ax.plot(t, q_real, color="tab:blue", lw=1.5, label="Real")
+    ax.plot(t, q_init, color="tab:orange", lw=1.0, ls="--", label=f"Sim (initial)  RMSE={rmse_q_init:.4f} rad")
+    ax.plot(t, q_iden, color="tab:green", lw=1.0, ls="-.", label=f"Sim (identified) RMSE={rmse_q_iden:.4f} rad")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Position [rad]")
+    ax.set_title("Position")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    # ── 位置誤差 ─────────────────────────────────────────────────────────────
+    ax = axes[0, 1]
+    ax.plot(t, q_real - q_init, color="tab:orange", lw=0.8, label="real − initial")
+    ax.plot(t, q_real - q_iden, color="tab:green", lw=0.8, label="real − identified")
+    ax.axhline(0, color="black", lw=0.5, ls="--")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Position error [rad]")
+    ax.set_title("Position Error")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    # ── 速度トレース ─────────────────────────────────────────────────────────
+    ax = axes[1, 0]
+    ax.plot(t, v_real, color="tab:blue", lw=1.5, label="Real")
+    ax.plot(t, v_init, color="tab:orange", lw=1.0, ls="--", label=f"Sim (initial)  RMSE={rmse_v_init:.4f} rad/s")
+    ax.plot(t, v_iden, color="tab:green", lw=1.0, ls="-.", label=f"Sim (identified) RMSE={rmse_v_iden:.4f} rad/s")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Velocity [rad/s]")
+    ax.set_title("Velocity")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    # ── 速度誤差 ─────────────────────────────────────────────────────────────
+    ax = axes[1, 1]
+    ax.plot(t, v_real - v_init, color="tab:orange", lw=0.8, label="real − initial")
+    ax.plot(t, v_real - v_iden, color="tab:green", lw=0.8, label="real − identified")
+    ax.axhline(0, color="black", lw=0.5, ls="--")
+    ax.set_xlabel("Time [s]")
+    ax.set_ylabel("Velocity error [rad/s]")
+    ax.set_title("Velocity Error")
+    ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+
+    if output_png:
+        Path(output_png).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_png, dpi=150)
+        print(f"Saved: {output_png}")
+    else:
+        plt.show()
+
+
+# =============================================================================
+# メイン
+# =============================================================================
+
+
+def validate(
+    csv_path: str,
+    model_path: str,
+    params_path: str,
+    kp: float = 8.0,
+    kd: float = 0.5,
+    output_png: str | None = None,
+) -> None:
+    print(f"Loading CSV: {csv_path}")
+    t, tau, q_target, q_real, v_real = load_recording(csv_path)
+    print(f"  {len(t)} valid samples, duration={float(t[-1] - t[0]):.2f} s")
+
+    q0, v0 = float(q_real[0]), float(v_real[0])
+
+    # 初期パラメータでシミュレーション
+    print("\nSimulating with initial parameters ...")
+    model_init = mujoco.MjModel.from_xml_path(model_path)
+    q_init, v_init = simulate_pd(model_init, q_target, q0, v0, kp, kd)
+
+    # 同定パラメータでシミュレーション
+    print(f"Loading identified params: {params_path}")
+    params = load_params(params_path)
+    print(f"  armature={params['armature']:.6f}  "
+          f"frictionloss={params['frictionloss']:.6f}  "
+          f"damping={params['damping']:.6f}")
+
+    model_iden = mujoco.MjModel.from_xml_path(model_path)
+    model_iden.dof_armature[0] = params["armature"]
+    model_iden.dof_frictionloss[0] = params["frictionloss"]
+    model_iden.dof_damping[0] = params["damping"]
+    print("\nSimulating with identified parameters ...")
+    q_iden, v_iden = simulate_pd(model_iden, q_target, q0, v0, kp, kd)
+
+    # RMSE レポート
+    rmse_q_init = rmse(q_real, q_init)
+    rmse_q_iden = rmse(q_real, q_iden)
+    rmse_v_init = rmse(v_real, v_init)
+    rmse_v_iden = rmse(v_real, v_iden)
+
+    print("\n=== Validation Results ===")
+    print(f"  Position RMSE:  initial={rmse_q_init:.4f} rad  →  identified={rmse_q_iden:.4f} rad  "
+          f"(improvement: {100.0 * (1.0 - rmse_q_iden / max(rmse_q_init, 1e-9)):.1f}%)")
+    print(f"  Velocity RMSE:  initial={rmse_v_init:.4f} rad/s  →  identified={rmse_v_iden:.4f} rad/s  "
+          f"(improvement: {100.0 * (1.0 - rmse_v_iden / max(rmse_v_init, 1e-9)):.1f}%)")
+
+    plot_comparison(t, q_real, v_real, q_init, v_init, q_iden, v_iden, output_png)
+
+
+# =============================================================================
+# CLI
+# =============================================================================
+
+
+def parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="RS-02 QDD sysid validation")
+    p.add_argument("--csv", required=True, help="Path to validation recording CSV (--validate mode)")
+    p.add_argument("--model", required=True, help="Path to rs02_joint.xml")
+    p.add_argument("--params", required=True, help="Path to identified_params.json")
+    p.add_argument("--kp", type=float, default=8.0, help="PD position gain used during recording (default: 8.0)")
+    p.add_argument("--kd", type=float, default=0.5, help="PD damping gain used during recording (default: 0.5)")
+    p.add_argument("--output-png", default=None, help="Save comparison plot to PNG (default: show)")
+    return p.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    validate(args.csv, args.model, args.params, args.kp, args.kd, args.output_png)
+
+
+if __name__ == "__main__":
+    main()
