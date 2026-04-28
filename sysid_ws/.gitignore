@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# C++ build
+recorder/build/
+
+# Recording / result artifacts (keep .gitkeep)
+optimizer/data/*
+!optimizer/data/.gitkeep
+optimizer/results/*
+!optimizer/results/.gitkeep
