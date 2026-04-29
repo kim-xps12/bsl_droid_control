@@ -21,7 +21,8 @@ sysid_ws/
     ├── pyproject.toml             # uv 管理
     └── sysid/
         ├── optimize.py            # シミュレーションリプレイ最適化
-        └── validate.py            # 初期値 vs 同定値 vs 実機 比較
+        ├── validate.py            # 初期値 vs 同定値 vs 実機 比較
+        └── plot_recording.py      # 録画 CSV の時系列可視化（励振品質確認用）
 ```
 
 `recorder/` は [ros2_ws/src/aoba_hardware](../ros2_ws/src/aoba_hardware) の
@@ -140,11 +141,12 @@ torque(t) = amp × (sin(2π·f·t) + 0.6·sin(2π·3.4f·t) + 0.3·sin(2π·7.4f
 | カラム | 単位 | 説明 |
 |---|---|---|
 | `timestamp` | s | ループ開始からの経過時間 |
-| `cmd_torque` | Nm | 送信したトルク指令 |
+| `cmd_torque` | Nm | コントローラ理論指令値（クランプ前。validateモードでは PD 計算結果そのまま、sysidモードでは multi-sine 値） |
+| `cmd_torque_clamped` | Nm | motor 側 `set_torque_limit`（±12 Nm）でクランプ後の値。実際にロータに加わるトルクの上限 |
 | `target_position` | rad | sysidモードでは 0 |
 | `position` | rad | モータ実測位置 |
 | `velocity` | rad/s | モータ実測速度 |
-| `estimated_torque` | Nm | モータ推定トルク |
+| `estimated_torque` | Nm | モータ推定トルク（LPF 済みと思われ、cmd_torque より振幅が小さく見えることがある） |
 | `valid` | 0/1 | 1=応答あり、0=タイムアウト |
 
 #### 確認ポイント
@@ -153,6 +155,34 @@ torque(t) = amp × (sin(2π·f·t) + 0.6·sin(2π·3.4f·t) + 0.3·sin(2π·7.4f
 - `valid==0` 行が 1% 未満
 - `position` が複数 Hz の重畳波形になっている
 - 速度がほぼ ±44 rad/s（モータ仕様上限）に張り付いていない
+
+#### 波形を可視化する（`plot_recording.py`）
+
+録画した CSV を時系列プロットで確認するツール。励振品質や安全マージンを目視できる。
+sysid・validate 両モードに対応（`target_position` 列が非ゼロなら自動的に階段線で重ね描き）。
+
+```bash
+cd sysid_ws/optimizer
+uv run python sysid/plot_recording.py \
+    --csv data/recording_sysid.csv \
+    --output-png data/recording.png
+```
+
+**出力**: 4 段時系列プロット
+1. `cmd_torque` … `±12 Nm` の torque_limit を破線で重ね描き
+2. `estimated_torque` … 同じく `±12 Nm` 線
+3. `position` … `initial_position ± 2π` の drift_guard 線、validate モードなら `target_position` の階段線も重ね描き
+4. `velocity` … `±30 rad/s` の vel_guard と `±44 rad/s` の RS-02 仕様上限
+
+stdout に samples 数、duration、`valid_rate`、各信号の min/max が出るのでクイックチェックに便利。
+
+**確認ポイント**:
+- `cmd_torque` が想定振幅か（sysid: `amp × 1.9`、validate: step 遷移時に PD 飽和）
+- `estimated_torque` と `cmd_torque` の乖離（電流ループ帯域の影響を観察）
+- `position` が drift_guard 線に近づいていないか
+- `velocity` が RS-02 仕様 ±44 rad/s に近づいていないか
+
+`--output-png` を省略すると GUI で表示（X11 / wayland 環境が必要）。
 
 #### `sudo` を回避する場合
 
@@ -209,7 +239,7 @@ cost(θ) = pos_weight · MSE(q_sim, q_real) + vel_weight · MSE(v_sim, v_real)
 #### コストが収束しない場合
 
 - `--freq` / `--amp` を変えて記録し直す（励振が不十分）
-- `recording.csv` の波形を可視化して、速度飽和や位置範囲超過がないか確認
+- `recording.csv` の波形を [`plot_recording.py`](#波形を可視化する-plot_recordingpy) で可視化して、速度飽和や位置範囲超過がないか確認
 - 初期値 `x0` を変更（`optimize.py` 内）
 
 ---
@@ -336,7 +366,7 @@ sysid モードと validate モードで同一スキーマを使い、
 | 速度が ±44 rad/s に張り付く | `--amp` を下げるか `--freq` を上げる |
 | 位置が ±4π を超える | 同上、または励振時間を短くする |
 | optimize.py が収束しない | 励振データを記録し直す、`--freq` / `--amp` を調整 |
-| validate.py の RMSE が改善しない | sysid 記録時の波形を可視化して励振品質を確認 |
+| validate.py の RMSE が改善しない | `plot_recording.py` で sysid 記録の波形を見て励振品質を確認 |
 
 ---
 
