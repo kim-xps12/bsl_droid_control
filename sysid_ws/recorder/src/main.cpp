@@ -10,7 +10,10 @@
  *   --validate             : PDコントローラ（ランダム位置目標）→ CSVに記録
  *
  * CSVスキーマ:
- *   timestamp,cmd_torque,target_position,position,velocity,estimated_torque,valid
+ *   timestamp,cmd_torque,cmd_torque_clamped,target_position,position,velocity,estimated_torque,valid
+ *
+ *   cmd_torque         : コントローラの理論指令値（validateモードでは PD 計算前段、クランプ前）
+ *   cmd_torque_clamped : motor 側 torque_limit でクランプ後の値（実際にロータに加わる上限）
  *
  * ビルド & 実行:
  *   cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build -j4
@@ -23,8 +26,10 @@
 #include <sys/mman.h>
 #include <time.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 #include <csignal>
 #include <cstdlib>
 #include <cstring>
@@ -50,17 +55,31 @@ static void signal_handler(int) {
 }
 
 // ============================================================================
+// recorder 共通定数（安全リミットと制御パラメータ）
+// ============================================================================
+
+// motor 側ソフトトルクリミット。set_torque_limit の値と一致させる。
+// 同じ値で cmd_torque_clamped の計算に使うため、単一情報源にしておく。
+constexpr double TORQUE_LIMIT_NM = 12.0;
+// sysidモードの drift guard 閾値
+constexpr double DRIFT_LIMIT_RAD = 2.0 * 3.14159265358979323846;
+constexpr double VELOCITY_LIMIT_RAD_S = 30.0;
+// validateモードの kp/kd ramp-up 期間
+constexpr double RAMP_DURATION_S = 0.2;
+
+// ============================================================================
 // サンプル構造体
 // ============================================================================
 
 struct Sample {
-  double timestamp;       // ループ開始からの経過時間 [s]
-  double cmd_torque;      // 送信トルクコマンド [Nm]
-  double target_position; // PDモード時の目標位置 [rad]、sysidモード時は0
-  double position;        // モータ実測位置 [rad]
-  double velocity;        // モータ実測速度 [rad/s]
-  double estimated_torque; // モータ推定トルク [Nm]
-  int valid;              // 1=応答あり、0=タイムアウト
+  double timestamp;          // ループ開始からの経過時間 [s]
+  double cmd_torque;         // コントローラ理論指令値 [Nm]（クランプ前）
+  double cmd_torque_clamped; // motor 側 torque_limit クランプ後 [Nm]
+  double target_position;    // PDモード時の目標位置 [rad]、sysidモード時は0
+  double position;           // モータ実測位置 [rad]
+  double velocity;           // モータ実測速度 [rad/s]
+  double estimated_torque;   // モータ推定トルク [Nm]
+  int valid;                 // 1=応答あり、0=タイムアウト
 };
 
 // ============================================================================
@@ -181,11 +200,12 @@ static bool flush_csv(const std::string& path, const std::vector<Sample>& sample
     return false;
   }
 
-  ofs << "timestamp,cmd_torque,target_position,position,velocity,estimated_torque,valid\n";
+  ofs << "timestamp,cmd_torque,cmd_torque_clamped,target_position,position,velocity,estimated_torque,valid\n";
   ofs << std::fixed << std::setprecision(6);
   for (const auto& s : samples) {
     ofs << s.timestamp << ','
         << s.cmd_torque << ','
+        << s.cmd_torque_clamped << ','
         << s.target_position << ','
         << s.position << ','
         << s.velocity << ','
@@ -211,13 +231,17 @@ int main(int argc, char** argv) {
             << "  Interface: " << cfg.interface << "\n"
             << "  Motor ID:  " << cfg.motor_id << "\n";
   if (!cfg.validate_mode) {
-    std::cout << "  Freq:      " << cfg.freq << " Hz\n"
-              << "  Amp:       " << cfg.amp << " Nm\n";
+    std::cout << "  Freq:        " << cfg.freq << " Hz\n"
+              << "  Amp:         " << cfg.amp << " Nm\n"
+              << "  Gains:       kp=0.0  kd=0.0 (pure torque)\n"
+              << "  Drift guard: +/- 2pi rad / +/- 30 rad/s\n";
   } else {
-    std::cout << "  kp=" << cfg.kp << "  kd=" << cfg.kd << "\n";
+    std::cout << "  kp=" << cfg.kp << "  kd=" << cfg.kd
+              << "  ramp=200 ms\n";
   }
-  std::cout << "  Duration:  " << cfg.duration << " s\n"
-            << "  Output:    " << cfg.output << "\n\n";
+  std::cout << "  Duration:    " << cfg.duration << " s\n"
+            << "  Torque lim:  12 Nm\n"
+            << "  Output:      " << cfg.output << "\n\n";
 
   // ── モータ初期化 ─────────────────────────────────────────────────────────
   aoba_driver::AobaDriver driver;
@@ -247,16 +271,32 @@ int main(int argc, char** argv) {
   std::this_thread::sleep_for(std::chrono::milliseconds(20));
   driver.drain_rx_buffer();
 
-  // プローブ: ゼロトルクコマンドで通信確認
+  // ハードウェア側ソフトリミット（過大トルク防止の最終ライン）
+  if (!driver.set_torque_limit(cfg.motor_id, static_cast<float>(TORQUE_LIMIT_NM))) {
+    std::cerr << "[WARN] Failed to set torque limit; relying on motor default\n";
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+  // プローブ: 完全ゼロ指令（kp/kd含めて全ゼロ）で通信確認 + 初期位置取得
+  // MitCommand のデフォルト kp=30, kd=1 をそのまま送ると、現在位置オフセット x kp で
+  // 過大トルクが出るため明示的にゼロ化する。
+  double initial_position = 0.0;
   {
     aoba_driver::MitCommand probe{};
+    probe.position = 0.0;
+    probe.velocity = 0.0;
+    probe.kp = 0.0;
+    probe.kd = 0.0;
+    probe.torque_ff = 0.0;
     driver.send_command(cfg.motor_id, probe);
     auto [id, state] = driver.read_one_response(50);
     if (id == cfg.motor_id && state.valid) {
+      initial_position = state.position;
       std::cout << "Motor probe OK: pos=" << state.position
                 << " rad, vel=" << state.velocity << " rad/s\n\n";
     } else {
       std::cerr << "[WARN] Motor did not respond to probe — continuing anyway\n"
+                << "  initial_position fallback to 0.0\n"
                 << "  Check: motor power, CAN wiring, bitrate (1Mbps), motor ID ("
                 << cfg.motor_id << ")\n\n";
     }
@@ -284,10 +324,14 @@ int main(int argc, char** argv) {
 
   int tick = 0;
   int missed = 0;
+  bool drift_aborted = false;
 
   // validateモード用: ランダム目標位置の管理
-  double target_pos = 0.0;
-  int next_target_tick = 0;
+  // 初期目標は probe で読んだ位置にしておき、最初の target_interval は脱力ホールド。
+  double target_pos = cfg.validate_mode ? initial_position : 0.0;
+  int next_target_tick = cfg.validate_mode
+      ? static_cast<int>(cfg.target_interval * 1000.0)
+      : 0;
   std::srand(42);
   auto random_target = [&]() -> double {
     return cfg.target_range * (2.0 * (static_cast<double>(std::rand()) / RAND_MAX) - 1.0);
@@ -301,58 +345,81 @@ int main(int argc, char** argv) {
     // vDSO 経由の clock_gettime は ~20ns で軽量。
     const double t = elapsed_seconds();
 
-    // トルクコマンド計算
-    double tau;
+    // モード別の指令組み立て（MitCommand のデフォルト kp/kd に依存しない）
+    double tau = 0.0;
+    double kp_now = 0.0;
+    double kd_now = 0.0;
+    aoba_driver::MitCommand cmd{};
+
     if (!cfg.validate_mode) {
-      // sysidモード: マルチサイン純トルク励振
+      // sysidモード: マルチサイン純トルク励振（kp=kd=0）
       tau = sysid::multi_sine_torque(t, cfg.freq, cfg.amp);
-      target_pos = 0.0;
+      cmd.position = 0.0;
+      cmd.velocity = 0.0;
+      cmd.kp = 0.0;
+      cmd.kd = 0.0;
+      cmd.torque_ff = tau;
     } else {
-      // validateモード: PDコントローラ
+      // validateモード: PDコントローラ（kp/kdを 0→cfg値 に 200ms 線形ramp）
       if (tick >= next_target_tick) {
         target_pos = random_target();
         next_target_tick = tick + static_cast<int>(cfg.target_interval * 1000.0);
       }
-      // tau はここでは仮値（実際のフィードバックから計算）
-      tau = 0.0;
-    }
-
-    // コマンド送信（kp=0, kd=0 → 純トルク / validateモードもtorque_ffは0で後で設定）
-    aoba_driver::MitCommand cmd{};
-    if (!cfg.validate_mode) {
-      cmd.torque_ff = tau;
-    }
-    // validateモードはkp/kdを使う
-    if (cfg.validate_mode) {
+      const double ramp_factor = std::min(1.0, t / RAMP_DURATION_S);
+      kp_now = cfg.kp * ramp_factor;
+      kd_now = cfg.kd * ramp_factor;
       cmd.position = target_pos;
       cmd.velocity = 0.0;
-      cmd.kp = cfg.kp;
-      cmd.kd = cfg.kd;
+      cmd.kp = kp_now;
+      cmd.kd = kd_now;
       cmd.torque_ff = 0.0;
-      // cmd_torque として記録する値を計算（前回サンプルがあれば）
-      if (!samples.empty() && samples.back().valid) {
-        tau = cfg.kp * (target_pos - samples.back().position)
-              + cfg.kd * (0.0 - samples.back().velocity);
-      }
     }
 
     driver.send_command(cfg.motor_id, cmd);
 
-    // レスポンス受信（タイムアウト2ms）
-    auto [id, state] = driver.read_one_response(2);
+    // レスポンス受信（タイムアウト1ms: 1kHz周期を阻害しない）
+    auto [id, state] = driver.read_one_response(1);
     const bool got_response = (id == cfg.motor_id && state.valid);
 
     if (!got_response) {
       missed++;
     }
 
+    // validate モードの cmd_torque は今回受信 state で再計算
+    // （前tick値ではなく同tickの実状態に基づく PD 指令理論値）
+    if (cfg.validate_mode) {
+      tau = got_response
+                ? kp_now * (target_pos - state.position) + kd_now * (0.0 - state.velocity)
+                : std::nan("");
+    }
+
+    // sysid モードのドリフトガード: 初期位置から ±2π / 速度 30 rad/s を超えたら graceful abort
+    if (!cfg.validate_mode && got_response) {
+      const double pos_drift = state.position - initial_position;
+      if (std::abs(pos_drift) > DRIFT_LIMIT_RAD ||
+          std::abs(state.velocity) > VELOCITY_LIMIT_RAD_S) {
+        std::cerr << "\n[ABORT] Drift guard tripped: pos_drift=" << pos_drift
+                  << " rad  vel=" << state.velocity << " rad/s\n";
+        drift_aborted = true;
+      }
+    }
+
+    // motor 側 torque_limit でクランプ後の値（NaN は伝播）
+    const double tau_clamped = std::isnan(tau)
+        ? tau
+        : std::clamp(tau, -TORQUE_LIMIT_NM, TORQUE_LIMIT_NM);
+
     samples.push_back({
-      t, tau, target_pos,
+      t, tau, tau_clamped, target_pos,
       got_response ? state.position : 0.0,
       got_response ? state.velocity : 0.0,
       got_response ? state.torque   : 0.0,
       got_response ? 1 : 0,
     });
+
+    if (drift_aborted) {
+      break;
+    }
 
     // 進捗表示（100ticks=0.1s毎）
     if (tick % 100 == 0) {
