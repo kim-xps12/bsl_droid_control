@@ -15,7 +15,7 @@
     damping:      速度比例摩擦は小さめ、0.05 から
 -->
 <mujoco model="rs02_joint">
-  <compiler angle="radian" autolimits="false"/>
+  <compiler angle="radian" autolimits="true"/>
 
   <!-- timestep=0.001 → 記録レート 1 kHz と一致; RK4 で剛性摩擦モデルに対応 -->
   <option timestep="0.001" integrator="RK4"/>
