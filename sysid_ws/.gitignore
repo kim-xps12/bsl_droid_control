@@ -12,5 +12,8 @@ recorder/build/
 # Recording / result artifacts (keep .gitkeep)
 optimizer/data/*
 !optimizer/data/.gitkeep
+# 同定/検証用のリファレンス録画はコミット対象（個体ごとに named で管理）
+!optimizer/data/recording_sysid_*.csv
+!optimizer/data/validation_*.csv
 optimizer/results/*
 !optimizer/results/.gitkeep
