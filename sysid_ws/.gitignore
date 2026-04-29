@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# C++ build
+recorder/build/
+
+# Recording / result artifacts (keep .gitkeep)
+optimizer/data/*
+!optimizer/data/.gitkeep
+# 同定/検証用のリファレンス録画はコミット対象（個体ごとに named で管理）
+!optimizer/data/recording_sysid_*.csv
+!optimizer/data/validation_*.csv
+optimizer/results/*
+!optimizer/results/.gitkeep
+# 同定パラメータ JSON と検証プロット PNG はコミット対象（再現性・トレーサビリティのため）
+!optimizer/results/identified_params*.json
+!optimizer/results/validation_*.png
