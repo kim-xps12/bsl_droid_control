@@ -17,3 +17,6 @@ optimizer/data/*
 !optimizer/data/validation_*.csv
 optimizer/results/*
 !optimizer/results/.gitkeep
+# 同定パラメータ JSON と検証プロット PNG はコミット対象（再現性・トレーサビリティのため）
+!optimizer/results/identified_params*.json
+!optimizer/results/validation_*.png
