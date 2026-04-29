@@ -35,10 +35,33 @@ from numpy.typing import NDArray
 # =============================================================================
 
 
-def load_recording(csv_path: str) -> tuple[NDArray[np.float64], ...]:
-    """CSV を読み込み (t, cmd_torque, target_position, q, v) を返す。
+def detect_torque_limit(df: pd.DataFrame, fallback: float = 17.0) -> float:
+    """CSV の cmd_torque vs cmd_torque_clamped の差から実機側 torque_limit を推定する。
+
+    motor 側で `set_torque_limit(L)` が効いている場合、cmd_torque_clamped は ±L で
+    頭打ちされる。abs(cmd_torque) > abs(cmd_torque_clamped) となるサンプルが飽和イベント
+    なので、その時の abs(cmd_torque_clamped) の最大値が L そのもの。
+
+    `cmd_torque_clamped` 列がない（旧 schema）または飽和イベントが観測されない場合は
+    fallback（driver の scale::TORQUE = 17 Nm）を返す。
+    """
+    if "cmd_torque_clamped" not in df.columns:
+        return fallback
+    cmd = df["cmd_torque"].to_numpy(dtype=np.float64)
+    clamped = df["cmd_torque_clamped"].to_numpy(dtype=np.float64)
+    saturated = np.abs(cmd) - np.abs(clamped) > 1e-6
+    if not saturated.any():
+        return fallback
+    return float(np.abs(clamped[saturated]).max())
+
+
+def load_recording(csv_path: str) -> tuple[NDArray[np.float64], NDArray[np.float64],
+                                             NDArray[np.float64], NDArray[np.float64],
+                                             NDArray[np.float64], float]:
+    """CSV を読み込み (t, cmd_torque, target_position, q, v, torque_limit) を返す。
 
     valid==0 行は除外する。
+    torque_limit は `cmd_torque_clamped` 列から自動検出する（detect_torque_limit 参照）。
     """
     df = pd.read_csv(csv_path)
     if "valid" in df.columns:
@@ -48,7 +71,8 @@ def load_recording(csv_path: str) -> tuple[NDArray[np.float64], ...]:
     q_target = df["target_position"].to_numpy(dtype=np.float64)
     q = df["position"].to_numpy(dtype=np.float64)
     v = df["velocity"].to_numpy(dtype=np.float64)
-    return t, tau, q_target, q, v
+    torque_limit = detect_torque_limit(df)
+    return t, tau, q_target, q, v, torque_limit
 
 
 def load_params(json_path: str) -> dict[str, float]:
@@ -68,6 +92,7 @@ def simulate_pd(
     v0: float,
     kp: float,
     kd: float,
+    torque_limit: float = 17.0,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """クローズドループ PD シミュレーション。
 
@@ -75,6 +100,10 @@ def simulate_pd(
     PD 制御量を計算することで、実機と同条件のフィードバックを再現する。
 
     target_position 列（= 録画時のランダム目標位置）をそのまま入力する。
+
+    torque_limit は実機側 `set_torque_limit` の値に合わせる（CSV から自動検出）。
+    sim と real のクランプ値を一致させないと、飽和サンプルで sim が過剰トルクを
+    出して RMSE が膨らむ。
     """
     data = mujoco.MjData(model)
     data.qpos[0] = q0
@@ -88,8 +117,8 @@ def simulate_pd(
     for i in range(n):
         # PD トルク: シミュレーション内の状態でフィードバック
         tau = kp * (q_targets[i] - data.qpos[0]) + kd * (0.0 - data.qvel[0])
-        # RS-02 ピークトルクでクランプ
-        tau = float(np.clip(tau, -17.0, 17.0))
+        # 実機側 torque_limit と同じ値でクランプ
+        tau = float(np.clip(tau, -torque_limit, torque_limit))
         data.ctrl[0] = tau
         mujoco.mj_step(model, data)
         q_sim[i] = data.qpos[0]
@@ -206,8 +235,10 @@ def validate(
     output_png: str | None = None,
 ) -> None:
     print(f"Loading CSV: {csv_path}")
-    t, _tau, q_target, q_real, v_real = load_recording(csv_path)
+    t, _tau, q_target, q_real, v_real, torque_limit = load_recording(csv_path)
     print(f"  {len(t)} valid samples, duration={float(t[-1] - t[0]):.2f} s")
+    print(f"  Detected torque_limit: {torque_limit:.2f} Nm "
+          f"(used to match sim clamp to real motor)")
 
     q0, v0 = float(q_real[0]), float(v_real[0])
 
@@ -219,7 +250,7 @@ def validate(
         "frictionloss": float(model_init.dof_frictionloss[0]),
         "damping": float(model_init.dof_damping[0]),
     }
-    q_init, v_init = simulate_pd(model_init, q_target, q0, v0, kp, kd)
+    q_init, v_init = simulate_pd(model_init, q_target, q0, v0, kp, kd, torque_limit)
 
     # 同定パラメータでシミュレーション
     print(f"Loading identified params: {params_path}")
@@ -233,7 +264,7 @@ def validate(
     model_iden.dof_frictionloss[0] = params_iden["frictionloss"]
     model_iden.dof_damping[0] = params_iden["damping"]
     print("\nSimulating with identified parameters ...")
-    q_iden, v_iden = simulate_pd(model_iden, q_target, q0, v0, kp, kd)
+    q_iden, v_iden = simulate_pd(model_iden, q_target, q0, v0, kp, kd, torque_limit)
 
     # RMSE レポート
     rmse_q_init = rmse(q_real, q_init)
